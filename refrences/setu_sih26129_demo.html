@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setu — one citizen record, every department</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF6EE;
+    --paper-deep:#F3EDDF;
+    --ink:#211D18;
+    --ink-soft:#6B6357;
+    --indigo:#1E3350;
+    --indigo-deep:#122036;
+    --terracotta:#B85C2B;
+    --terracotta-soft:#F2E1D3;
+    --sage:#3E7A5C;
+    --sage-soft:#E1EDE4;
+    --gold:#B4862F;
+    --line:#E2D9C6;
+    --line-strong:#CFC3A8;
+    --card:#FFFFFE;
+    --radius:4px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-font-smoothing:antialiased}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    font-size:15px;
+    line-height:1.5;
+  }
+  h1,h2,h3,.serif{font-family:'Source Serif 4',Georgia,serif}
+  button{font:inherit;cursor:pointer}
+  a{color:inherit}
+  ::selection{background:var(--terracotta-soft)}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 40px;border-bottom:1px solid var(--line);
+    background:var(--paper);position:sticky;top:0;z-index:30;
+  }
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand .mark{
+    width:34px;height:34px;position:relative;flex:none;
+  }
+  .brand .mark svg{width:100%;height:100%}
+  .brand .word{font-family:'Source Serif 4',serif;font-weight:600;font-size:21px;letter-spacing:-.2px}
+  .brand .word span{color:var(--terracotta)}
+  nav.tabs{display:flex;gap:2px;background:var(--paper-deep);padding:3px;border-radius:8px;border:1px solid var(--line)}
+  nav.tabs button{
+    border:0;background:transparent;padding:8px 16px;border-radius:6px;
+    font-size:13.5px;font-weight:600;color:var(--ink-soft);
+  }
+  nav.tabs button.active{background:var(--card);color:var(--indigo);box-shadow:0 1px 2px rgba(30,51,80,.08)}
+  .who{display:flex;align-items:center;gap:12px}
+  .who .role{font-size:12px;color:var(--ink-soft);text-align:right;line-height:1.3}
+  .who .role b{display:block;color:var(--ink);font-size:13px}
+  .avatar{width:36px;height:36px;border-radius:50%;background:var(--indigo);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;font-family:'Source Serif 4',serif}
+
+  main{max-width:1180px;margin:0 auto;padding:44px 40px 90px}
+  .view{display:none}
+  .view.active{display:block}
+
+  /* ---------- hero with network diagram ---------- */
+  .hero{
+    display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center;
+    padding-bottom:40px;margin-bottom:40px;border-bottom:1px solid var(--line);
+  }
+  .hero .kicker{color:var(--terracotta);font-weight:600;font-size:13px;margin-bottom:10px}
+  .hero h1{font-size:38px;line-height:1.14;margin:0 0 16px;font-weight:600;letter-spacing:-.5px;max-width:9.5em}
+  .hero p{color:var(--ink-soft);font-size:15.5px;max-width:38ch;margin:0 0 22px}
+  .hero-actions{display:flex;gap:10px}
+  .btn{border-radius:6px;padding:11px 18px;font-weight:600;font-size:13.5px;border:1px solid transparent}
+  .btn-primary{background:var(--indigo);color:#fff}
+  .btn-primary:hover{background:var(--indigo-deep)}
+  .btn-ghost{background:transparent;color:var(--indigo);border-color:var(--line-strong)}
+  .btn-ghost:hover{border-color:var(--indigo)}
+
+  .netmap{position:relative}
+  .netmap svg{width:100%;height:auto;display:block}
+
+  /* ---------- section headers ---------- */
+  .section-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px}
+  .section-head h2{font-size:19px;font-weight:600;margin:0}
+  .section-head .link{font-size:13px;font-weight:600;color:var(--indigo);background:none;border:0}
+
+  /* ---------- layout grid ---------- */
+  .layout{display:grid;grid-template-columns:1.5fr 1fr;gap:22px;align-items:start}
+
+  /* ---------- application timeline ---------- */
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius)}
+  .panel-pad{padding:22px 24px}
+  .app-item{padding:20px 0;border-bottom:1px solid var(--line)}
+  .app-item:first-child{padding-top:0}
+  .app-item:last-child{border-bottom:0;padding-bottom:0}
+  .app-top{display:flex;justify-content:space-between;gap:10px;margin-bottom:14px}
+  .app-name{font-weight:700;font-size:15px}
+  .app-meta{font-size:12.5px;color:var(--ink-soft);margin-top:3px}
+  .chip{font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;white-space:nowrap;height:fit-content}
+  .chip-progress{background:var(--terracotta-soft);color:var(--terracotta)}
+  .chip-done{background:var(--sage-soft);color:var(--sage)}
+  .chip-wait{background:#EDE8DA;color:var(--ink-soft)}
+
+  .track{display:flex;align-items:center;gap:0}
+  .tnode{display:flex;flex-direction:column;align-items:center;gap:7px;position:relative}
+  .tdot{width:11px;height:11px;border-radius:50%;background:var(--paper-deep);border:2px solid var(--line-strong);z-index:1}
+  .tdot.done{background:var(--sage);border-color:var(--sage)}
+  .tdot.now{background:var(--indigo);border-color:var(--indigo);box-shadow:0 0 0 4px rgba(30,51,80,.12)}
+  .tlabel{font-size:10.5px;color:var(--ink-soft);white-space:nowrap}
+  .tline{flex:1;height:2px;background:var(--line-strong);margin-bottom:19px}
+  .tline.done{background:var(--sage)}
+
+  /* ---------- side stack ---------- */
+  .stack{display:flex;flex-direction:column;gap:18px}
+  .side-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px}
+  .side-card h3{font-size:14px;margin:0 0 14px;font-weight:700}
+  .doc-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .doc-row:last-child{border-bottom:0;padding-bottom:0}
+  .doc-row:first-child{padding-top:0}
+  .doc-name{font-size:13.5px;font-weight:600}
+  .doc-src{font-size:11.5px;color:var(--ink-soft)}
+  .dot-ok{width:7px;height:7px;border-radius:50%;background:var(--sage);display:inline-block;margin-right:6px}
+
+  .stat-row{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+  .stat{background:var(--card);padding:16px 18px}
+  .stat .n{font-family:'Source Serif 4',serif;font-size:26px;font-weight:600;color:var(--indigo)}
+  .stat .l{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
+
+  .activity-row{display:flex;gap:11px;padding:11px 0;border-bottom:1px dashed var(--line)}
+  .activity-row:last-child{border-bottom:0;padding-bottom:0}
+  .activity-row:first-child{padding-top:0}
+  .activity-row b{font-size:13px;display:block}
+  .activity-row span{font-size:11.5px;color:var(--ink-soft)}
+  .arail{width:2px;background:var(--line-strong);border-radius:2px;flex:none}
+
+  /* ---------- services grid ---------- */
+  .service-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:4px}
+  .service{border:1px solid var(--line);border-radius:var(--radius);padding:20px;background:var(--card)}
+  .service .src{font-size:11px;font-weight:700;color:var(--terracotta);text-transform:none;margin-bottom:9px;display:block}
+  .service h3{font-size:15px;margin:0 0 7px;font-weight:600}
+  .service p{font-size:12.8px;color:var(--ink-soft);margin:0 0 16px;min-height:34px}
+  .service button{background:transparent;border:1px solid var(--line-strong);color:var(--indigo);padding:8px 13px;border-radius:6px;font-weight:600;font-size:12.5px}
+  .service button:hover{background:var(--indigo);color:#fff;border-color:var(--indigo)}
+  .searchbar{width:100%;border:1px solid var(--line-strong);background:var(--card);padding:13px 16px;border-radius:6px;outline:none;font-size:14px;margin-bottom:22px}
+  .searchbar:focus{border-color:var(--indigo)}
+
+  /* ---------- documents view ---------- */
+  .doc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .doc-card{border:1px solid var(--line);border-radius:var(--radius);padding:20px;background:var(--card)}
+  .doc-card .status{font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;display:inline-block;margin-bottom:12px}
+  .status-ok{background:var(--sage-soft);color:var(--sage)}
+  .status-warn{background:var(--terracotta-soft);color:var(--terracotta)}
+  .doc-card h3{margin:0 0 4px;font-size:15px}
+  .doc-card p{margin:0 0 16px;font-size:12.5px;color:var(--ink-soft)}
+
+  /* ---------- table (applications view) ---------- */
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:13px 6px;border-bottom:1px solid var(--line)}
+  th{font-size:11px;color:var(--ink-soft);font-weight:700}
+  td b{font-weight:600}
+
+  /* ---------- connections / network view ---------- */
+  .node-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .node-card{border:1px solid var(--line);border-radius:var(--radius);padding:22px;background:var(--card)}
+  .node-card .nid{
+    width:38px;height:38px;border-radius:8px;background:var(--indigo);color:#fff;
+    display:grid;place-items:center;font-family:'Source Serif 4',serif;font-weight:600;margin-bottom:14px;
+  }
+  .node-card h3{margin:0 0 4px;font-size:15px}
+  .node-card p{margin:0 0 14px;font-size:12.5px;color:var(--ink-soft)}
+  .node-meta{font-size:12px;color:var(--ink-soft);margin:12px 0}
+  .node-meta b{color:var(--ink)}
+
+  /* ---------- admin ---------- */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px}
+  .kpi{border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;background:var(--card)}
+  .kpi .l{font-size:12px;color:var(--ink-soft)}
+  .kpi .v{font-family:'Source Serif 4',serif;font-size:27px;font-weight:600;margin:8px 0 3px}
+  .kpi .v.good{color:var(--sage)}
+  .kpi .v.warn{color:var(--terracotta)}
+
+  /* ---------- assist ---------- */
+  .assist{
+    position:fixed;right:28px;bottom:26px;padding:12px 18px;border-radius:24px;
+    background:var(--indigo);color:#fff;border:0;font-weight:600;font-size:13px;
+    display:flex;align-items:center;gap:8px;box-shadow:0 10px 24px rgba(18,32,54,.28);
+  }
+  .assist:hover{background:var(--indigo-deep)}
+
+  .toast{
+    position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(120%);
+    background:var(--indigo-deep);color:#fff;padding:12px 20px;border-radius:6px;
+    font-size:13px;transition:transform .35s ease;z-index:50;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0)}
+
+  /* ---------- chat assistant ---------- */
+  .chat-panel{
+    position:fixed;right:28px;bottom:90px;width:360px;max-width:calc(100vw - 40px);
+    height:480px;max-height:calc(100vh - 150px);background:var(--card);
+    border:1px solid var(--line);border-radius:10px;box-shadow:0 20px 48px rgba(18,32,54,.22);
+    display:flex;flex-direction:column;z-index:60;
+    opacity:0;transform:translateY(14px) scale(.98);pointer-events:none;
+    transition:opacity .2s ease,transform .2s ease;
+  }
+  .chat-panel.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+  .chat-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .chat-head .t{display:flex;align-items:center;gap:9px}
+  .chat-head .dot{width:8px;height:8px;border-radius:50%;background:var(--sage)}
+  .chat-head h3{margin:0;font-size:14.5px;font-family:'Source Serif 4',serif;font-weight:600}
+  .chat-head span{font-size:11px;color:var(--ink-soft)}
+  .chat-close{background:none;border:0;color:var(--ink-soft);font-size:18px;line-height:1;padding:4px}
+  .chat-close:hover{color:var(--ink)}
+  .chat-body{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+  .msg{max-width:82%;padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.45}
+  .msg.bot{background:var(--paper-deep);color:var(--ink);align-self:flex-start;border-bottom-left-radius:3px}
+  .msg.user{background:var(--indigo);color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
+  .chat-suggest{display:flex;flex-wrap:wrap;gap:7px;padding:0 18px 12px}
+  .chip-suggest{border:1px solid var(--line-strong);background:var(--card);color:var(--indigo);font-size:11.5px;font-weight:600;padding:7px 11px;border-radius:20px}
+  .chip-suggest:hover{background:var(--indigo);color:#fff;border-color:var(--indigo)}
+  .chat-input{display:flex;gap:8px;padding:14px;border-top:1px solid var(--line)}
+  .chat-input input{flex:1;border:1px solid var(--line-strong);border-radius:20px;padding:10px 15px;font-size:13px;outline:none;background:var(--paper)}
+  .chat-input input:focus{border-color:var(--indigo)}
+  .chat-input button{background:var(--indigo);color:#fff;border:0;width:38px;height:38px;border-radius:50%;flex:none;font-size:15px}
+  .chat-input button:hover{background:var(--indigo-deep)}
+  .typing span{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ink-soft);margin-right:3px;animation:tb 1.1s infinite}
+  .typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}
+  @keyframes tb{0%,60%,100%{opacity:.3}30%{opacity:1}}
+
+  /* ---------- consent modal ---------- */
+  .modal-veil{position:fixed;inset:0;background:rgba(33,29,24,.42);z-index:70;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-veil.open{display:flex}
+  .modal{background:var(--card);border-radius:10px;max-width:440px;width:100%;padding:28px;box-shadow:0 24px 60px rgba(18,32,54,.3)}
+  .modal .kicker{color:var(--terracotta);font-weight:600;font-size:12px;margin-bottom:8px}
+  .modal h3{margin:0 0 8px;font-size:19px}
+  .modal .desc{color:var(--ink-soft);font-size:13.5px;margin:0 0 20px}
+  .consent-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+  .consent-row:last-of-type{border-bottom:0}
+  .consent-row .fld{font-weight:600}
+  .consent-row .from{color:var(--ink-soft);font-size:12px}
+  .modal-actions{display:flex;gap:10px;margin-top:22px}
+  .modal-actions .btn{flex:1;text-align:center}
+  @media(max-width:560px){
+    .chat-panel{right:16px;left:16px;width:auto;bottom:82px}
+  }
+
+  @media(max-width:920px){
+    .topbar{padding:14px 20px;flex-wrap:wrap;gap:12px}
+    nav.tabs{order:3;width:100%;overflow-x:auto}
+    main{padding:28px 20px 70px}
+    .hero{grid-template-columns:1fr;gap:26px}
+    .layout{grid-template-columns:1fr}
+    .service-grid,.doc-grid,.node-grid{grid-template-columns:1fr 1fr}
+    .kpi-row{grid-template-columns:1fr 1fr}
+  }
+  @media(max-width:560px){
+    .service-grid,.doc-grid,.node-grid,.kpi-row,.stat-row{grid-template-columns:1fr}
+    .who .role{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">
+      <svg viewBox="0 0 34 34" fill="none">
+        <circle cx="17" cy="17" r="16" stroke="#1E3350" stroke-width="1.4"/>
+        <circle cx="17" cy="9" r="2.6" fill="#B85C2B"/>
+        <circle cx="9" cy="22" r="2.6" fill="#1E3350"/>
+        <circle cx="25" cy="22" r="2.6" fill="#1E3350"/>
+        <path d="M17 11.4V17M17 17L10.5 20.3M17 17L23.5 20.3" stroke="#1E3350" stroke-width="1.3"/>
+      </svg>
+    </div>
+    <div class="word">Setu<span>.</span></div>
+  </div>
+  <nav class="tabs">
+    <button class="active" onclick="showView('dashboard',this)">Dashboard</button>
+    <button onclick="showView('services',this)">Find a service</button>
+    <button onclick="showView('documents',this)">Documents</button>
+    <button onclick="showView('applications',this)">Applications</button>
+    <button onclick="showView('network',this)">Connected platforms</button>
+    <button onclick="showView('admin',this)">Department view</button>
+  </nav>
+  <div class="who">
+    <div class="role"><b>Palak</b>Pune district</div>
+    <div class="avatar">P</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ================= DASHBOARD ================= -->
+  <section id="dashboard" class="view active">
+    <div class="hero">
+      <div>
+        <div class="kicker">Government of Maharashtra · interoperability layer</div>
+        <h1>One record for every citizen, shared with consent — not copied.</h1>
+        <p>Setu links Aadhaar, Aaple Sarkar, UMANG and DigiLocker behind a single citizen login, so a document verified once doesn't need to be uploaded again.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" onclick="showView('services')">Find a service</button>
+          <button class="btn btn-ghost" onclick="showView('network')">See what's connected</button>
+        </div>
+      </div>
+      <div class="netmap">
+        <svg viewBox="0 0 420 300">
+          <g stroke="#CFC3A8" stroke-width="1.4">
+            <line x1="210" y1="150" x2="210" y2="44"/>
+            <line x1="210" y1="150" x2="90" y2="90"/>
+            <line x1="210" y1="150" x2="330" y2="90"/>
+            <line x1="210" y1="150" x2="90" y2="222"/>
+            <line x1="210" y1="150" x2="330" y2="222"/>
+          </g>
+          <circle cx="210" cy="150" r="34" fill="#1E3350"/>
+          <text x="210" y="146" text-anchor="middle" fill="#fff" font-family="Source Serif 4, serif" font-size="12" font-weight="600">You</text>
+          <text x="210" y="160" text-anchor="middle" fill="#fff" font-family="Source Serif 4, serif" font-size="9">Setu ID</text>
+
+          <circle cx="210" cy="44" r="26" fill="#FFFFFE" stroke="#B85C2B" stroke-width="1.6"/>
+          <text x="210" y="41" text-anchor="middle" fill="#211D18" font-size="9.5" font-weight="700" font-family="Inter">Aadhaar</text>
+          <text x="210" y="52" text-anchor="middle" fill="#6B6357" font-size="8">DigiLocker</text>
+
+          <circle cx="90" cy="90" r="26" fill="#FFFFFE" stroke="#3E7A5C" stroke-width="1.6"/>
+          <text x="90" y="87" text-anchor="middle" fill="#211D18" font-size="9" font-weight="700" font-family="Inter">Aaple</text>
+          <text x="90" y="98" text-anchor="middle" fill="#6B6357" font-size="8">Sarkar</text>
+
+          <circle cx="330" cy="90" r="26" fill="#FFFFFE" stroke="#3E7A5C" stroke-width="1.6"/>
+          <text x="330" y="94" text-anchor="middle" fill="#211D18" font-size="9.5" font-weight="700" font-family="Inter">UMANG</text>
+
+          <circle cx="90" cy="222" r="26" fill="#FFFFFE" stroke="#CFC3A8" stroke-width="1.6"/>
+          <text x="90" y="219" text-anchor="middle" fill="#211D18" font-size="8.5" font-weight="700" font-family="Inter">Revenue</text>
+          <text x="90" y="230" text-anchor="middle" fill="#6B6357" font-size="8">Dept.</text>
+
+          <circle cx="330" cy="222" r="26" fill="#FFFFFE" stroke="#CFC3A8" stroke-width="1.6"/>
+          <text x="330" y="219" text-anchor="middle" fill="#211D18" font-size="8.5" font-weight="700" font-family="Inter">Scholar-</text>
+          <text x="330" y="230" text-anchor="middle" fill="#6B6357" font-size="8">ship cell</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat"><div class="n">3</div><div class="l">Applications in progress</div></div>
+      <div class="stat"><div class="n">5</div><div class="l">Documents ready to reuse</div></div>
+      <div class="stat"><div class="n">4</div><div class="l">Departments connected to you</div></div>
+      <div class="stat"><div class="n">1</div><div class="l">Action needed from you</div></div>
+    </div>
+
+    <div class="layout">
+      <div class="panel panel-pad">
+        <div class="section-head"><h2>Your applications</h2><button class="link" onclick="showView('applications')">View all</button></div>
+
+        <div class="app-item">
+          <div class="app-top">
+            <div><div class="app-name">Income certificate</div><div class="app-meta">Filed via Aaple Sarkar · MH-2026-10234</div></div>
+            <span class="chip chip-progress">With officer</span>
+          </div>
+          <div class="track">
+            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Filed</div></div>
+            <div class="tline done"></div>
+            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Docs verified</div></div>
+            <div class="tline done"></div>
+            <div class="tnode"><div class="tdot now"></div><div class="tlabel">Officer review</div></div>
+            <div class="tline"></div>
+            <div class="tnode"><div class="tdot"></div><div class="tlabel">Issued</div></div>
+          </div>
+        </div>
+
+        <div class="app-item">
+          <div class="app-top">
+            <div><div class="app-name">Residence certificate</div><div class="app-meta">Filed via Aaple Sarkar · MH-2026-09721</div></div>
+            <span class="chip chip-wait">Needs a photo</span>
+          </div>
+          <div class="track">
+            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Filed</div></div>
+            <div class="tline"></div>
+            <div class="tnode"><div class="tdot now"></div><div class="tlabel">Docs verified</div></div>
+            <div class="tline"></div>
+            <div class="tnode"><div class="tdot"></div><div class="tlabel">Officer review</div></div>
+            <div class="tline"></div>
+            <div class="tnode"><div class="tdot"></div><div class="tlabel">Issued</div></div>
+          </div>
+        </div>
+
+        <div class="app-item">
+          <div class="app-top">
+            <div><div class="app-name">Post-matric scholarship</div><div class="app-meta">Filed via UMANG · UM-88421</div></div>
+            <span class="chip chip-done">Issued</span>
+          </div>
+          <div class="track">
+            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Filed</div></div>
+            <div class="tline done"></div>
+            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Docs verified</div></div>
+            <div class="tline done"></div>
+            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Officer review</div></div>
+            <div class="tline done"></div>
+            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Issued</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="side-card">
+          <h3>Documents on file</h3>
+          <div class="doc-row"><div><div class="doc-name"><span class="dot-ok"></span>Aadhaar</div><div class="doc-src">DigiLocker · today</div></div></div>
+          <div class="doc-row"><div><div class="doc-name"><span class="dot-ok"></span>PAN card</div><div class="doc-src">DigiLocker · today</div></div></div>
+          <div class="doc-row"><div><div class="doc-name"><span class="dot-ok"></span>Income certificate</div><div class="doc-src">Aaple Sarkar · 12 Sept</div></div></div>
+          <div class="doc-row"><div><div class="doc-name">Photograph</div><div class="doc-src" style="color:var(--terracotta)">Needs updating</div></div></div>
+        </div>
+
+        <div class="side-card">
+          <h3>Recent activity</h3>
+          <div class="activity-row"><div class="arail"></div><div><b>Aadhaar fetched from DigiLocker</b><span>10 minutes ago</span></div></div>
+          <div class="activity-row"><div class="arail"></div><div><b>Income certificate synced to Aaple Sarkar</b><span>32 minutes ago</span></div></div>
+          <div class="activity-row"><div class="arail"></div><div><b>Residence certificate needs a photo</b><span>Yesterday</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SERVICES ================= -->
+  <section id="services" class="view">
+    <div class="section-head" style="margin-bottom:6px"><h2>Find a government service</h2></div>
+    <p style="color:var(--ink-soft);margin:0 0 22px;max-width:56ch">Search across every department connected to Setu — your saved documents fill in automatically wherever they're accepted.</p>
+    <input class="searchbar" placeholder="Try “income”, “scholarship”, “residence”…" oninput="searchServices(this.value)">
+    <div id="serviceResults" class="service-grid"></div>
+  </section>
+
+  <!-- ================= DOCUMENTS ================= -->
+  <section id="documents" class="view">
+    <div class="section-head"><h2>My documents</h2><button class="btn btn-primary" onclick="toast('Starting DigiLocker link…')">Connect DigiLocker</button></div>
+    <div class="doc-grid">
+      <div class="doc-card"><span class="status status-ok">Verified</span><h3>Aadhaar</h3><p>DigiLocker · updated today</p><button class="service" style="width:100%">Reuse this document</button></div>
+      <div class="doc-card"><span class="status status-ok">Verified</span><h3>PAN card</h3><p>DigiLocker · updated today</p><button class="service" style="width:100%">Reuse this document</button></div>
+      <div class="doc-card"><span class="status status-ok">Verified</span><h3>Address proof</h3><p>DigiLocker · updated yesterday</p><button class="service" style="width:100%">Reuse this document</button></div>
+      <div class="doc-card"><span class="status status-ok">Verified</span><h3>Income certificate</h3><p>Aaple Sarkar · 12 September</p><button class="service" style="width:100%">Reuse this document</button></div>
+      <div class="doc-card"><span class="status status-warn">Needs updating</span><h3>Photograph</h3><p>Profile · last updated 2025</p><button class="service" style="width:100%">Update now</button></div>
+    </div>
+  </section>
+
+  <!-- ================= APPLICATIONS ================= -->
+  <section id="applications" class="view">
+    <div class="section-head"><h2>My applications</h2></div>
+    <div class="panel panel-pad">
+      <table>
+        <thead><tr><th>Application</th><th>Department</th><th>Reference</th><th>Status</th><th>Last update</th></tr></thead>
+        <tbody>
+          <tr><td><b>Income certificate</b></td><td>Aaple Sarkar</td><td>MH-2026-10234</td><td><span class="chip chip-progress">With officer</span></td><td>2 min ago</td></tr>
+          <tr><td><b>Residence certificate</b></td><td>Aaple Sarkar</td><td>MH-2026-09721</td><td><span class="chip chip-wait">Needs a photo</span></td><td>5 min ago</td></tr>
+          <tr><td><b>Post-matric scholarship</b></td><td>UMANG</td><td>UM-88421</td><td><span class="chip chip-done">Issued</span></td><td>Today</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= NETWORK ================= -->
+  <section id="network" class="view">
+    <div class="section-head"><h2>Connected platforms</h2><button class="btn btn-primary" onclick="toast('Opening connector setup…')">Add a connector</button></div>
+    <div class="node-grid">
+      <div class="node-card"><div class="nid">U</div><h3>UMANG</h3><p>National services connector</p><span class="chip chip-done">Connected</span><div class="node-meta">12 services linked · synced <b>2 min ago</b></div><button class="service">Manage</button></div>
+      <div class="node-card"><div class="nid">A</div><h3>Aaple Sarkar</h3><p>Maharashtra services connector</p><span class="chip chip-done">Connected</span><div class="node-meta">8 services linked · synced <b>5 min ago</b></div><button class="service">Manage</button></div>
+      <div class="node-card"><div class="nid">D</div><h3>DigiLocker</h3><p>Digital document connector</p><span class="chip chip-done">Connected</span><div class="node-meta">6 documents linked · synced <b>1 min ago</b></div><button class="service">Manage</button></div>
+    </div>
+  </section>
+
+  <!-- ================= ADMIN / DEPARTMENT VIEW ================= -->
+  <section id="admin" class="view">
+    <div class="section-head" style="margin-bottom:4px"><h2>Department view — API &amp; integration health</h2></div>
+    <p style="color:var(--ink-soft);margin:0 0 22px">Illustrative demo data for judges — a real deployment reads this from the connector layer.</p>
+    <div class="kpi-row">
+      <div class="kpi"><div class="l">Requests, last 24h</div><div class="v">12,450</div></div>
+      <div class="kpi"><div class="l">Successful</div><div class="v good">97.8%</div></div>
+      <div class="kpi"><div class="l">Exceptions open</div><div class="v warn">2</div></div>
+      <div class="kpi"><div class="l">Average response</div><div class="v">240ms</div></div>
+    </div>
+    <div class="layout">
+      <div class="panel panel-pad">
+        <div class="section-head"><h2 style="font-size:16px">System health</h2></div>
+        <div class="doc-row"><div><div class="doc-name">UMANG · API gateway</div></div><span class="chip chip-done">Operational</span></div>
+        <div class="doc-row"><div><div class="doc-name">Aaple Sarkar · service connector</div></div><span class="chip chip-done">Operational</span></div>
+        <div class="doc-row"><div><div class="doc-name">DigiLocker · document connector</div></div><span class="chip chip-done">Operational</span></div>
+      </div>
+      <div class="side-card">
+        <h3>Recent exceptions</h3>
+        <div class="activity-row"><div class="arail" style="background:var(--terracotta)"></div><div><b>Timeout on Aaple Sarkar connector</b><span>11 minutes ago</span></div></div>
+        <div class="activity-row"><div class="arail" style="background:var(--gold)"></div><div><b>Validation retry on UMANG</b><span>26 minutes ago</span></div></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<button class="assist" id="assistBtn" onclick="toggleChat()">Ask Setu</button>
+<div id="toast" class="toast"></div>
+
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-head">
+    <div class="t"><span class="dot"></span><div><h3>Ask Setu</h3><span>Usually replies in a few seconds</span></div></div>
+    <button class="chat-close" onclick="toggleChat(false)">&times;</button>
+  </div>
+  <div class="chat-body" id="chatBody">
+    <div class="msg bot">Hi Palak — I can check your documents, applications, or find a service. What do you need?</div>
+  </div>
+  <div class="chat-suggest" id="chatSuggest">
+    <button class="chip-suggest" onclick="askChat('Where is my income certificate?')">Where is my income certificate?</button>
+    <button class="chip-suggest" onclick="askChat('What documents do I have?')">What documents do I have?</button>
+    <button class="chip-suggest" onclick="askChat('What is Setu?')">What is Setu?</button>
+  </div>
+  <div class="chat-input">
+    <input id="chatInput" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendChat()">
+    <button onclick="sendChat()">&#8593;</button>
+  </div>
+</div>
+
+<div class="modal-veil" id="consentVeil">
+  <div class="modal">
+    <div class="kicker" id="consentDept">Aaple Sarkar</div>
+    <h3 id="consentTitle">Income certificate</h3>
+    <p class="desc" id="consentDesc">Setu will fetch and share only the fields below, for this application only.</p>
+    <div id="consentFields">
+      <div class="consent-row"><div><div class="fld">Aadhaar-linked identity</div><div class="from">from DigiLocker</div></div>Required</div>
+      <div class="consent-row"><div><div class="fld">Income record</div><div class="from">from Revenue Dept.</div></div>Required</div>
+      <div class="consent-row"><div><div class="fld">Address proof</div><div class="from">already on file</div></div>Reused</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConsent()">Cancel</button>
+      <button class="btn btn-primary" onclick="approveConsent()">Approve &amp; continue</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const services=[
+ ['Aaple Sarkar','Income certificate','Apply with your verified profile — no re-upload needed.'],
+ ['Aaple Sarkar','Residence certificate','Reuse your verified address on file.'],
+ ['Aaple Sarkar','Senior citizen certificate','Check requirements and file in minutes.'],
+ ['UMANG','Government schemes','See what you already qualify for.'],
+ ['DigiLocker','Digital documents','Access and reuse anything you have verified.'],
+ ['UMANG','Scholarship services','Explore education support schemes.']
+];
+function renderServices(q){
+  const box=document.getElementById('serviceResults');
+  if(!box) return;
+  const f=services.filter(s=>s.join(' ').toLowerCase().includes(q.toLowerCase()));
+  box.innerHTML=f.map(s=>`<div class="service"><span class="src">${s[0]}</span><h3>${s[1]}</h3><p>${s[2]}</p><button onclick="openConsent('${s[0]}','${s[1]}')">Start application</button></div>`).join('');
+}
+function searchServices(q){ renderServices(q); }
+function showView(id,btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  else document.querySelectorAll('nav.tabs button').forEach(b=>{ if(b.textContent.toLowerCase().includes(id.slice(0,4))) b.classList.add('active'); });
+  if(id==='services') renderServices('');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),2600);
+}
+renderServices('');
+
+/* ---------- consent flow ---------- */
+function openConsent(dept,name){
+  document.getElementById('consentDept').textContent=dept;
+  document.getElementById('consentTitle').textContent=name;
+  document.getElementById('consentVeil').classList.add('open');
+}
+function closeConsent(){ document.getElementById('consentVeil').classList.remove('open'); }
+function approveConsent(){
+  closeConsent();
+  toast('Consent approved — fields fetched, application submitted');
+}
+document.getElementById('consentVeil').addEventListener('click',e=>{ if(e.target.id==='consentVeil') closeConsent(); });
+
+/* ---------- reuse-document buttons on Documents view ---------- */
+document.querySelectorAll('.doc-card .service').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const name=btn.closest('.doc-card').querySelector('h3').textContent;
+    if(btn.textContent.includes('Update')) toast('Opening photo update…');
+    else openConsent('Your documents',`Reuse ${name}`);
+  });
+});
+
+/* ---------- chat assistant ---------- */
+const chatKB=[
+  {k:['income certificate','income cert'],a:"Your income certificate (MH-2026-10234) is with the officer for review — filed via Aaple Sarkar, docs already verified. Usually 2–3 working days from here."},
+  {k:['residence certificate','residence'],a:"Your residence certificate (MH-2026-09721) needs one thing from you: an updated photograph. Everything else is verified."},
+  {k:['scholarship'],a:"Your post-matric scholarship (UM-88421) was issued today via UMANG. Nothing further needed."},
+  {k:['document','documents','on file'],a:"You have 4 verified documents — Aadhaar, PAN, address proof and income certificate — plus one photograph that needs updating."},
+  {k:['setu','what is'],a:"Setu is a consent-based interoperability layer — it links your DigiLocker, Aaple Sarkar and UMANG accounts so a document verified once doesn't need re-uploading anywhere else."},
+  {k:['consent','privacy','data'],a:"Nothing moves without your approval. Every time a department needs a field from another department, you see exactly what's requested and why before it's shared."},
+  {k:['connect','digilocker','umang','aaple'],a:"You're connected to UMANG, Aaple Sarkar and DigiLocker. Check the Connected platforms tab for live sync status on each."}
+];
+function toggleChat(force){
+  const p=document.getElementById('chatPanel');
+  const open = force!==undefined ? force : !p.classList.contains('open');
+  p.classList.toggle('open',open);
+}
+function botReply(text){
+  const body=document.getElementById('chatBody');
+  const typ=document.createElement('div');
+  typ.className='msg bot typing';
+  typ.innerHTML='<span></span><span></span><span></span>';
+  body.appendChild(typ); body.scrollTop=body.scrollHeight;
+  setTimeout(()=>{
+    typ.remove();
+    const lower=text.toLowerCase();
+    const hit=chatKB.find(e=>e.k.some(k=>lower.includes(k)));
+    const reply=hit?hit.a:"I couldn't find that directly — try asking about a specific application, document, or department, or check the relevant tab above.";
+    const m=document.createElement('div'); m.className='msg bot'; m.textContent=reply;
+    body.appendChild(m); body.scrollTop=body.scrollHeight;
+  },650);
+}
+function askChat(text){
+  const body=document.getElementById('chatBody');
+  const m=document.createElement('div'); m.className='msg user'; m.textContent=text;
+  body.appendChild(m); body.scrollTop=body.scrollHeight;
+  botReply(text);
+}
+function sendChat(){
+  const input=document.getElementById('chatInput');
+  const text=input.value.trim();
+  if(!text) return;
+  input.value='';
+  askChat(text);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Identity Registration — National Identity Registry</title>
+  <meta name="description" content="Register your synthetic test identity reference with personal details against the persistent PostgreSQL database.">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Educational Prototype Notice Banner -->
+  <div class="demo-banner">
+    <span>⚠️</span>
+    <span><strong>DEMO / EDUCATIONAL PROTOTYPE:</strong> Use synthetic test identifiers only. Do not enter real Aadhaar or personal information.</span>
+  </div>
+
+  <!-- Header Navigation -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand-logo">
+        <div class="brand-icon">ID</div>
+        <div class="brand-text">
+          <span class="brand-title">National Identity Registry</span>
+          <span class="brand-badge">Demo Department</span>
+        </div>
+      </a>
+      <nav class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/registration.html" class="nav-link" style="color: #fff; background: rgba(255,255,255,0.07);">Registration</a>
+        <a href="/admin-login.html" class="nav-link nav-btn-admin">Admin Portal</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Page Hero -->
+  <main>
+    <section class="hero-section" style="margin-bottom: 1rem;">
+      <div class="hero-pill">
+        <span style="color:#10b981;">●</span> Persistent PostgreSQL Storage
+        <span>|</span>
+        <span>Identity Registration</span>
+      </div>
+      <h1 class="hero-title" style="font-size: 2.25rem;">New Registration</h1>
+      <p class="hero-subtitle" style="font-size: 1rem;">
+        Fill in your details below. New references are registered on first submission;
+        existing ones are identified as already registered.
+      </p>
+    </section>
+
+    <!-- Registration Form Card -->
+    <div class="card-container" style="max-width: 640px;">
+      <div class="glass-card">
+
+        <!-- Form Section -->
+        <div id="form-section">
+          <form id="registration-form" autocomplete="off" novalidate>
+
+            <!-- ── Identity Reference ─────────────────────────────────────── -->
+            <div class="form-group">
+              <label class="form-label" for="identity-input">
+                Synthetic Identity Reference <span class="field-required">*</span>
+              </label>
+              <div class="input-wrapper">
+                <input
+                  type="text"
+                  id="identity-input"
+                  class="form-input"
+                  placeholder="e.g. TESTAADHAAR0001"
+                  maxlength="32"
+                  spellcheck="false"
+                  autocorrect="off"
+                  autocapitalize="characters"
+                  aria-label="Synthetic identity reference input"
+                  aria-required="true"
+                  aria-describedby="identity-help identity-error"
+                />
+              </div>
+              <p class="input-help" id="identity-help">
+                <span>ℹ️</span>
+                Use uppercase alphanumeric identifiers only (4–32 chars). Real 12-digit numbers are strictly rejected.
+              </p>
+              <p class="field-error" id="identity-error" role="alert" aria-live="polite"></p>
+            </div>
+
+            <!-- Quick-fill Preset Chips -->
+            <div class="preset-section">
+              <div class="preset-title">Quick-fill test identifiers</div>
+              <div class="preset-chips" role="group" aria-label="Quick fill preset identifiers">
+                <button type="button" class="preset-chip" data-val="TESTAADHAAR0001" aria-label="Use TESTAADHAAR0001">TESTAADHAAR0001</button>
+                <button type="button" class="preset-chip" data-val="TESTAADHAAR0002" aria-label="Use TESTAADHAAR0002">TESTAADHAAR0002</button>
+                <button type="button" class="preset-chip" data-val="DEMO-ID-9999" aria-label="Use DEMO-ID-9999">DEMO-ID-9999</button>
+                <button type="button" class="preset-chip" data-val="SYNTHETIC-001" aria-label="Use SYNTHETIC-001">SYNTHETIC-001</button>
+                <button type="button" class="preset-chip" data-val="TEST-USER-ALPHA" aria-label="Use TEST-USER-ALPHA">TEST-USER-ALPHA</button>
+              </div>
+            </div>
+
+            <!-- ── Section divider ────────────────────────────────────────── -->
+            <div class="form-section-divider">
+              <span>Personal Information</span>
+            </div>
+
+            <!-- ── Full Name ──────────────────────────────────────────────── -->
+            <div class="form-group">
+              <label class="form-label" for="name-input">
+                Full Name <span class="field-required">*</span>
+              </label>
+              <div class="input-wrapper">
+                <input
+                  type="text"
+                  id="name-input"
+                  class="form-input"
+                  placeholder="e.g. Aarav Kumar Sharma"
+                  maxlength="120"
+                  spellcheck="false"
+                  autocomplete="name"
+                  aria-required="true"
+                  aria-describedby="name-error"
+                />
+              </div>
+              <p class="field-error" id="name-error" role="alert" aria-live="polite"></p>
+            </div>
+
+            <!-- ── Father's Name ───────────────────────────────────────────── -->
+            <div class="form-group">
+              <label class="form-label" for="father-name-input">
+                Father's Name <span class="field-required">*</span>
+              </label>
+              <div class="input-wrapper">
+                <input
+                  type="text"
+                  id="father-name-input"
+                  class="form-input"
+                  placeholder="e.g. Rajesh Kumar Sharma"
+                  maxlength="120"
+                  spellcheck="false"
+                  autocomplete="off"
+                  aria-required="true"
+                  aria-describedby="father-name-error"
+                />
+              </div>
+              <p class="field-error" id="father-name-error" role="alert" aria-live="polite"></p>
+            </div>
+
+            <!-- ── Mobile Number ───────────────────────────────────────────── -->
+            <div class="form-group">
+              <label class="form-label" for="mobile-input">
+                Mobile Number <span class="field-required">*</span>
+              </label>
+              <div class="input-wrapper mobile-input-wrapper">
+                <span class="mobile-prefix" aria-hidden="true">+91</span>
+                <input
+                  type="tel"
+                  id="mobile-input"
+                  class="form-input form-input-with-prefix"
+                  placeholder="98765 43210"
+                  maxlength="10"
+                  spellcheck="false"
+                  autocomplete="tel-national"
+                  inputmode="numeric"
+                  aria-required="true"
+                  aria-label="Mobile number (10 digits, Indian)"
+                  aria-describedby="mobile-help mobile-error"
+                />
+              </div>
+              <p class="input-help" id="mobile-help">
+                <span>ℹ️</span>
+                Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.
+              </p>
+              <p class="field-error" id="mobile-error" role="alert" aria-live="polite"></p>
+            </div>
+
+            <!-- ── Address ────────────────────────────────────────────────── -->
+            <div class="form-group">
+              <label class="form-label" for="address-input">
+                Residential Address <span class="field-required">*</span>
+              </label>
+              <div class="input-wrapper">
+                <textarea
+                  id="address-input"
+                  class="form-input form-textarea"
+                  placeholder="House No., Street, Area, City, State — PIN Code"
+                  maxlength="500"
+                  rows="3"
+                  spellcheck="false"
+                  autocomplete="street-address"
+                  aria-required="true"
+                  aria-describedby="address-help address-error"
+                ></textarea>
+              </div>
+              <p class="input-help" id="address-help">
+                <span>ℹ️</span>
+                Enter your full residential address (10–500 characters).
+              </p>
+              <p class="field-error" id="address-error" role="alert" aria-live="polite"></p>
+            </div>
+
+            <!-- ── Section divider ────────────────────────────────────────── -->
+            <div class="form-section-divider">
+              <span>Verification</span>
+            </div>
+
+            <!-- ── Captcha ─────────────────────────────────────────────────── -->
+            <div class="form-group">
+              <label class="form-label">
+                Captcha Verification <span class="field-required">*</span>
+              </label>
+
+              <div class="captcha-widget" id="captcha-widget">
+                <!-- Captcha image + refresh button -->
+                <div class="captcha-image-row">
+                  <div class="captcha-image-container" id="captcha-image-container" aria-label="Captcha image" role="img">
+                    <div class="captcha-loading" id="captcha-loading" aria-live="polite">
+                      <span class="spinner"></span>
+                      <span>Loading captcha…</span>
+                    </div>
+                    <img
+                      id="captcha-img"
+                      src=""
+                      alt="Captcha: enter the characters shown"
+                      class="captcha-img"
+                      style="display:none;"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    id="captcha-refresh-btn"
+                    class="captcha-refresh-btn"
+                    aria-label="Refresh captcha"
+                    title="Get a new captcha"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <polyline points="23 4 23 10 17 10"></polyline>
+                      <polyline points="1 20 1 14 7 14"></polyline>
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                    <span>New Captcha</span>
+                  </button>
+                </div>
+
+                <!-- Hidden token field -->
+                <input type="hidden" id="captcha-token" name="captchaToken" value="" />
+
+                <!-- Answer input -->
+                <div class="input-wrapper" style="margin-top: 0.75rem;">
+                  <input
+                    type="text"
+                    id="captcha-answer-input"
+                    class="form-input"
+                    placeholder="Type the characters shown above"
+                    maxlength="10"
+                    spellcheck="false"
+                    autocorrect="off"
+                    autocomplete="off"
+                    autocapitalize="characters"
+                    aria-required="true"
+                    aria-describedby="captcha-help captcha-error"
+                  />
+                </div>
+                <p class="input-help" id="captcha-help">
+                  <span>ℹ️</span>
+                  Enter the 6-character code exactly as shown (case-insensitive).
+                </p>
+                <p class="field-error" id="captcha-error" role="alert" aria-live="polite"></p>
+              </div>
+            </div>
+
+            <!-- ── Submit ──────────────────────────────────────────────────── -->
+            <button type="submit" id="submit-btn" class="btn-primary" aria-live="polite">
+              <span id="btn-spinner" class="spinner" style="display:none;" aria-hidden="true"></span>
+              <span id="btn-text">Register Identity</span>
+            </button>
+
+          </form>
+        </div>
+
+        <!-- Result Card (shown after submission) -->
+        <div id="result-card" class="result-card" role="alert" aria-live="assertive">
+          <div class="result-icon-wrapper" id="result-icon" aria-hidden="true">✓</div>
+          <h2 class="result-title" id="result-title">Result</h2>
+          <p class="result-desc" id="result-desc"></p>
+          <div class="status-badge" id="result-badge"></div>
+          <div class="status-meta" id="result-meta"></div>
+          <button id="try-another-btn" class="btn-secondary" type="button">
+            ← Register Another Identity
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Prototype Info Note -->
+      <div class="glass-card" style="padding: 1.25rem 1.5rem; margin-top: 1rem; border-color: rgba(255,255,255,0.04);">
+        <p style="font-size: 0.825rem; color: var(--text-dim); line-height: 1.65;">
+          <strong style="color: #93c5fd;">How it works:</strong>
+          This portal registers the identity reference along with personal details in the
+          <code style="color:#60a5fa;">aadhaar_portal_db</code> PostgreSQL database.
+          A new identifier is created and marked <strong style="color:#34d399;">REGISTERED</strong>.
+          Re-submitting the same identifier returns <strong style="color:#fbbf24;">Already Registered</strong>.
+          Records persist across server restarts.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-disclaimer">
+        EDUCATIONAL PROTOTYPE — USE SYNTHETIC TEST IDENTIFIERS ONLY. DO NOT ENTER REAL AADHAAR INFORMATION.
+      </div>
+      <div>
+        National Identity Registry — Demo Department (Node.js + Express + PostgreSQL)
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+  <script src="/js/registration.js"></script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>National Identity Registry — Demo Department</title>
+  <meta name="description" content="Independent educational identity registration prototype for National Identity Registry — Demo Department using synthetic references, PostgreSQL, and Express.">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Educational Prototype Notice Banner -->
+  <div class="demo-banner">
+    <span>⚠️</span>
+    <span><strong>DEMO / EDUCATIONAL PROTOTYPE:</strong> Use synthetic test identifiers only. Do not enter real Aadhaar or personal information.</span>
+  </div>
+
+  <!-- Header Navigation -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand-logo" id="nav-brand-logo">
+        <div class="brand-icon">ID</div>
+        <div class="brand-text">
+          <span class="brand-title">National Identity Registry</span>
+          <span class="brand-badge">Demo Department</span>
+        </div>
+      </a>
+      <nav class="nav-links">
+        <a href="/" class="nav-link" id="nav-home">Home</a>
+        <a href="/registration.html" class="nav-link" id="nav-registration">Registration</a>
+        <a href="/admin-login.html" class="nav-link nav-btn-admin" id="nav-admin">Admin Portal</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main>
+    <section class="hero-section">
+      <div class="hero-pill">
+        <span id="system-status-indicator"><span style="color:#10b981;">●</span> PostgreSQL 17 Storage</span>
+        <span>|</span>
+        <span>Demo Department</span>
+      </div>
+      <h1 class="hero-title">National Identity Registry</h1>
+      <p class="hero-subtitle">
+        A secure, autonomous identity registration prototype for National Identity Registry — Demo Department, powered by PostgreSQL. 
+        Engineered for persistent record validation, duplicate protection, and Setu gateway consent-based interoperability.
+      </p>
+    </section>
+
+    <!-- Navigation & Quick Access Cards -->
+    <div class="card-container" style="max-width: 900px; display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem;">
+      <!-- Registration Portal Card -->
+      <div class="glass-card" style="padding: 2rem;">
+        <div style="font-size: 2rem; margin-bottom: 0.75rem;">🪪</div>
+        <h2 style="font-size: 1.35rem; margin-bottom: 0.5rem; color: #fff;">Check & Register</h2>
+        <p style="color: var(--text-muted); font-size: 0.925rem; margin-bottom: 1.5rem;">
+          Verify synthetic test identity references against persistent PostgreSQL database. Identifiers are registered on first check and marked as already registered on subsequent attempts.
+        </p>
+        <a href="/registration.html" class="btn-primary" style="text-decoration: none;" id="btn-goto-registration">
+          Open Registration Check →
+        </a>
+      </div>
+
+      <!-- Admin Dashboard Card -->
+      <div class="glass-card" style="padding: 2rem;">
+        <div style="font-size: 2rem; margin-bottom: 0.75rem;">🛡️</div>
+        <h2 style="font-size: 1.35rem; margin-bottom: 0.5rem; color: #fff;">Admin Panel</h2>
+        <p style="color: var(--text-muted); font-size: 0.925rem; margin-bottom: 1.5rem;">
+          Authenticated administration dashboard to inspect registered records, real-time metrics, search identity references, and monitor tamper-evident audit logs.
+        </p>
+        <a href="/admin-login.html" class="btn-secondary" style="width: 100%; justify-content: center; text-decoration: none;" id="btn-goto-admin">
+          Administrator Sign In →
+        </a>
+      </div>
+    </div>
+
+    <!-- Architecture & Prototype Clarification Card -->
+    <div class="card-container" style="max-width: 900px;">
+      <div class="glass-card" style="padding: 1.75rem; border-color: rgba(255, 255, 255, 0.05);">
+        <h3 style="font-size: 1rem; color: #93c5fd; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
+          National Identity Registry Architecture & Gateway Interoperability
+        </h3>
+        <p style="color: var(--text-dim); font-size: 0.875rem; line-height: 1.6;">
+          This application operates with strict domain isolation: dedicated backend, independent PostgreSQL database (<code style="color:#60a5fa;">aadhaar_portal_db</code>), and parameterized queries. It integrates with the Setu consent gateway via secure service API keys (<code style="color:#60a5fa;">X-Gateway-Key</code>) and standardized field-level demographic endpoints.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-disclaimer">
+        EDUCATIONAL PROTOTYPE — USE SYNTHETIC TEST IDENTIFIERS ONLY. DO NOT ENTER REAL AADHAAR INFORMATION.
+      </div>
+      <div>
+        National Identity Registry — Demo Department (Node.js + Express + PostgreSQL 17)
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>

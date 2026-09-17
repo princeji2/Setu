@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — National Identity Registry</title>
+  <meta name="description" content="Administration dashboard for National Identity Registry — Demo Department records, metrics, and audit logs.">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+
+  <!-- Educational Prototype Notice Banner -->
+  <div class="demo-banner">
+    <span>⚠️</span>
+    <span><strong>ADMIN PANEL — EDUCATIONAL PROTOTYPE:</strong> Authorized access only. Synthetic data only.</span>
+  </div>
+
+  <!-- Header Navigation -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand-logo">
+        <div class="brand-icon">ID</div>
+        <div class="brand-text">
+          <span class="brand-title">National Identity Registry</span>
+          <span class="brand-badge">Demo Department</span>
+        </div>
+      </a>
+      <nav class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/registration.html" class="nav-link">Registration</a>
+        <span class="nav-link nav-btn-admin" style="cursor: default; color: #fff; border-color: rgba(99,102,241,0.5);">
+          🛡️ Admin Panel
+        </span>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="admin-layout">
+
+      <!-- Dashboard Header -->
+      <div class="admin-header">
+        <div class="admin-title-group">
+          <h1>Administration Dashboard</h1>
+          <p>National Identity Registry — Demo Department Management</p>
+        </div>
+        <div class="admin-actions">
+          <div class="admin-user-pill">
+            <div class="status-dot" aria-hidden="true"></div>
+            <span id="admin-username-display" aria-label="Logged in admin username">Admin</span>
+          </div>
+          <button id="logout-btn" class="btn-secondary" type="button" aria-label="Sign out">
+            Sign Out
+          </button>
+        </div>
+      </div>
+
+      <!-- Metrics Cards -->
+      <div class="metrics-grid" aria-label="Dashboard statistics">
+
+        <div class="metric-card">
+          <div class="metric-icon icon-blue" aria-hidden="true">📋</div>
+          <div class="metric-info">
+            <h3>Total Registrations</h3>
+            <div class="metric-value" id="stat-total" aria-live="polite">—</div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon icon-green" aria-hidden="true">📅</div>
+          <div class="metric-info">
+            <h3>Registered Today</h3>
+            <div class="metric-value" id="stat-today" aria-live="polite">—</div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon icon-purple" aria-hidden="true">🔍</div>
+          <div class="metric-info">
+            <h3>Total Audit Events</h3>
+            <div class="metric-value" id="stat-audit" aria-live="polite">—</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Registrations Table Section -->
+      <section class="dashboard-card" aria-labelledby="registrations-section-title">
+        <div class="card-header-bar">
+          <h2 class="card-header-title" id="registrations-section-title">
+            <span aria-hidden="true">📊</span> Registration Records
+          </h2>
+          <div class="search-box">
+            <span class="search-icon" aria-hidden="true">🔎</span>
+            <input
+              type="search"
+              id="search-input"
+              class="search-input"
+              placeholder="Search by identity reference..."
+              maxlength="64"
+              spellcheck="false"
+              autocomplete="off"
+              aria-label="Search registrations by identity reference"
+            />
+          </div>
+        </div>
+
+        <div class="table-responsive" role="region" aria-label="Registrations table" tabindex="0">
+          <table class="data-table" aria-describedby="registrations-section-title">
+            <thead>
+              <tr>
+                <th scope="col">Identity Reference</th>
+                <th scope="col">Status</th>
+                <th scope="col">Registered At</th>
+                <th scope="col">Storage</th>
+              </tr>
+            </thead>
+            <tbody id="registrations-tbody" aria-live="polite" aria-busy="true">
+              <tr>
+                <td colspan="4" class="empty-state">
+                  <span class="spinner" style="display: inline-block; margin-right: 0.5rem;" aria-hidden="true"></span>
+                  Loading registrations from PostgreSQL...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
+          <button
+            id="refresh-registrations-btn"
+            class="btn-secondary"
+            type="button"
+            style="font-size: 0.85rem; padding: 0.55rem 1rem;"
+            aria-label="Refresh registrations table"
+          >
+            ↻ Refresh
+          </button>
+        </div>
+      </section>
+
+      <!-- Audit Logs Section -->
+      <section class="dashboard-card" aria-labelledby="audit-section-title">
+        <div class="card-header-bar">
+          <h2 class="card-header-title" id="audit-section-title">
+            <span aria-hidden="true">🔐</span> System Audit Log
+          </h2>
+          <button
+            id="refresh-audit-btn"
+            class="btn-secondary"
+            type="button"
+            style="font-size: 0.85rem; padding: 0.55rem 1rem;"
+            aria-label="Refresh audit logs"
+          >
+            ↻ Refresh
+          </button>
+        </div>
+
+        <div id="audit-list" class="audit-list" aria-live="polite" aria-label="Audit log entries">
+          <div class="empty-state">
+            <span class="spinner" style="display: inline-block; margin-right: 0.5rem;" aria-hidden="true"></span>
+            Loading audit events from PostgreSQL...
+          </div>
+        </div>
+      </section>
+
+      <!-- Architecture Note -->
+      <div class="dashboard-card" style="border-color: rgba(255,255,255,0.04);" role="note">
+        <h3 style="font-size: 0.9rem; color: #93c5fd; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
+          Website 1 — API Integration Reference
+        </h3>
+        <p style="font-size: 0.825rem; color: var(--text-dim); line-height: 1.7;">
+          This portal exposes a clean REST API for authorized integration by a future Final Portal.
+          The Final Portal communicates exclusively via the API — it never accesses the database directly.
+        </p>
+        <div style="margin-top: 0.85rem; display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.8rem; font-family: var(--font-mono);">
+          <span style="background: rgba(37,99,235,0.12); border: 1px solid rgba(37,99,235,0.3); color: #93c5fd; padding: 0.25rem 0.65rem; border-radius: 6px;">POST /api/registration/check</span>
+          <span style="background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3); color: #a5b4fc; padding: 0.25rem 0.65rem; border-radius: 6px;">POST /api/admin/login</span>
+          <span style="background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3); color: #a5b4fc; padding: 0.25rem 0.65rem; border-radius: 6px;">GET /api/admin/registrations</span>
+          <span style="background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3); color: #a5b4fc; padding: 0.25rem 0.65rem; border-radius: 6px;">GET /api/admin/audit-logs</span>
+          <span style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #34d399; padding: 0.25rem 0.65rem; border-radius: 6px;">GET /health</span>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-disclaimer">
+        EDUCATIONAL PROTOTYPE — AUTHORIZED ADMINISTRATIVE ACCESS ONLY.
+      </div>
+      <div>
+        Independent Identity Registration System — Website 1 Prototype (Node.js + Express + PostgreSQL 17)
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+  <script src="/js/admin-dashboard.js"></script>
+  <script>
+    // Wire up refresh buttons
+    document.addEventListener('DOMContentLoaded', () => {
+      const refreshReg = document.getElementById('refresh-registrations-btn');
+      const refreshAudit = document.getElementById('refresh-audit-btn');
+      const searchInput = document.getElementById('search-input');
+
+      if (refreshReg) {
+        refreshReg.addEventListener('click', () => {
+          const search = searchInput ? searchInput.value.trim() : '';
+          // Trigger a manual reload by dispatching an input event on the search box
+          // The dashboard.js loadRegistrations function handles this directly
+          if (typeof loadRegistrations === 'function') {
+            loadRegistrations(search);
+          } else {
+            // Fallback: reload page data
+            location.reload();
+          }
+        });
+      }
+
+      if (refreshAudit) {
+        refreshAudit.addEventListener('click', () => {
+          if (typeof loadAuditLogs === 'function') {
+            loadAuditLogs();
+          } else {
+            location.reload();
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

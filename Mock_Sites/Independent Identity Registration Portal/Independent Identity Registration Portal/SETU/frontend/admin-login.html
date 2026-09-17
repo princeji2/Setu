@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Sign In — National Identity Registry</title>
+  <meta name="description" content="Secure administrator authentication portal for National Identity Registry — Demo Department.">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .login-container {
+      max-width: 440px;
+      margin: 4rem auto 3rem;
+      padding: 0 1.5rem;
+      width: 100%;
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .login-icon {
+      width: 68px;
+      height: 68px;
+      background: linear-gradient(135deg, rgba(37,99,235,0.25), rgba(99,102,241,0.25));
+      border: 1px solid rgba(99,102,241,0.4);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 1.25rem;
+    }
+
+    .login-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.4rem;
+    }
+
+    .login-subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .error-alert {
+      display: none;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      color: #fca5a5;
+      font-size: 0.875rem;
+      margin-bottom: 1.25rem;
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .error-alert.visible {
+      display: flex;
+    }
+
+    .form-input-icon {
+      position: relative;
+    }
+
+    .form-input-icon .form-input {
+      padding-left: 2.75rem;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin: 1.5rem 0;
+    }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      margin-top: 1.5rem;
+      transition: var(--transition);
+    }
+
+    .back-link:hover {
+      color: var(--text-main);
+    }
+
+    .security-note {
+      background: rgba(37, 99, 235, 0.06);
+      border: 1px solid rgba(37, 99, 235, 0.2);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      margin-top: 1.25rem;
+      font-size: 0.8rem;
+      color: #93c5fd;
+      line-height: 1.55;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Educational Prototype Notice Banner -->
+  <div class="demo-banner">
+    <span>⚠️</span>
+    <span><strong>DEMO / EDUCATIONAL PROTOTYPE:</strong> Use synthetic test identifiers only. Do not enter real Aadhaar or personal information.</span>
+  </div>
+
+  <!-- Header Navigation -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand-logo">
+        <div class="brand-icon">ID</div>
+        <div class="brand-text">
+          <span class="brand-title">National Identity Registry</span>
+          <span class="brand-badge">Demo Department</span>
+        </div>
+      </a>
+      <nav class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/registration.html" class="nav-link">Registration</a>
+        <a href="/admin-login.html" class="nav-link nav-btn-admin" style="color: #fff; border-color: rgba(99,102,241,0.5);">Admin Portal</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="login-container">
+
+      <!-- Login Header -->
+      <div class="login-header">
+        <div class="login-icon" aria-hidden="true">🛡️</div>
+        <h1 class="login-title">Administration Sign In</h1>
+        <p class="login-subtitle">Restricted access — authorized administrators only</p>
+      </div>
+
+      <!-- Login Card -->
+      <div class="glass-card">
+
+        <!-- Error Alert -->
+        <div id="login-error" class="error-alert" role="alert" aria-live="assertive">
+          <span aria-hidden="true">⚠</span>
+          <span id="login-error-text"></span>
+        </div>
+
+        <form id="login-form" autocomplete="off" novalidate>
+
+          <!-- Username -->
+          <div class="form-group">
+            <label class="form-label" for="username">Administrator Username</label>
+            <div class="input-wrapper form-input-icon">
+              <span class="input-icon" aria-hidden="true">👤</span>
+              <input
+                type="text"
+                id="username"
+                class="form-input"
+                placeholder="Enter admin username"
+                maxlength="50"
+                spellcheck="false"
+                autocomplete="username"
+                aria-required="true"
+                aria-label="Administrator username"
+              />
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <div class="input-wrapper form-input-icon">
+              <span class="input-icon" aria-hidden="true">🔒</span>
+              <input
+                type="password"
+                id="password"
+                class="form-input"
+                placeholder="Enter admin password"
+                maxlength="100"
+                autocomplete="current-password"
+                aria-required="true"
+                aria-label="Administrator password"
+              />
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Submit -->
+          <button type="submit" id="login-btn" class="btn-primary" aria-live="polite">
+            <span id="login-spinner" class="spinner" style="display:none;" aria-hidden="true"></span>
+            <span id="login-btn-text">Sign In to Dashboard</span>
+          </button>
+
+        </form>
+      </div>
+
+      <!-- Security Note -->
+      <div class="security-note" role="note">
+        <strong>🔐 Security:</strong> Authentication is enforced via bcrypt password verification and time-limited JWT tokens.
+        All login attempts are recorded in the system audit log.
+      </div>
+
+      <!-- Back Link -->
+      <a href="/" class="back-link">← Return to Registration Portal</a>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-disclaimer">
+        EDUCATIONAL PROTOTYPE — USE SYNTHETIC TEST IDENTIFIERS ONLY.
+      </div>
+      <div>
+        National Identity Registry — Demo Department (Node.js + Express + PostgreSQL 17)
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+  <script src="/js/admin-login.js"></script>
+</body>
+</html>
