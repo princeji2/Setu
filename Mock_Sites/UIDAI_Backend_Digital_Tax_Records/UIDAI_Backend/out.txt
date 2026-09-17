@@ -1,0 +1,10 @@
+Found python executables:
+  c:\Users\Rahul kumar gaur\Desktop\UIDAI_Backend\venv\Scripts\python.exe
+  c:\Users\Rahul kumar gaur\AppData\Local\Microsoft\WindowsApps\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\python.exe
+  c:\Users\Rahul kumar gaur\AppData\Local\Microsoft\WindowsApps\PythonSoftwareFoundation.PythonManager_3847v3x7pw1km\python.exe
+  c:\Users\Rahul kumar gaur\AppData\Local\Python\bin\python.exe
+  c:\Users\Rahul kumar gaur\AppData\Local\Microsoft\WindowsApps\python.exe
+  C:\Users\Rahul kumar gaur\AppData\Local\Microsoft\WindowsApps\python3.EXE
+  C:\Python314\python.EXE
+  c:\Users\Rahul kumar gaur\AppData\Local\Python\pythoncore-3.14-64\python.exe
+  c:\Users\Rahul kumar gaur\Downloads\UIDAI_Backend (1)\UIDAI_Backend\venv\Scripts\python.exe
