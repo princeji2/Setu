@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registration Successful – Driving Licence &amp; Jan Aadhaar Portal</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="logo-area">
+        <div class="logo-icon" aria-hidden="true">&#128196;</div>
+        <div>
+          <h1 class="site-title">Driving Licence &amp; Jan Aadhaar<br>Registration Portal</h1>
+          <p class="site-subtitle">Secure Document Details Registration System</p>
+        </div>
+      </div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="registration.html" class="nav-link">Register</a>
+        <a href="admin-login.html" class="nav-link">Admin</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="success-card" role="main" aria-labelledby="success-heading">
+        <div class="success-icon" aria-hidden="true">&#10003;</div>
+        <h2 id="success-heading" class="success-title">Registration Successful</h2>
+        <p class="success-desc">Your document details have been submitted and securely recorded.</p>
+
+        <div class="reference-box" aria-label="Registration reference number">
+          <p class="reference-label">Registration Reference</p>
+          <p id="reference-number" class="reference-number">Loading…</p>
+        </div>
+
+        <div class="status-box" aria-label="Verification status">
+          <p class="status-label">Verification Status</p>
+          <p id="verification-status" class="status-value">—</p>
+          <p class="status-note">
+            Note: Verification status reflects format checking only.
+            This does <strong>not</strong> confirm the authenticity of your documents.
+          </p>
+        </div>
+
+        <div class="success-actions">
+          <a href="registration.html" class="btn btn-secondary">Register Another</a>
+          <a href="index.html" class="btn btn-primary">Return Home</a>
+        </div>
+
+        <p class="success-footer-note">
+          Keep your registration reference safe. You can use it to look up your submission.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p class="disclaimer">
+        <strong>Educational prototype.</strong>
+        Entered information is stored and processed only according to the application's configured policies.
+        This portal does not itself establish government-issued document authenticity.
+      </p>
+      <p class="footer-copy">&copy; 2024 Driving Licence &amp; Jan Aadhaar Registration Portal</p>
+    </div>
+  </footer>
+
+  <script>
+    // Read registration data passed via sessionStorage (set by registration.js)
+    (function () {
+      const raw = sessionStorage.getItem('registrationResult');
+      if (!raw) {
+        // Nothing in session — redirect to home
+        window.location.href = 'index.html';
+        return;
+      }
+      try {
+        const data = JSON.parse(raw);
+        document.getElementById('reference-number').textContent =
+          data.registration_reference || 'N/A';
+        document.getElementById('verification-status').textContent =
+          (data.verification_status || 'UNKNOWN').replace(/_/g, ' ');
+        // Clear immediately so back-button re-visit redirects
+        sessionStorage.removeItem('registrationResult');
+      } catch {
+        window.location.href = 'index.html';
+      }
+    })();
+  </script>
+</body>
+</html>

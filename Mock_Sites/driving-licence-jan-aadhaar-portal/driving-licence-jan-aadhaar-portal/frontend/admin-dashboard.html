@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard – Driving Licence &amp; Jan Aadhaar Portal</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="logo-area">
+        <div class="logo-icon" aria-hidden="true">&#128196;</div>
+        <div>
+          <h1 class="site-title">Driving Licence &amp; Jan Aadhaar<br>Registration Portal</h1>
+          <p class="site-subtitle">Admin Dashboard</p>
+        </div>
+      </div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="registration.html" class="nav-link">Register</a>
+        <span id="admin-username-display" class="nav-link nav-user" aria-live="polite"></span>
+        <button id="logout-btn" class="btn btn-sm btn-outline" type="button">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Stats Cards -->
+      <section class="stats-section" aria-labelledby="stats-heading">
+        <h2 id="stats-heading" class="section-title">Dashboard Overview</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="stat-total">—</div>
+            <div class="stat-label">Total Registrations</div>
+          </div>
+          <div class="stat-card stat-card--green">
+            <div class="stat-value" id="stat-format-valid">—</div>
+            <div class="stat-label">Format Valid</div>
+          </div>
+          <div class="stat-card stat-card--yellow">
+            <div class="stat-value" id="stat-pending">—</div>
+            <div class="stat-label">Pending Verification</div>
+          </div>
+          <div class="stat-card stat-card--blue">
+            <div class="stat-value" id="stat-24h">—</div>
+            <div class="stat-label">Last 24 Hours</div>
+          </div>
+          <div class="stat-card stat-card--purple">
+            <div class="stat-value" id="stat-7d">—</div>
+            <div class="stat-label">Last 7 Days</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab Navigation -->
+      <div class="tab-bar" role="tablist" aria-label="Dashboard sections">
+        <button class="tab-btn active" role="tab" aria-selected="true"  aria-controls="tab-registrations" id="btn-registrations" type="button">
+          Registrations
+        </button>
+        <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-audit"         id="btn-audit"         type="button">
+          Audit Logs
+        </button>
+      </div>
+
+      <!-- ── Tab: Registrations ────────────────────── -->
+      <div id="tab-registrations" class="tab-panel" role="tabpanel" aria-labelledby="btn-registrations">
+
+        <!-- Search bar -->
+        <div class="table-toolbar">
+          <form id="search-form" class="search-form" role="search" aria-label="Search registrations">
+            <input
+              type="search"
+              id="search-input"
+              class="form-input search-input"
+              placeholder="Search by reference or holder name…"
+              maxlength="100"
+              aria-label="Search registrations"
+            />
+            <button type="submit" class="btn btn-primary" id="search-btn">Search</button>
+            <button type="button" class="btn btn-secondary" id="clear-search-btn">Clear</button>
+          </form>
+        </div>
+
+        <div id="registrations-error" class="form-banner form-banner--error hidden" role="alert"></div>
+
+        <div class="table-wrapper" role="region" aria-label="Registrations table" aria-live="polite">
+          <table class="data-table" id="registrations-table" aria-label="Registrations">
+            <thead>
+              <tr>
+                <th scope="col">Reference</th>
+                <th scope="col">Holder Name</th>
+                <th scope="col">Licence No. (masked)</th>
+                <th scope="col">Issue Date</th>
+                <th scope="col">Valid From</th>
+                <th scope="col">Expiry</th>
+                <th scope="col">Jan Aadhaar (masked)</th>
+                <th scope="col">Family</th>
+                <th scope="col">Status</th>
+                <th scope="col">Registered On</th>
+              </tr>
+            </thead>
+            <tbody id="registrations-tbody">
+              <tr><td colspan="10" class="table-empty">Loading registrations…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination" aria-label="Pagination">
+          <button class="btn btn-sm btn-outline" id="prev-page" type="button" disabled>&laquo; Prev</button>
+          <span id="page-info" class="page-info" aria-live="polite"></span>
+          <button class="btn btn-sm btn-outline" id="next-page" type="button" disabled>Next &raquo;</button>
+        </div>
+      </div>
+
+      <!-- ── Tab: Audit Logs ───────────────────────── -->
+      <div id="tab-audit" class="tab-panel hidden" role="tabpanel" aria-labelledby="btn-audit">
+        <div class="table-wrapper" role="region" aria-label="Audit logs table" aria-live="polite">
+          <table class="data-table" id="audit-table" aria-label="Audit logs">
+            <thead>
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Event Type</th>
+                <th scope="col">Reference</th>
+                <th scope="col">Masked ID</th>
+                <th scope="col">Admin</th>
+                <th scope="col">IP Address</th>
+                <th scope="col">Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody">
+              <tr><td colspan="7" class="table-empty">Click the Audit Logs tab to load.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination" id="audit-pagination" aria-label="Audit log pagination">
+          <button class="btn btn-sm btn-outline" id="audit-prev-page" type="button" disabled>&laquo; Prev</button>
+          <span id="audit-page-info" class="page-info" aria-live="polite"></span>
+          <button class="btn btn-sm btn-outline" id="audit-next-page" type="button" disabled>Next &raquo;</button>
+        </div>
+      </div>
+
+    </div><!-- /.container -->
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p class="disclaimer">
+        <strong>Educational prototype.</strong>
+        Entered information is stored and processed only according to the application's configured policies.
+        This portal does not itself establish government-issued document authenticity.
+      </p>
+      <p class="footer-copy">&copy; 2024 Driving Licence &amp; Jan Aadhaar Registration Portal — Admin Area</p>
+    </div>
+  </footer>
+
+  <script src="js/admin-dashboard.js"></script>
+</body>
+</html>

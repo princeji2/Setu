@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Setu — one citizen record, every department</title>
+<title>Setu — one login, three departments, verified through a gateway</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -301,9 +301,9 @@
   <section id="dashboard" class="view active">
     <div class="hero">
       <div>
-        <div class="kicker">Government of Maharashtra · interoperability layer</div>
+        <div class="kicker">Smart India Hackathon · SIH26129</div>
         <h1>One record for every citizen, shared with consent — not copied.</h1>
-        <p>Setu links Aadhaar, Aaple Sarkar, UMANG and DigiLocker behind a single citizen login, so a document verified once doesn't need to be uploaded again.</p>
+        <p>Setu links Digital Tax Records, the National Identity Registry and the Driving Licence &amp; Jan Aadhaar Portal behind a single citizen login, so a document verified once doesn't need to be uploaded again.</p>
         <div class="hero-actions">
           <button class="btn btn-primary" onclick="showView('services')">Find a service</button>
           <button class="btn btn-ghost" onclick="showView('network')">See what's connected</button>
@@ -312,34 +312,27 @@
       <div class="netmap">
         <svg viewBox="0 0 420 300">
           <g stroke="#CFC3A8" stroke-width="1.4">
-            <line x1="210" y1="150" x2="210" y2="44"/>
-            <line x1="210" y1="150" x2="90" y2="90"/>
-            <line x1="210" y1="150" x2="330" y2="90"/>
-            <line x1="210" y1="150" x2="90" y2="222"/>
-            <line x1="210" y1="150" x2="330" y2="222"/>
+            <line x1="210" y1="150" x2="210" y2="48"/>
+            <line x1="210" y1="150" x2="82" y2="228"/>
+            <line x1="210" y1="150" x2="338" y2="228"/>
           </g>
           <circle cx="210" cy="150" r="34" fill="#1E3350"/>
           <text x="210" y="146" text-anchor="middle" fill="#fff" font-family="Source Serif 4, serif" font-size="12" font-weight="600">You</text>
           <text x="210" y="160" text-anchor="middle" fill="#fff" font-family="Source Serif 4, serif" font-size="9">Setu ID</text>
 
-          <circle cx="210" cy="44" r="26" fill="#FFFFFE" stroke="#B85C2B" stroke-width="1.6"/>
-          <text x="210" y="41" text-anchor="middle" fill="#211D18" font-size="9.5" font-weight="700" font-family="Inter">Aadhaar</text>
-          <text x="210" y="52" text-anchor="middle" fill="#6B6357" font-size="8">DigiLocker</text>
+          <circle cx="210" cy="48" r="30" fill="#FFFFFE" stroke="#B85C2B" stroke-width="1.6"/>
+          <text x="210" y="44" text-anchor="middle" fill="#211D18" font-size="8.5" font-weight="700" font-family="Inter">Digital Tax</text>
+          <text x="210" y="55" text-anchor="middle" fill="#6B6357" font-size="7.5">Records · PAN</text>
 
-          <circle cx="90" cy="90" r="26" fill="#FFFFFE" stroke="#3E7A5C" stroke-width="1.6"/>
-          <text x="90" y="87" text-anchor="middle" fill="#211D18" font-size="9" font-weight="700" font-family="Inter">Aaple</text>
-          <text x="90" y="98" text-anchor="middle" fill="#6B6357" font-size="8">Sarkar</text>
+          <circle cx="82" cy="228" r="30" fill="#FFFFFE" stroke="#3E7A5C" stroke-width="1.6"/>
+          <text x="82" y="221" text-anchor="middle" fill="#211D18" font-size="8" font-weight="700" font-family="Inter">National</text>
+          <text x="82" y="232" text-anchor="middle" fill="#211D18" font-size="8" font-weight="700" font-family="Inter">Identity</text>
+          <text x="82" y="243" text-anchor="middle" fill="#6B6357" font-size="7.5">Registry</text>
 
-          <circle cx="330" cy="90" r="26" fill="#FFFFFE" stroke="#3E7A5C" stroke-width="1.6"/>
-          <text x="330" y="94" text-anchor="middle" fill="#211D18" font-size="9.5" font-weight="700" font-family="Inter">UMANG</text>
-
-          <circle cx="90" cy="222" r="26" fill="#FFFFFE" stroke="#CFC3A8" stroke-width="1.6"/>
-          <text x="90" y="219" text-anchor="middle" fill="#211D18" font-size="8.5" font-weight="700" font-family="Inter">Revenue</text>
-          <text x="90" y="230" text-anchor="middle" fill="#6B6357" font-size="8">Dept.</text>
-
-          <circle cx="330" cy="222" r="26" fill="#FFFFFE" stroke="#CFC3A8" stroke-width="1.6"/>
-          <text x="330" y="219" text-anchor="middle" fill="#211D18" font-size="8.5" font-weight="700" font-family="Inter">Scholar-</text>
-          <text x="330" y="230" text-anchor="middle" fill="#6B6357" font-size="8">ship cell</text>
+          <circle cx="338" cy="228" r="30" fill="#FFFFFE" stroke="#CFC3A8" stroke-width="1.6"/>
+          <text x="338" y="221" text-anchor="middle" fill="#211D18" font-size="8" font-weight="700" font-family="Inter">Driving Licence</text>
+          <text x="338" y="232" text-anchor="middle" fill="#211D18" font-size="8" font-weight="700" font-family="Inter">&amp; Jan Aadhaar</text>
+          <text x="338" y="243" text-anchor="middle" fill="#6B6357" font-size="7.5">Portal</text>
         </svg>
       </div>
     </div>
@@ -347,7 +340,7 @@
     <div class="stat-row">
       <div class="stat"><div class="n">3</div><div class="l">Applications in progress</div></div>
       <div class="stat"><div class="n">5</div><div class="l">Documents ready to reuse</div></div>
-      <div class="stat"><div class="n">4</div><div class="l">Departments connected to you</div></div>
+      <div class="stat"><div class="n">3</div><div class="l">Departments connected to you</div></div>
       <div class="stat"><div class="n">1</div><div class="l">Action needed from you</div></div>
     </div>
 
@@ -357,49 +350,49 @@
 
         <div class="app-item">
           <div class="app-top">
-            <div><div class="app-name">Income certificate</div><div class="app-meta">Filed via Aaple Sarkar · MH-2026-10234</div></div>
-            <span class="chip chip-progress">With officer</span>
+            <div><div class="app-name">PAN verification</div><div class="app-meta">Filed via Digital Tax Records · TAX-2026-000123</div></div>
+            <span class="chip chip-progress">Awaiting department</span>
           </div>
           <div class="track">
-            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Filed</div></div>
+            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Submitted</div></div>
             <div class="tline done"></div>
-            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Docs verified</div></div>
+            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Gateway relay</div></div>
             <div class="tline done"></div>
-            <div class="tnode"><div class="tdot now"></div><div class="tlabel">Officer review</div></div>
+            <div class="tnode"><div class="tdot now"></div><div class="tlabel">Dept. verifying</div></div>
             <div class="tline"></div>
-            <div class="tnode"><div class="tdot"></div><div class="tlabel">Issued</div></div>
+            <div class="tnode"><div class="tdot"></div><div class="tlabel">Complete</div></div>
           </div>
         </div>
 
         <div class="app-item">
           <div class="app-top">
-            <div><div class="app-name">Residence certificate</div><div class="app-meta">Filed via Aaple Sarkar · MH-2026-09721</div></div>
-            <span class="chip chip-wait">Needs a photo</span>
+            <div><div class="app-name">Identity verification</div><div class="app-meta">Filed via National Identity Registry · NIR-2026-000045</div></div>
+            <span class="chip chip-wait">Token expired — retry</span>
           </div>
           <div class="track">
-            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Filed</div></div>
+            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Submitted</div></div>
             <div class="tline"></div>
-            <div class="tnode"><div class="tdot now"></div><div class="tlabel">Docs verified</div></div>
+            <div class="tnode"><div class="tdot now"></div><div class="tlabel">Gateway relay</div></div>
             <div class="tline"></div>
-            <div class="tnode"><div class="tdot"></div><div class="tlabel">Officer review</div></div>
+            <div class="tnode"><div class="tdot"></div><div class="tlabel">Dept. verifying</div></div>
             <div class="tline"></div>
-            <div class="tnode"><div class="tdot"></div><div class="tlabel">Issued</div></div>
+            <div class="tnode"><div class="tdot"></div><div class="tlabel">Complete</div></div>
           </div>
         </div>
 
         <div class="app-item">
           <div class="app-top">
-            <div><div class="app-name">Post-matric scholarship</div><div class="app-meta">Filed via UMANG · UM-88421</div></div>
-            <span class="chip chip-done">Issued</span>
+            <div><div class="app-name">Driving licence registration</div><div class="app-meta">Filed via Driving Licence &amp; Jan Aadhaar Portal · REG-A3F7C291</div></div>
+            <span class="chip chip-done">Complete</span>
           </div>
           <div class="track">
-            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Filed</div></div>
+            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Submitted</div></div>
             <div class="tline done"></div>
-            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Docs verified</div></div>
+            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Gateway relay</div></div>
             <div class="tline done"></div>
-            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Officer review</div></div>
+            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Dept. verifying</div></div>
             <div class="tline done"></div>
-            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Issued</div></div>
+            <div class="tnode"><div class="tdot done"></div><div class="tlabel">Complete</div></div>
           </div>
         </div>
       </div>
@@ -407,17 +400,17 @@
       <div class="stack">
         <div class="side-card">
           <h3>Documents on file</h3>
-          <div class="doc-row"><div><div class="doc-name"><span class="dot-ok"></span>Aadhaar</div><div class="doc-src">DigiLocker · today</div></div></div>
-          <div class="doc-row"><div><div class="doc-name"><span class="dot-ok"></span>PAN card</div><div class="doc-src">DigiLocker · today</div></div></div>
-          <div class="doc-row"><div><div class="doc-name"><span class="dot-ok"></span>Income certificate</div><div class="doc-src">Aaple Sarkar · 12 Sept</div></div></div>
-          <div class="doc-row"><div><div class="doc-name">Photograph</div><div class="doc-src" style="color:var(--terracotta)">Needs updating</div></div></div>
+          <div class="doc-row"><div><div class="doc-name"><span class="dot-ok"></span>PAN (masked)</div><div class="doc-src">Digital Tax Records · today</div></div></div>
+          <div class="doc-row"><div><div class="doc-name"><span class="dot-ok"></span>Identity record</div><div class="doc-src">National Identity Registry · today</div></div></div>
+          <div class="doc-row"><div><div class="doc-name"><span class="dot-ok"></span>Driving licence</div><div class="doc-src">Driving Licence &amp; Jan Aadhaar Portal · 12 Sept</div></div></div>
+          <div class="doc-row"><div><div class="doc-name">Jan Aadhaar ID</div><div class="doc-src" style="color:var(--terracotta)">Needs updating</div></div></div>
         </div>
 
         <div class="side-card">
           <h3>Recent activity</h3>
-          <div class="activity-row"><div class="arail"></div><div><b>Aadhaar fetched from DigiLocker</b><span>10 minutes ago</span></div></div>
-          <div class="activity-row"><div class="arail"></div><div><b>Income certificate synced to Aaple Sarkar</b><span>32 minutes ago</span></div></div>
-          <div class="activity-row"><div class="arail"></div><div><b>Residence certificate needs a photo</b><span>Yesterday</span></div></div>
+          <div class="activity-row"><div class="arail"></div><div><b>PAN fetched from Digital Tax Records</b><span>10 minutes ago</span></div></div>
+          <div class="activity-row"><div class="arail"></div><div><b>Driving licence synced to portal audit log</b><span>32 minutes ago</span></div></div>
+          <div class="activity-row"><div class="arail"></div><div><b>Identity token expired — needs retry</b><span>Yesterday</span></div></div>
         </div>
       </div>
     </div>
@@ -427,19 +420,19 @@
   <section id="services" class="view">
     <div class="section-head" style="margin-bottom:6px"><h2>Find a government service</h2></div>
     <p style="color:var(--ink-soft);margin:0 0 22px;max-width:56ch">Search across every department connected to Setu — your saved documents fill in automatically wherever they're accepted.</p>
-    <input class="searchbar" placeholder="Try “income”, “scholarship”, “residence”…" oninput="searchServices(this.value)">
+    <input class="searchbar" placeholder="Try “PAN”, “identity”, “licence”…" oninput="searchServices(this.value)">
     <div id="serviceResults" class="service-grid"></div>
   </section>
 
   <!-- ================= DOCUMENTS ================= -->
   <section id="documents" class="view">
-    <div class="section-head"><h2>My documents</h2><button class="btn btn-primary" onclick="toast('Starting DigiLocker link…')">Connect DigiLocker</button></div>
+    <div class="section-head"><h2>My documents</h2><button class="btn btn-primary" onclick="toast('Requesting a fresh identity token…')">Refresh identity token</button></div>
     <div class="doc-grid">
-      <div class="doc-card"><span class="status status-ok">Verified</span><h3>Aadhaar</h3><p>DigiLocker · updated today</p><button class="service" style="width:100%">Reuse this document</button></div>
-      <div class="doc-card"><span class="status status-ok">Verified</span><h3>PAN card</h3><p>DigiLocker · updated today</p><button class="service" style="width:100%">Reuse this document</button></div>
-      <div class="doc-card"><span class="status status-ok">Verified</span><h3>Address proof</h3><p>DigiLocker · updated yesterday</p><button class="service" style="width:100%">Reuse this document</button></div>
-      <div class="doc-card"><span class="status status-ok">Verified</span><h3>Income certificate</h3><p>Aaple Sarkar · 12 September</p><button class="service" style="width:100%">Reuse this document</button></div>
-      <div class="doc-card"><span class="status status-warn">Needs updating</span><h3>Photograph</h3><p>Profile · last updated 2025</p><button class="service" style="width:100%">Update now</button></div>
+      <div class="doc-card"><span class="status status-ok">Verified</span><h3>PAN</h3><p>Digital Tax Records · updated today</p><button class="service" style="width:100%">Reuse this document</button></div>
+      <div class="doc-card"><span class="status status-ok">Verified</span><h3>Identity record</h3><p>National Identity Registry · updated today</p><button class="service" style="width:100%">Reuse this document</button></div>
+      <div class="doc-card"><span class="status status-ok">Verified</span><h3>Driving licence</h3><p>Driving Licence &amp; Jan Aadhaar Portal · 12 September</p><button class="service" style="width:100%">Reuse this document</button></div>
+      <div class="doc-card"><span class="status status-ok">Verified</span><h3>Jan Aadhaar ID</h3><p>Driving Licence &amp; Jan Aadhaar Portal · 12 September</p><button class="service" style="width:100%">Reuse this document</button></div>
+      <div class="doc-card"><span class="status status-warn">Needs updating</span><h3>Identity token</h3><p>National Identity Registry · expired</p><button class="service" style="width:100%">Update now</button></div>
     </div>
   </section>
 
@@ -450,9 +443,9 @@
       <table>
         <thead><tr><th>Application</th><th>Department</th><th>Reference</th><th>Status</th><th>Last update</th></tr></thead>
         <tbody>
-          <tr><td><b>Income certificate</b></td><td>Aaple Sarkar</td><td>MH-2026-10234</td><td><span class="chip chip-progress">With officer</span></td><td>2 min ago</td></tr>
-          <tr><td><b>Residence certificate</b></td><td>Aaple Sarkar</td><td>MH-2026-09721</td><td><span class="chip chip-wait">Needs a photo</span></td><td>5 min ago</td></tr>
-          <tr><td><b>Post-matric scholarship</b></td><td>UMANG</td><td>UM-88421</td><td><span class="chip chip-done">Issued</span></td><td>Today</td></tr>
+          <tr><td><b>PAN verification</b></td><td>Digital Tax Records</td><td>TAX-2026-000123</td><td><span class="chip chip-progress">Awaiting department</span></td><td>2 min ago</td></tr>
+          <tr><td><b>Identity verification</b></td><td>National Identity Registry</td><td>NIR-2026-000045</td><td><span class="chip chip-wait">Token expired — retry</span></td><td>5 min ago</td></tr>
+          <tr><td><b>Driving licence registration</b></td><td>Driving Licence &amp; Jan Aadhaar Portal</td><td>REG-A3F7C291</td><td><span class="chip chip-done">Complete</span></td><td>Today</td></tr>
         </tbody>
       </table>
     </div>
@@ -462,9 +455,9 @@
   <section id="network" class="view">
     <div class="section-head"><h2>Connected platforms</h2><button class="btn btn-primary" onclick="toast('Opening connector setup…')">Add a connector</button></div>
     <div class="node-grid">
-      <div class="node-card"><div class="nid">U</div><h3>UMANG</h3><p>National services connector</p><span class="chip chip-done">Connected</span><div class="node-meta">12 services linked · synced <b>2 min ago</b></div><button class="service">Manage</button></div>
-      <div class="node-card"><div class="nid">A</div><h3>Aaple Sarkar</h3><p>Maharashtra services connector</p><span class="chip chip-done">Connected</span><div class="node-meta">8 services linked · synced <b>5 min ago</b></div><button class="service">Manage</button></div>
-      <div class="node-card"><div class="nid">D</div><h3>DigiLocker</h3><p>Digital document connector</p><span class="chip chip-done">Connected</span><div class="node-meta">6 documents linked · synced <b>1 min ago</b></div><button class="service">Manage</button></div>
+      <div class="node-card"><div class="nid">T</div><h3>Digital Tax Records</h3><p>FastAPI · SQLite backend</p><span class="chip chip-done">Gateway-key verified</span><div class="node-meta">PAN lookups · synced <b>2 min ago</b></div><button class="service">Manage</button></div>
+      <div class="node-card"><div class="nid">N</div><h3>National Identity Registry</h3><p>Node/Express · PostgreSQL backend</p><span class="chip chip-done">Gateway-key verified</span><div class="node-meta">Identity checks · synced <b>5 min ago</b></div><button class="service">Manage</button></div>
+      <div class="node-card"><div class="nid">D</div><h3>Driving Licence &amp; Jan Aadhaar Portal</h3><p>Node/Express · PostgreSQL backend</p><span class="chip chip-done">Gateway-key verified</span><div class="node-meta">Licence &amp; ID registrations · synced <b>1 min ago</b></div><button class="service">Manage</button></div>
     </div>
   </section>
 
@@ -481,14 +474,14 @@
     <div class="layout">
       <div class="panel panel-pad">
         <div class="section-head"><h2 style="font-size:16px">System health</h2></div>
-        <div class="doc-row"><div><div class="doc-name">UMANG · API gateway</div></div><span class="chip chip-done">Operational</span></div>
-        <div class="doc-row"><div><div class="doc-name">Aaple Sarkar · service connector</div></div><span class="chip chip-done">Operational</span></div>
-        <div class="doc-row"><div><div class="doc-name">DigiLocker · document connector</div></div><span class="chip chip-done">Operational</span></div>
+        <div class="doc-row"><div><div class="doc-name">Digital Tax Records · X-Gateway-Key</div></div><span class="chip chip-done">Operational</span></div>
+        <div class="doc-row"><div><div class="doc-name">National Identity Registry · X-Gateway-Key</div></div><span class="chip chip-done">Operational</span></div>
+        <div class="doc-row"><div><div class="doc-name">Driving Licence &amp; Jan Aadhaar Portal · X-Gateway-Key</div></div><span class="chip chip-done">Operational</span></div>
       </div>
       <div class="side-card">
         <h3>Recent exceptions</h3>
-        <div class="activity-row"><div class="arail" style="background:var(--terracotta)"></div><div><b>Timeout on Aaple Sarkar connector</b><span>11 minutes ago</span></div></div>
-        <div class="activity-row"><div class="arail" style="background:var(--gold)"></div><div><b>Validation retry on UMANG</b><span>26 minutes ago</span></div></div>
+        <div class="activity-row"><div class="arail" style="background:var(--terracotta)"></div><div><b>Identity token expired mid-request — retried</b><span>11 minutes ago</span></div></div>
+        <div class="activity-row"><div class="arail" style="background:var(--gold)"></div><div><b>Validation retry on Driving Licence connector</b><span>26 minutes ago</span></div></div>
       </div>
     </div>
   </section>
@@ -507,7 +500,7 @@
     <div class="msg bot">Hi Palak — I can check your documents, applications, or find a service. What do you need?</div>
   </div>
   <div class="chat-suggest" id="chatSuggest">
-    <button class="chip-suggest" onclick="askChat('Where is my income certificate?')">Where is my income certificate?</button>
+    <button class="chip-suggest" onclick="askChat('Where is my PAN verification?')">Where is my PAN verification?</button>
     <button class="chip-suggest" onclick="askChat('What documents do I have?')">What documents do I have?</button>
     <button class="chip-suggest" onclick="askChat('What is Setu?')">What is Setu?</button>
   </div>
@@ -519,13 +512,13 @@
 
 <div class="modal-veil" id="consentVeil">
   <div class="modal">
-    <div class="kicker" id="consentDept">Aaple Sarkar</div>
-    <h3 id="consentTitle">Income certificate</h3>
+    <div class="kicker" id="consentDept">Digital Tax Records</div>
+    <h3 id="consentTitle">PAN verification</h3>
     <p class="desc" id="consentDesc">Setu will fetch and share only the fields below, for this application only.</p>
     <div id="consentFields">
-      <div class="consent-row"><div><div class="fld">Aadhaar-linked identity</div><div class="from">from DigiLocker</div></div>Required</div>
-      <div class="consent-row"><div><div class="fld">Income record</div><div class="from">from Revenue Dept.</div></div>Required</div>
-      <div class="consent-row"><div><div class="fld">Address proof</div><div class="from">already on file</div></div>Reused</div>
+      <div class="consent-row"><div><div class="fld">PAN number</div><div class="from">from Digital Tax Records</div></div>Required</div>
+      <div class="consent-row"><div><div class="fld">Identity match</div><div class="from">from National Identity Registry</div></div>Required</div>
+      <div class="consent-row"><div><div class="fld">Driving licence status</div><div class="from">already on file</div></div>Reused</div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeConsent()">Cancel</button>
@@ -536,12 +529,12 @@
 
 <script>
 const services=[
- ['Aaple Sarkar','Income certificate','Apply with your verified profile — no re-upload needed.'],
- ['Aaple Sarkar','Residence certificate','Reuse your verified address on file.'],
- ['Aaple Sarkar','Senior citizen certificate','Check requirements and file in minutes.'],
- ['UMANG','Government schemes','See what you already qualify for.'],
- ['DigiLocker','Digital documents','Access and reuse anything you have verified.'],
- ['UMANG','Scholarship services','Explore education support schemes.']
+ ['Digital Tax Records','PAN verification','Confirm your PAN against tax records — no re-upload needed.'],
+ ['Digital Tax Records','Income bracket check','Fetch your verified income bracket for other applications.'],
+ ['National Identity Registry','Identity verification','Match your identity details against the registry.'],
+ ['National Identity Registry','Identity re-verification','Refresh a check before its token expires.'],
+ ['Driving Licence & Jan Aadhaar Portal','Driving licence registration','Register your licence and Jan Aadhaar details together.'],
+ ['Driving Licence & Jan Aadhaar Portal','Jan Aadhaar linking','Link your Jan Aadhaar ID to your household record.']
 ];
 function renderServices(q){
   const box=document.getElementById('serviceResults');
@@ -590,13 +583,13 @@ document.querySelectorAll('.doc-card .service').forEach(btn=>{
 
 /* ---------- chat assistant ---------- */
 const chatKB=[
-  {k:['income certificate','income cert'],a:"Your income certificate (MH-2026-10234) is with the officer for review — filed via Aaple Sarkar, docs already verified. Usually 2–3 working days from here."},
-  {k:['residence certificate','residence'],a:"Your residence certificate (MH-2026-09721) needs one thing from you: an updated photograph. Everything else is verified."},
-  {k:['scholarship'],a:"Your post-matric scholarship (UM-88421) was issued today via UMANG. Nothing further needed."},
-  {k:['document','documents','on file'],a:"You have 4 verified documents — Aadhaar, PAN, address proof and income certificate — plus one photograph that needs updating."},
-  {k:['setu','what is'],a:"Setu is a consent-based interoperability layer — it links your DigiLocker, Aaple Sarkar and UMANG accounts so a document verified once doesn't need re-uploading anywhere else."},
+  {k:['pan verification','pan'],a:"Your PAN verification (TAX-2026-000123) is waiting on Digital Tax Records — the gateway has already relayed your request. Usually a few seconds once the department responds."},
+  {k:['identity verification','identity'],a:"Your identity verification (NIR-2026-000045) needs a retry — the National Identity Registry uses a short-lived token, and it expired mid-check. Nothing else needs re-entering."},
+  {k:['driving licence','licence','jan aadhaar'],a:"Your driving licence registration (REG-A3F7C291) is complete, filed via the Driving Licence & Jan Aadhaar Portal. Nothing further needed."},
+  {k:['document','documents','on file'],a:"You have 3 verified documents — PAN, identity record and driving licence — plus one identity token that needs refreshing."},
+  {k:['setu','what is'],a:"Setu is a consent-based gateway — one login that talks to Digital Tax Records, the National Identity Registry and the Driving Licence & Jan Aadhaar Portal on your behalf, each authenticated with its own gateway key, with every hop written to an audit log."},
   {k:['consent','privacy','data'],a:"Nothing moves without your approval. Every time a department needs a field from another department, you see exactly what's requested and why before it's shared."},
-  {k:['connect','digilocker','umang','aaple'],a:"You're connected to UMANG, Aaple Sarkar and DigiLocker. Check the Connected platforms tab for live sync status on each."}
+  {k:['connect','tax records','identity registry','driving licence portal'],a:"You're connected to Digital Tax Records, the National Identity Registry and the Driving Licence & Jan Aadhaar Portal. Check the Connected platforms tab for live sync status on each."}
 ];
 function toggleChat(force){
   const p=document.getElementById('chatPanel');

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login – Driving Licence &amp; Jan Aadhaar Portal</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="auth-page">
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="logo-area">
+        <div class="logo-icon" aria-hidden="true">&#128196;</div>
+        <div>
+          <h1 class="site-title">Driving Licence &amp; Jan Aadhaar<br>Registration Portal</h1>
+          <p class="site-subtitle">Secure Document Details Registration System</p>
+        </div>
+      </div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="registration.html" class="nav-link">Register</a>
+        <a href="admin-login.html" class="nav-link active">Admin</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content auth-main">
+    <div class="auth-card" role="main">
+      <div class="auth-header">
+        <div class="auth-icon" aria-hidden="true">&#128272;</div>
+        <h2 class="auth-title">Admin Login</h2>
+        <p class="auth-subtitle">Authorised personnel only</p>
+      </div>
+
+      <div id="login-error" class="form-banner form-banner--error hidden" role="alert" aria-live="assertive"></div>
+
+      <form id="login-form" class="auth-form" novalidate aria-label="Admin login form">
+        <div class="form-group">
+          <label for="username" class="form-label">
+            Username <span class="required" aria-label="required">*</span>
+          </label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            class="form-input"
+            maxlength="100"
+            autocomplete="username"
+            aria-required="true"
+            aria-describedby="username-error"
+          />
+          <p id="username-error" class="field-error hidden" role="alert"></p>
+        </div>
+
+        <div class="form-group">
+          <label for="password" class="form-label">
+            Password <span class="required" aria-label="required">*</span>
+          </label>
+          <div class="input-with-toggle">
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-input"
+              maxlength="128"
+              autocomplete="current-password"
+              aria-required="true"
+              aria-describedby="password-error"
+            />
+            <button
+              type="button"
+              id="toggle-password"
+              class="input-toggle-btn"
+              aria-label="Show password"
+            >&#128065;</button>
+          </div>
+          <p id="password-error" class="field-error hidden" role="alert"></p>
+        </div>
+
+        <button type="submit" id="login-btn" class="btn btn-primary btn-full">
+          <span id="login-text">Login</span>
+          <span id="login-spinner" class="spinner hidden" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <p class="auth-back-link"><a href="index.html">&larr; Back to Home</a></p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p class="disclaimer">
+        <strong>Educational prototype.</strong>
+        Entered information is stored and processed only according to the application's configured policies.
+        This portal does not itself establish government-issued document authenticity.
+      </p>
+    </div>
+  </footer>
+
+  <script src="js/admin-login.js"></script>
+</body>
+</html>

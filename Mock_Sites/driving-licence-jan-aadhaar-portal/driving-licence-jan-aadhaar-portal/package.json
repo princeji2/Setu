@@ -1,0 +1,40 @@
+{
+  "name": "driving-licence-jan-aadhaar-portal",
+  "version": "1.0.0",
+  "description": "Independent registration portal for Driving Licence and Jan Aadhaar document details",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "test": "jest --runInBand --forceExit",
+    "test:coverage": "jest --runInBand --forceExit --coverage",
+    "db:migrate": "node database/migrate.js",
+    "db:seed": "node database/seed.js"
+  },
+  "keywords": ["driving-licence", "jan-aadhaar", "registration", "portal"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "supertest": "^6.3.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.test.js"],
+    "testTimeout": 30000,
+    "setupFiles": ["./tests/setup.js"]
+  }
+}

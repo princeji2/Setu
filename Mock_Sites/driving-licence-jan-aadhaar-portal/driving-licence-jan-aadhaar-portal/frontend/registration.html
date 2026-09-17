@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register Documents – Driving Licence &amp; Jan Aadhaar Portal</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="logo-area">
+        <div class="logo-icon" aria-hidden="true">&#128196;</div>
+        <div>
+          <h1 class="site-title">Driving Licence &amp; Jan Aadhaar<br>Registration Portal</h1>
+          <p class="site-subtitle">Secure Document Details Registration System</p>
+        </div>
+      </div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="registration.html" class="nav-link active">Register</a>
+        <a href="admin-login.html" class="nav-link">Admin</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="page-header">
+        <h2 class="page-title">Document Registration</h2>
+        <p class="page-desc">Fill in both sections below and submit. All fields are required.</p>
+      </div>
+
+      <!-- Global form error / success banner -->
+      <div id="form-banner" class="form-banner hidden" role="alert" aria-live="assertive"></div>
+
+      <form id="registration-form" class="registration-form" novalidate aria-label="Document registration form">
+
+        <!-- ══════════════════════════════════════════
+             SECTION A — DRIVING LICENCE
+        ══════════════════════════════════════════ -->
+        <section class="form-section" aria-labelledby="dl-section-heading">
+          <div class="section-heading-bar">
+            <span class="section-icon" aria-hidden="true">&#128663;</span>
+            <h3 id="dl-section-heading" class="form-section-title">Section A — Driving Licence Details</h3>
+          </div>
+          <p class="section-note">
+            Format validation checks the entered value against the expected pattern.
+            <strong>It does not confirm that the licence is genuine or government-verified.</strong>
+          </p>
+
+          <div class="form-grid">
+
+            <!-- Licence Number -->
+            <div class="form-group full-width">
+              <label for="licence_number" class="form-label">
+                Licence Number <span class="required" aria-label="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="licence_number"
+                name="licence_number"
+                class="form-input"
+                maxlength="20"
+                placeholder="e.g. MH0120231234567"
+                autocomplete="off"
+                spellcheck="false"
+                aria-required="true"
+                aria-describedby="licence_number-hint licence_number-error"
+              />
+              <p id="licence_number-hint" class="field-hint">
+                State code (2 letters) + RTO code (2 digits) + year (4 digits) + serial (7 digits). Example: MH0120231234567
+              </p>
+              <p id="licence_number-error" class="field-error hidden" role="alert"></p>
+            </div>
+
+            <!-- Licence Holder Name -->
+            <div class="form-group full-width">
+              <label for="licence_holder_name" class="form-label">
+                Licence Holder Name <span class="required" aria-label="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="licence_holder_name"
+                name="licence_holder_name"
+                class="form-input"
+                maxlength="255"
+                placeholder="Full name as on licence"
+                autocomplete="name"
+                aria-required="true"
+                aria-describedby="licence_holder_name-error"
+              />
+              <p id="licence_holder_name-error" class="field-error hidden" role="alert"></p>
+            </div>
+
+            <!-- Date of Issue -->
+            <div class="form-group">
+              <label for="licence_issue_date" class="form-label">
+                Date of Issue <span class="required" aria-label="required">*</span>
+              </label>
+              <input
+                type="date"
+                id="licence_issue_date"
+                name="licence_issue_date"
+                class="form-input"
+                aria-required="true"
+                aria-describedby="licence_issue_date-error"
+              />
+              <p id="licence_issue_date-error" class="field-error hidden" role="alert"></p>
+            </div>
+
+            <!-- Validity From -->
+            <div class="form-group">
+              <label for="licence_valid_from" class="form-label">
+                Validity From <span class="required" aria-label="required">*</span>
+              </label>
+              <input
+                type="date"
+                id="licence_valid_from"
+                name="licence_valid_from"
+                class="form-input"
+                aria-required="true"
+                aria-describedby="licence_valid_from-error"
+              />
+              <p id="licence_valid_from-error" class="field-error hidden" role="alert"></p>
+            </div>
+
+            <!-- Validity Expiry -->
+            <div class="form-group">
+              <label for="licence_expiry_date" class="form-label">
+                Validity Expiry Date <span class="required" aria-label="required">*</span>
+              </label>
+              <input
+                type="date"
+                id="licence_expiry_date"
+                name="licence_expiry_date"
+                class="form-input"
+                aria-required="true"
+                aria-describedby="licence_expiry_date-error"
+              />
+              <p id="licence_expiry_date-error" class="field-error hidden" role="alert"></p>
+            </div>
+
+          </div><!-- /.form-grid -->
+        </section>
+
+        <!-- ══════════════════════════════════════════
+             SECTION B — JAN AADHAAR
+        ══════════════════════════════════════════ -->
+        <section class="form-section" aria-labelledby="ja-section-heading">
+          <div class="section-heading-bar">
+            <span class="section-icon" aria-hidden="true">&#128101;</span>
+            <h3 id="ja-section-heading" class="form-section-title">Section B — Jan Aadhaar Details</h3>
+          </div>
+          <p class="section-note">
+            The Jan Aadhaar ID is validated for the expected numeric format only.
+            <strong>Format validation does not confirm that the ID exists in any government database.</strong>
+          </p>
+
+          <div class="form-grid">
+
+            <!-- Jan Aadhaar ID -->
+            <div class="form-group">
+              <label for="jan_aadhaar_id" class="form-label">
+                Jan Aadhaar ID <span class="required" aria-label="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="jan_aadhaar_id"
+                name="jan_aadhaar_id"
+                class="form-input"
+                maxlength="10"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                placeholder="10-digit numeric ID"
+                autocomplete="off"
+                spellcheck="false"
+                aria-required="true"
+                aria-describedby="jan_aadhaar_id-hint jan_aadhaar_id-error"
+              />
+              <p id="jan_aadhaar_id-hint" class="field-hint">Enter exactly 10 numeric digits.</p>
+              <p id="jan_aadhaar_id-error" class="field-error hidden" role="alert"></p>
+            </div>
+
+            <!-- Family Members Count -->
+            <div class="form-group">
+              <label for="family_members_count" class="form-label">
+                Number of Family Members <span class="required" aria-label="required">*</span>
+              </label>
+              <input
+                type="number"
+                id="family_members_count"
+                name="family_members_count"
+                class="form-input"
+                min="1"
+                max="50"
+                step="1"
+                placeholder="e.g. 4"
+                aria-required="true"
+                aria-describedby="family_members_count-hint family_members_count-error"
+              />
+              <p id="family_members_count-hint" class="field-hint">Integer between 1 and 50.</p>
+              <p id="family_members_count-error" class="field-error hidden" role="alert"></p>
+            </div>
+
+          </div><!-- /.form-grid -->
+        </section>
+
+        <!-- ══════════════════════════════════════════
+             ACTIONS
+        ══════════════════════════════════════════ -->
+        <div class="form-actions">
+          <button type="submit" id="submit-btn" class="btn btn-primary btn-lg">
+            <span id="submit-text">Submit Registration</span>
+            <span id="submit-spinner" class="spinner hidden" aria-hidden="true"></span>
+          </button>
+          <button type="reset" id="reset-btn" class="btn btn-secondary btn-lg">
+            Reset Form
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p class="disclaimer">
+        <strong>Educational prototype.</strong>
+        Entered information is stored and processed only according to the application's configured policies.
+        This portal does not itself establish government-issued document authenticity.
+      </p>
+      <p class="footer-copy">&copy; 2024 Driving Licence &amp; Jan Aadhaar Registration Portal</p>
+    </div>
+  </footer>
+
+  <script src="js/registration.js"></script>
+</body>
+</html>
