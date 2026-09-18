@@ -1,200 +1,118 @@
-# Tech — SIH26129
+# Tech — SIH26129 (Setu Gateway)
 
 ## Stack (locked — do not suggest alternatives mid-build)
-- **Frontend**: Next.js (App Router), shadcn/ui components, Tailwind
-- **Auth**: Supabase Auth (single citizen identity)
-- **Database**: Supabase Postgres (audit log + mock service seed data)
-- **Mock services**: standalone Node/Express APIs (or Next.js API routes
-  if time-pressed) — one per department, deployed/run separately
-- **Animation**: GSAP, used only for the live status-line reveal on the
-  result screen — not used decoratively elsewhere
-- **Gateway**: a dedicated Next.js API layer (or lightweight standalone
-  service) — see structure.md for where this lives in the repo
+- **Gateway backend**: standalone **Node.js + Express** service. This is
+  the project's core deliverable. It is NOT a Next.js app and is not
+  coupled to the frontend.
+- **Citizen auth**: **hand-rolled**, gateway-owned. A `citizens` table
+  with `password_hash` (bcrypt), and a self-issued **JWT** returned on
+  login/register. NOT Supabase Auth — the gateway needs its own citizen
+  identity to join against `linked_references`, `applications`, etc.
+- **Gateway database**: PostgreSQL (the gateway's own tables only — see
+  `database-schema.md`). It shares no storage with any department.
+- **Department services**: the three already exist in `Mock_Sites/` and
+  are not built here (FastAPI+SQLite for Digital Tax Records;
+  Node/Express+PostgreSQL for the other two). Each runs independently on
+  its own port with its own database.
+- **Frontend**: a separate citizen-facing app that calls the gateway's
+  citizen-facing API over HTTP. Framework TBD when frontend work starts;
+  keep it decoupled from the backend.
+- **Animation**: GSAP, reserved for a live status/relay reveal on the
+  result screen when the frontend is built — not used decoratively.
 
 ## Why this stack
-Everything here is something already in active use — no new tools are
-being learned mid-hackathon. The one deliberate constraint is service
-separation: the 3 mock services must run and store data independently,
-because proving the gateway can reconcile *genuinely* different systems
-is the whole point of an "interoperability" problem statement. Merging
-them into one shared schema would demo a CRUD app, not an integration
-layer.
+Node/Express keeps the gateway consistent with two of the three mock
+services and keeps a clean seam between backend and frontend. Hand-rolled
+auth is chosen deliberately over Supabase because the gateway must own
+the `citizens` row that every other gateway table joins against — a
+managed auth provider would put that identity outside our own schema.
+The one non-negotiable constraint is service separation: the three mock
+services run and store data independently, because proving the gateway
+can reconcile *genuinely* different systems is the whole point of an
+"interoperability" problem statement.
 
 ---
 
-## 1. Mock Department Services
+## 1. Department Services (Layer 2 — already built, gateway calls these)
 
-Each service is intentionally different in field naming AND auth
-mechanism. Do not harmonize these — the mismatch is deliberate.
+Do not edit these; the gateway calls them over real HTTP. Full,
+authoritative contracts are in **`api.md` Part 2** and
+**`Mock_Sites/HOW_GATEWAY_CONNECTS_TO_MOCK_SITES.md`** — this section is
+only a pointer so contracts live in exactly one place.
 
-### 1a. Land Records Service
-- **Auth**: static API key, sent as `x-api-key` header
-- **Endpoint**: `GET /land-records/:khasra_no`
-- **Success response (200)**:
-```json
-{
-  "khasra_no": "MH-2024-88231",
-  "owner_name": "Ramesh Patil",
-  "village": "Wagholi",
-  "district": "Pune",
-  "land_type": "agricultural",
-  "verified": true,
-  "last_updated": "2024-11-02T00:00:00Z"
-}
-```
-- **Not found (404)**:
-```json
-{ "error": "record_not_found", "khasra_no": "MH-2024-99999" }
-```
-- **Auth failure (401)**: `{ "error": "invalid_api_key" }`
+- **Digital Tax Records** (FastAPI + SQLite) — `GET /pan/{pan_reference}/fields`,
+  header `X-Gateway-Key`, synthetic refs like `SYNPAN-000123`.
+- **National Identity Registry** (Node/Express + PostgreSQL) — endpoint
+  path **unconfirmed** (referenced as ~`/api/registration/{reference}/fields`;
+  confirm against its route file before wiring), header `X-Gateway-Key`,
+  **short-lived-token quirk → retry once on expiry**.
+- **Driving Licence & Jan Aadhaar Portal** (Node/Express + PostgreSQL) —
+  `GET /api/v1/gateway/registrations/:reference` (alias
+  `/api/gateway/registrations/:reference`), header `X-Gateway-Key`.
 
-### 1b. Certificate Issuance Service
-- **Auth**: JWT bearer token (`Authorization: Bearer <token>`)
-- **Endpoint**: `POST /certificates/issue`
-- **Request**:
-```json
-{
-  "applicant_id": "string",
-  "cert_type": "caste | income | residence",
-  "supporting_ref": "string"
-}
-```
-- **Success response (201)**:
-```json
-{
-  "certificate_id": "CERT-2026-004521",
-  "status": "issued",
-  "issued_on": "2026-09-13T10:22:00Z"
-}
-```
-- **Rejected (200, business-level rejection, not an HTTP error)**:
-```json
-{ "certificate_id": null, "status": "rejected", "reason": "unverified_supporting_ref" }
-```
-
-### 1c. Grievance Service (stub — not in the demoed flow)
-- **Auth**: session cookie
-- **Endpoint**: `POST /grievance/ticket`
-- **Purpose**: exists solely to prove a 3rd, differently-shaped,
-  differently-authenticated system can also sit behind the same gateway.
-  Build it minimally — one endpoint, one seed record — do not build a
-  full grievance workflow.
-```json
-{
-  "ticket_ref": "GRV-88231",
-  "citizen_uid": "string",
-  "subject": "string",
-  "status": "open | closed"
-}
-```
+Each department has its own gateway key. Store one env var per
+department (`DTR_GATEWAY_KEY`, `NIR_GATEWAY_KEY`, `DLJA_GATEWAY_KEY`) —
+never a single shared key, even if they currently coincide in value.
 
 ---
 
-## 2. Canonical Schema (internal, gateway-side only)
-
-Every downstream response is translated into this shape before it
-reaches the dashboard or the audit log. The dashboard and audit log
-should never need to know a department's native field names.
-
-```json
-{
-  "citizen": {
-    "uid": "string",
-    "name": "string"
-  },
-  "land_record": {
-    "ref": "string",          // maps from khasra_no
-    "verified": "boolean",
-    "source_service": "land-records"
-  },
-  "certificate": {
-    "id": "string | null",
-    "type": "string",
-    "status": "issued | rejected | pending",
-    "source_service": "certificate-issuance"
-  }
-}
-```
+## 2. Canonical / translated shape (gateway-side only)
+Each department returns a different response shape. A per-department
+client/adapter translates that into a consistent internal shape before
+it reaches the citizen API response or the audit summary — the frontend
+and audit log never need to know a department's native field names. The
+gateway stores only *references* and short non-sensitive summaries, never
+a department's raw source-of-truth payload (see `database-schema.md`
+"What's deliberately NOT in this schema").
 
 ---
 
-## 3. Gateway API (what the dashboard actually calls)
+## 3. Gateway API (Layer 1 — the citizen-facing API, to be built)
+Authoritative contract lives in **`api.md` Part 1**. Summary:
+- `POST /api/v1/auth/register`, `POST /api/v1/auth/login` — citizen
+  account against the `citizens` table; returns a gateway-scoped JWT.
+- `GET /api/v1/applications`, `POST /api/v1/applications`,
+  `GET /api/v1/applications/:id` — application lifecycle + per-call history.
+- `POST /api/v1/consent` — records a `consent_grants` row; the gateway
+  refuses a department call without a matching consent record.
+- `GET /api/v1/documents` — the citizen's `linked_references`.
 
-### `POST /api/apply-certificate`
-Orchestrates: Land Records lookup → (if verified) Certificate Issuance
-→ audit log write for every step, regardless of outcome.
-
-**Request**:
-```json
-{
-  "citizen_uid": "string",
-  "cert_type": "caste | income | residence",
-  "khasra_no": "string"
-}
-```
-
-**Success response**:
-```json
-{
-  "certificate_id": "CERT-2026-004521",
-  "status": "issued",
-  "steps": [
-    { "service": "land-records", "status": "success", "timestamp": "2026-09-13T10:21:40Z" },
-    { "service": "certificate-issuance", "status": "success", "timestamp": "2026-09-13T10:22:00Z" }
-  ]
-}
-```
-
-**Failure response (land record not found)** — this is the one failure
-path the demo must show:
-```json
-{
-  "certificate_id": null,
-  "status": "rejected",
-  "reason": "land_record_not_found",
-  "steps": [
-    { "service": "land-records", "status": "failed", "timestamp": "2026-09-13T10:21:40Z" }
-  ]
-}
-```
-Note: Certificate Issuance is never called if Land Records fails — the
-gateway must short-circuit, not call downstream services blindly.
-
-### `GET /api/audit-log/:citizen_uid`
-Returns full step history for a citizen, most recent first, read from
-the `audit_log` table below.
+Do not add or rename endpoints without updating `api.md` in the same
+sitting.
 
 ---
 
-## 4. Auth Federation (how one login covers 3 different auth styles)
-
-Citizen authenticates once via Supabase Auth. The gateway holds the
-credentials/tokens each mock service needs (API key for Land Records,
-service-level JWT for Certificate Issuance, session cookie for
-Grievance) and attaches the correct one per downstream call. The citizen
-never sees or handles any of these — that's the "unified identity"
-claim in the pitch. For the prototype, these downstream credentials can
-be static/service-level (not per-citizen) since the mock services don't
-need real per-user auth — what's being demonstrated is that the gateway
-handles the *translation*, not that each citizen has a real account on
-each legacy system.
+## 4. Auth: two independent layers (don't conflate them)
+- **Citizen ↔ Setu (Layer 1):** hand-rolled. Register/login against the
+  `citizens` table, bcrypt password hashing, a self-issued JWT scoped to
+  the gateway only. This credential has nothing to do with any
+  department's own login.
+- **Setu ↔ Department (Layer 2, "auth federation"):** the gateway holds
+  each department's `X-Gateway-Key` in its own env config and attaches
+  the correct one per outbound call. The citizen never sees or handles
+  these. For the prototype these are static service-level keys — what's
+  demonstrated is that the gateway handles the translation/attachment,
+  not that each citizen has a real account on each legacy system.
 
 ---
 
-## 5. Audit Log Table (Supabase Postgres)
-
-| column         | type          | notes                              |
-|----------------|---------------|-------------------------------------|
-| id             | uuid, pk      |                                      |
-| citizen_uid    | text          |                                      |
-| service_name   | text          | `land-records` \| `certificate-issuance` |
-| status         | text          | `success` \| `failed`               |
-| request_ref    | text          | khasra_no or applicant_id, for traceability |
-| timestamp      | timestamptz   | default `now()`                     |
+## 5. Persistence
+The gateway's own tables (`citizens`, `linked_references`,
+`applications`, `application_department_calls`, `consent_grants`,
+`audit_log`) are defined authoritatively in **`database-schema.md`** —
+that file is the single source of truth for columns and types. Every
+department call writes to `application_department_calls` and is
+summarized in `audit_log`, success or failure.
 
 ## Open questions to resolve during build
-- [ ] Exact JWT signing approach for the Certificate Issuance mock (can
-      be a fixed shared secret for prototype purposes)
-- [ ] Whether mock services are deployed separately or run as 3
-      processes locally for the demo — decide based on demo-day
-      internet reliability
+- [ ] Confirm the National Identity Registry endpoint path against its
+      actual route file before wiring the client.
+- [ ] Confirm the exact current 401 wording on Digital Tax Records
+      (recently aligned with the other two) before hardcoding any match.
+- [ ] `application_department_calls.response_summary`: metadata-only vs.
+      masked-but-real field values — decide deliberately (see the open
+      question in `database-schema.md`).
+- [ ] Whether department services are deployed separately or run as
+      local processes for the demo — decide based on demo-day network
+      reliability; either way all three must run concurrently on distinct
+      ports for any end-to-end test to be meaningful.

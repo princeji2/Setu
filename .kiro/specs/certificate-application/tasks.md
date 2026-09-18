@@ -1,88 +1,83 @@
-# Tasks — Certificate Application Flow
+# Tasks — Setu Gateway
 
 Deadline: **30 September 2026**. Each task references the requirement(s)
-it satisfies (see `requirements.md`).
+it satisfies (see `requirements.md`). Built in verifiable stages — one
+piece confirmed building/passing before the next.
+
+> The three department backends already exist in `Mock_Sites/` and are
+> NOT built here — Phases below are about the gateway that calls them.
 
 ## Phase 0 — Design (complete)
-- [x] Define the one citizen journey → `product.md`
-- [x] Design 3 mock schemas + canonical schema + API contracts → `tech.md`
-- [x] Write user stories + acceptance criteria → `requirements.md`
-- [x] Sketch architecture + screens + states → `design.md`
+- [x] Define the journey + scope → `product.md`
+- [x] Lock the stack (Node/Express, hand-rolled auth) → `tech.md`
+- [x] Gateway DB tables → `database-schema.md`
+- [x] Citizen + department API contracts → `api.md`
+- [x] End-to-end sequence → `appflow.md`
+- [x] User stories + acceptance criteria → `requirements.md`
+- [x] Architecture + sequences + states → `design.md`
 
-## Phase 1 — Mock department services
-- [ ] Scaffold `/services/land-records`: `GET /land-records/:khasra_no`,
-      API-key auth check, 200/404/401 responses per `tech.md` §1a
-      (satisfies Story 3)
-- [ ] Scaffold `/services/certificate-issuance`: `POST
-      /certificates/issue`, JWT auth check, 201/rejection responses per
-      `tech.md` §1b (satisfies Story 4)
-- [ ] Scaffold `/services/grievance`: single stub endpoint, session
-      cookie auth — minimal, not part of the demoed flow (satisfies the
-      "3rd heterogeneous schema" claim in `product.md`)
-- [ ] Seed each service with a deterministic test citizen (same
-      `khasra_no` / `applicant_id` works every demo run — do not rely on
-      random data during a live demo)
-- [ ] Seed at least one intentionally-invalid `khasra_no` for the
-      failure-path demo (Story 7)
-- [ ] Confirm each service runs independently with no shared DB
-      (structure.md rule 1)
+## Phase 1 — Gateway scaffold + citizen auth  ← CURRENT STEP
+- [ ] Scaffold the standalone Node/Express gateway (`/gateway`), matching
+      the conventions of the existing Mock_Sites Node services (config/env,
+      pg pool with parameterised queries, versioned `/api/v1` routes,
+      helmet+cors, app exported for supertest)
+- [ ] Create the `citizens` table migration (per `database-schema.md`)
+- [ ] `POST /api/v1/auth/register`: create citizen, bcrypt hash, reject
+      duplicate email (Story 1)
+- [ ] `POST /api/v1/auth/login`: verify credentials, return gateway JWT;
+      reject wrong password (Story 1)
+- [ ] Tests: successful registration, duplicate email rejected, login
+      with correct credentials, login with wrong password rejected
+- [ ] Run tests, show pass/fail — STOP for review before Phase 2
 
-## Phase 2 — Gateway layer
-- [ ] Build `auth-federation.ts`: maps an authenticated Supabase session
-      to the correct credential per downstream service (Story 1)
-- [ ] Build `land-records-adapter.ts`: translate raw response into
-      canonical `land_record` shape (`tech.md` §2)
-- [ ] Build `certificate-issuance-adapter.ts`: translate raw response
-      into canonical `certificate` shape
-- [ ] Build `POST /api/apply-certificate` route: call Land Records →
-      short-circuit on failure → call Certificate Issuance → return
-      `steps[]` (Stories 3, 4; structure.md rule 3)
-- [ ] Write audit log row after every downstream call, success or
-      failure (Story 6; structure.md rule 2)
-- [ ] Build `GET /api/audit-log/:citizen_uid` route
-- [ ] Test the failure path explicitly: invalid `khasra_no` →
-      Certificate Issuance never called → audit log shows exactly one
-      `failed` row (Story 3, Story 7)
+## Phase 2 — Applications + consent (gateway-owned, no department calls yet)
+- [ ] Remaining gateway tables: `linked_references`, `applications`,
+      `application_department_calls`, `consent_grants`, `audit_log`
+- [ ] Auth middleware: verify the gateway JWT on protected routes
+- [ ] `POST /api/v1/applications` + `GET /api/v1/applications` +
+      `GET /api/v1/applications/:id` (Stories 2, 5)
+- [ ] `POST /api/v1/consent` writes a `consent_grants` row (Story 3)
+- [ ] `GET /api/v1/documents` returns `linked_references` (Story 6, 8)
+- [ ] Audit logging helper used by every state change
 
-## Phase 3 — Citizen dashboard
-- [ ] Login screen (Supabase Auth)
-- [ ] Apply for Certificate form — no file upload field (Story 2)
-- [ ] Live status view: sequential status lines wired to the gateway's
-      `steps[]` response, GSAP reveal animation (Story 5)
-- [ ] Success state: certificate ID + link to audit trail
-- [ ] Failure state: plain-language rejection reason + link to audit
-      trail (Story 7)
-- [ ] Audit Log screen: table pulling from `GET /api/audit-log/:uid`
-      (Story 6)
+## Phase 3 — Department clients (Layer 2) + orchestration
+- [ ] `department-clients/`: one client per department, each with its own
+      base URL + `X-Gateway-Key` env var + response/error shape
+      (`api.md` Part 2; HOW_GATEWAY_CONNECTS_TO_MOCK_SITES.md)
+- [ ] Confirm the National Identity Registry endpoint path against its
+      route file before wiring (open question in `tech.md`)
+- [ ] National Identity Registry client: retry once on token expiry
+- [ ] Consent check enforced before any department call (Story 3)
+- [ ] Relay orchestration: submitted → gateway_relay →
+      department_verifying → complete/failed (Story 4)
+- [ ] Every call writes `application_department_calls` + `audit_log`,
+      success or failure (Story 6; structure.md rule 2)
+- [ ] Failure path: department stopped → `failed` row + honest error,
+      no fake data (Story 7)
+- [ ] Reuse path: verified `linked_references` skips re-entry (Story 8)
 
-## Phase 4 — Failure handling + polish
-- [ ] Confirm the full failure path renders correctly on the dashboard,
-      not just in the API response
-- [ ] Confirm a network-level failure (service down) renders as a
-      distinct state from a business-level rejection (design.md, error
-      handling section)
-- [ ] Visual polish pass, in priority order: status view > audit log >
-      login/dashboard (design.md)
+## Phase 4 — Frontend (separate app)
+- [ ] Build citizen frontend against the gateway API, using `refrences/`
+      as the design guide (HOW_TO_USE_REFRENCES.md, 90/10 rule)
+- [ ] Login/register, application start, consent modal, live status
+      view (GSAP relay reveal), documents view, audit view
+- [ ] Distinguish business-level rejection from network failure on screen
 
 ## Phase 5 — Pitch assets
-- [ ] PPT: problem → before/after → architecture diagram → live demo →
-      scalability note (how this attaches to real Maharashtra systems
-      without touching their backends)
-- [ ] Record a 2–3 min backup demo video, both happy path and failure
-      path
-- [ ] Full rehearsal, out loud, once — time it against the 60-second
-      success criterion in `product.md`
+- [ ] PPT: problem → before/after → architecture → live demo →
+      scalability note (attaches to real systems without touching their
+      backends)
+- [ ] Record a 2–3 min backup demo video, happy + failure paths
+- [ ] Full rehearsal, timed against the 60-second success criterion
 
 ## Demo-day contingency (do not skip)
-- [ ] Decide now, not on the day: are the 3 mock services deployed
-      (Railway/Render) or run locally? Whichever you choose, test it on
-      the actual venue wifi/hotspot beforehand if at all possible.
-- [ ] If a mock service becomes unreachable mid-demo, the fallback is
-      the backup video — not live debugging in front of judges. Know
-      which screen of the video corresponds to "resume from here."
-- [ ] Keep a terminal tab open with all 3 services + gateway already
-      running before you're called up — do not start them from cold
-      during your slot.
-- [ ] Have one screenshot of a populated audit log saved locally, in
-      case the live audit screen fails to load — a judge can still see
-      the evidence even if the UI hiccups.
+- [ ] Decide now: are the 3 department services + gateway deployed or run
+      locally? Test on the actual venue network beforehand if possible.
+- [ ] All 3 department services must run concurrently on distinct ports
+      for any end-to-end test — confirm ports don't collide.
+- [ ] If a service becomes unreachable mid-demo, the fallback is the
+      backup video — not live debugging in front of judges.
+- [ ] Keep a terminal open with all 3 services + gateway already running
+      before you're called up — do not cold-start during your slot.
+- [ ] Have one screenshot of a populated audit log saved locally as a
+      last-resort fallback.

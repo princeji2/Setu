@@ -1,97 +1,85 @@
-# Design — Certificate Application Flow
+# Design — Setu Gateway
 
 ## Architecture
 ```
-Citizen Dashboard (Next.js, Supabase Auth)
-        │  POST /api/apply-certificate
+Citizen frontend (separate app; refrences/ is the design guide)
+        │  /api/v1/... (gateway-scoped JWT in Authorization header)
         ▼
-   Gateway (Next.js API layer)
+   Setu Gateway (standalone Node/Express)
         │
-        ├─ auth-federation.ts ──► attaches correct credential per service
+        ├─ citizen-api/ (Layer 1) ── auth, applications, consent, documents
+        │      └─ owns gateway DB: citizens, linked_references,
+        │         applications, application_department_calls,
+        │         consent_grants, audit_log  (PostgreSQL)
         │
-        ├─► Land Records service     (GET, API-key auth)
-        │       └─ land-records-adapter.ts ──► canonical shape
-        │
-        ├─► Certificate Issuance     (POST, JWT auth) [only if verified]
-        │       └─ certificate-issuance-adapter.ts ──► canonical shape
-        │
-        └─► audit_log table (Supabase Postgres) ──► one row per call
+        └─ department-clients/ (Layer 2) ── one HTTP client per department,
+               each attaching that department's own X-Gateway-Key:
+               ├─► Digital Tax Records        (FastAPI, GET /pan/{ref}/fields)
+               ├─► National Identity Registry (Express, path TBC; retry-on-token-expiry)
+               └─► Driving Licence & Jan Aadhaar (Express, GET /api/v1/gateway/registrations/:ref)
+
+Every department call → application_department_calls row + audit_log summary.
 ```
 
+Authoritative contracts: `api.md` (Part 1 = citizen API, Part 2 =
+department APIs), `database-schema.md` (tables), `appflow.md` (sequence),
+and `Mock_Sites/HOW_GATEWAY_CONNECTS_TO_MOCK_SITES.md` (per-site wiring).
+
 ## Sequence of calls (happy path)
-1. Dashboard → Gateway: `POST /api/apply-certificate`
-2. Gateway → Land Records: `GET /land-records/:khasra_no`
-3. Land Records → Gateway: `verified: true`
-4. Gateway writes audit row (`land-records`, `success`)
-5. Gateway → Certificate Issuance: `POST /certificates/issue`
-6. Certificate Issuance → Gateway: `status: issued`, `certificate_id`
-7. Gateway writes audit row (`certificate-issuance`, `success`)
-8. Gateway → Dashboard: final response with `certificate_id` + `steps[]`
+1. Citizen logs in → gateway returns a JWT (`POST /api/v1/auth/login`).
+2. Citizen starts an application → `applications` row, `status = submitted`.
+3. Citizen approves consent → `consent_grants` row written.
+4. Gateway checks consent exists, moves to `gateway_relay`, resolves the
+   `linked_references` row for that department.
+5. Gateway → department: real HTTP call with the correct `X-Gateway-Key`;
+   `status = department_verifying`.
+6. Department → gateway: verified data.
+7. Gateway writes `application_department_calls` (succeeded) + `audit_log`
+   summary, sets `linked_references.verified = true`, `status = complete`.
+8. Citizen sees the result via `GET /api/v1/applications/:id` and
+   `GET /api/v1/documents`.
 
 ## Sequence of calls (failure path)
-1–2. same as above
-3. Land Records → Gateway: 404 `record_not_found`
-4. Gateway writes audit row (`land-records`, `failed`)
-5. Gateway → Dashboard: `status: rejected`, `reason:
-   land_record_not_found`, Certificate Issuance is never called
+1–5. same as above.
+6. Department is unreachable / times out / rejects (after any built-in
+   retry, e.g. NIR token expiry).
+7. Gateway writes `application_department_calls` (failed) + `audit_log`
+   summary, sets `status = failed`.
+8. Citizen sees an honest error; no fake data is substituted.
+
+## Reuse path
+If a `linked_references` row for the needed department already has
+`verified = true`, a later application skips re-entry (steps around
+citizen data entry) and goes straight to a fresh consented, logged fetch.
 
 ---
 
-## Screens (3 total)
+## Citizen-facing API surface (Layer 1)
+See `api.md` Part 1 for the full contract. Endpoints:
+`POST /api/v1/auth/register`, `POST /api/v1/auth/login`,
+`GET/POST /api/v1/applications`, `GET /api/v1/applications/:id`,
+`POST /api/v1/consent`, `GET /api/v1/documents`.
 
-### 1. Dashboard / Login
-- Supabase Auth login form.
-- Post-login: citizen name + a single "Apply for Certificate" CTA.
-- Deliberately no department menu — the absence of a portal list is
-  itself the design statement being made.
+## Frontend (built later, separate app)
+Design direction comes from `refrences/` (see HOW_TO_USE_REFRENCES.md —
+90% match the tone/structure, 10% reconcile against what the gateway
+really does). `refrences/setu_sih26129_demo.html` is the closest
+structural reference (view-switching, consent-modal flow) and already
+names the three real departments. Do not build frontend behavior the
+gateway can't back yet — flag mismatches instead.
 
-### 2. Apply for Certificate
-- Fields: certificate type (dropdown: caste / income / residence),
-  land parcel reference (`khasra_no`, text input).
-- No file-upload field, per Story 2's acceptance criteria.
-- Submit transitions in-place to the status view (same page, no reload).
-
-### 3. Status / Result view
-- Two sequential status lines, each resolving live via the gateway's
-  step-by-step response:
-  - "Verifying land record..." → ✅ success / ❌ failed
-  - "Issuing certificate..." → ✅ success / (skipped entirely if step 1
-    failed — do not show this line as failed, omit it, since it was
-    never attempted)
-- Final state:
-  - Success: certificate ID shown + "View audit trail" link
-  - Failure: reason shown in plain language ("Land record not found —
-    please check your parcel reference") + "View audit trail" link
-
-### 4. Audit Log
-- Table: service name, status, timestamp, request reference.
-- Pulled from `GET /api/audit-log/:citizen_uid`.
-- Deliberately plain — a legible table, not a dashboard-style widget
-  layout. This screen's credibility comes from being obviously real
-  data, not from visual flourish.
-
-## States to handle on every screen
-- Loading
-- Success
-- Error (network/service unreachable — distinct from a business-level
-  rejection like "record not found")
+States to handle on every screen: loading, success, business-level
+"not found/rejected" (a calm informative state, not a crash), and
+network/infrastructure failure (distinct, retry-safe, still logged).
 
 ## Visual direction
-- Stack: shadcn/ui components, Tailwind, light GSAP limited to the
-  status-line reveal animation.
-- Tone: clean, trustworthy, govtech — muted palette, generous
-  whitespace, no gradients or glow effects. This is not a consumer
-  startup product; visual restraint reads as credibility to judges
-  evaluating a government-facing tool.
-- If time runs short, prioritize in this order: status view animation
-  (this is what sells the "automatic, real-time" claim) > audit log
-  clarity > login/dashboard polish.
+Clean, trustworthy, govtech — muted palette, generous whitespace, no
+gradients or glow. Restraint reads as credibility for a government-facing
+tool. GSAP reserved for the live relay/status reveal, not decoration.
 
 ## Error handling design
-- Business-level rejection (e.g. record not found) is a normal, expected
-  response from the gateway — not an HTTP error. The dashboard should
-  render it as a calm, informative state, not a crash or a red banner
-  screaming "ERROR."
-- Network/infrastructure failure (a mock service is down) is a distinct
-  state — show a "something went wrong, please retry" message, and this
-  too must be logged to the audit trail with `status: failed`.
+- Business-level response (e.g. reference not found) is a normal
+  expected outcome — render it calmly, still log it.
+- Network/infrastructure failure (a department is down) is a distinct
+  state — "couldn't reach <department>, try again shortly" — and must be
+  logged to `application_department_calls` + `audit_log` as `failed`.

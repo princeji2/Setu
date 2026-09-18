@@ -1,109 +1,127 @@
-# Requirements — Certificate Application Flow
+# Requirements — Setu Gateway (cross-department verification)
 
-Feature: a citizen applies for a certificate (caste/income/residence)
-that requires land-record verification, without manually handling any
-documents themselves.
+Feature: a citizen logs into Setu once and requests data that lives in a
+government department (Digital Tax Records, National Identity Registry,
+or Driving Licence & Jan Aadhaar Portal). The gateway fetches and
+verifies that data live on their behalf, only after explicit consent,
+and logs every step — so nothing is manually shuffled between portals
+and every action is provable.
+
+> Naming note: this spec folder is still called `certificate-application`
+> for historical reasons. The project was reframed from a
+> land-record/certificate flow to the three real departments above; the
+> folder name is kept only to avoid breaking references. Treat the
+> department list here as authoritative.
 
 ---
 
-## Story 1 — Unified login
-As a citizen, I want to log in once, so that I don't need separate
-credentials for each government service involved in my request.
+## Story 1 — Unified login (gateway-owned identity)
+As a citizen, I want to log in once to Setu, so that I don't need
+separate credentials for each government department.
 
 **Acceptance criteria**
+- WHEN a citizen registers with an email and password THE SYSTEM SHALL
+  create a `citizens` row with a bcrypt `password_hash` and SHALL NOT
+  store the password in plaintext.
 - WHEN a citizen submits valid credentials THE SYSTEM SHALL authenticate
-  them via Supabase Auth and grant access to the dashboard.
+  them against the `citizens` table and return a gateway-scoped JWT.
 - WHEN a citizen is authenticated THE SYSTEM SHALL NOT prompt for any
-  additional login for Land Records, Certificate Issuance, or the
-  Grievance service — those credentials are held and used by the
-  gateway, not the citizen.
-- IF authentication fails THEN THE SYSTEM SHALL show a clear error and
-  SHALL NOT grant dashboard access.
+  additional login for any department — the department gateway keys are
+  held and used by the gateway, not the citizen.
+- IF authentication fails THEN THE SYSTEM SHALL return a clear error and
+  SHALL NOT issue a token.
 
-## Story 2 — Apply for a certificate
-As a citizen, I want to submit one form with my certificate type and
-land parcel reference, so that I don't need to fetch or upload any
-supporting documents myself.
+## Story 2 — Start an application
+As a citizen, I want to start an application for a service that needs
+department data, so that the gateway can fetch it for me.
 
 **Acceptance criteria**
-- WHEN a citizen submits the apply form THE SYSTEM SHALL send
-  `citizen_uid`, `cert_type`, and `khasra_no` to
-  `POST /api/apply-certificate`.
-- THE SYSTEM SHALL NOT present any file-upload field on this form — the
-  absence of manual document handling is a core requirement, not an
-  oversight.
-- WHEN the form is submitted THE SYSTEM SHALL transition to the live
-  status view without a full page reload.
+- WHEN a citizen submits a new application THE SYSTEM SHALL create an
+  `applications` row with `status = submitted` and the application
+  `type`.
+- THE SYSTEM SHALL NOT present any file-upload field — the absence of
+  manual document handling is a core requirement, not an oversight.
 
-## Story 3 — Automatic land-record verification
-As a citizen, I want my land record verified automatically, so that I
-don't have to visit a separate portal to fetch it myself.
+## Story 3 — Consent before any department call
+As a citizen, I want to approve exactly which fields are shared and with
+which department, before anything is fetched, so that I stay in control.
 
 **Acceptance criteria**
-- WHEN the gateway receives an apply-certificate request THE SYSTEM
-  SHALL call the Land Records service with the provided `khasra_no`.
-- WHEN the Land Records service returns `verified: true` THE SYSTEM
-  SHALL proceed to certificate issuance (Story 4).
-- WHEN the Land Records service returns a 404 (record not found) THE
-  SYSTEM SHALL mark the request as rejected with reason
-  `land_record_not_found` AND SHALL NOT call Certificate Issuance.
-- WHEN the Land Records call completes (success or failure) THE SYSTEM
-  SHALL write a corresponding row to the audit log.
+- WHEN a citizen approves a consent prompt THE SYSTEM SHALL write a
+  `consent_grants` row recording the department and fields requested.
+- WHEN the gateway is about to call a department THE SYSTEM SHALL verify
+  a matching `consent_grants` row exists first — this is a real backend
+  authorization check, not just a frontend dialog.
+- IF no matching consent exists THEN THE SYSTEM SHALL refuse the
+  department call.
 
-## Story 4 — Automatic certificate issuance
-As a citizen, I want my certificate issued automatically once my land
-record is verified, so that the two-step process is invisible to me.
+## Story 4 — Gateway relay + verification
+As a citizen, I want my department data fetched and verified
+automatically, so that I don't visit each portal myself.
 
 **Acceptance criteria**
-- WHEN Land Records verification succeeds THE SYSTEM SHALL call the
-  Certificate Issuance service with `applicant_id`, `cert_type`, and the
-  verified `supporting_ref`.
-- WHEN Certificate Issuance returns `status: issued` THE SYSTEM SHALL
-  return the `certificate_id` to the dashboard and mark the request
-  complete.
-- WHEN the Certificate Issuance call completes THE SYSTEM SHALL write a
-  corresponding row to the audit log.
+- WHEN consent is granted THE SYSTEM SHALL move the application to
+  `gateway_relay`, look up/create the citizen's `linked_references` row
+  for that department, and make the real outbound HTTP call using that
+  department's contract (see `api.md` Part 2) with the correct
+  `X-Gateway-Key`.
+- WHEN awaiting the department THE SYSTEM SHALL move the application to
+  `department_verifying`.
+- WHEN the department returns verified data THE SYSTEM SHALL set
+  `linked_references.verified = true` and the application to `complete`.
+- WHEN a department call completes (success or failure) THE SYSTEM SHALL
+  write a row to `application_department_calls` AND a summary to
+  `audit_log`.
 
 ## Story 5 — Live status visibility
-As a citizen, I want to see each verification step happening in real
-time, so that I trust the system is actually doing the work, not just
-returning a black-box result.
+As a citizen, I want to see each step happening in real time, so that I
+trust the system is actually doing the work, not returning a black box.
 
 **Acceptance criteria**
-- WHEN the apply request is in flight THE SYSTEM SHALL display
-  sequential status lines ("Verifying land record...", "Issuing
-  certificate...") that resolve to a success or failure state as each
-  step completes.
-- WHEN the final result is available THE SYSTEM SHALL display the
-  certificate ID (on success) or a clear rejection reason (on failure).
+- WHEN an application is in flight THE SYSTEM SHALL expose its current
+  status (`submitted → gateway_relay → department_verifying →
+  complete`/`failed`) and its `application_department_calls` history via
+  `GET /api/v1/applications/:id`.
 
 ## Story 6 — Audit trail
-As a citizen (and as a judge evaluating the system), I want to see
-which backend services were called for a given request, so that the
-integration is verifiable rather than asserted.
+As a citizen (and as a judge evaluating the system), I want to see which
+backend services were called for a request, so that the integration is
+verifiable rather than asserted.
 
 **Acceptance criteria**
-- WHEN a citizen opens the audit log view THE SYSTEM SHALL display, for
-  their most recent request, each service called, its status, and a
-  timestamp, sourced from `GET /api/audit-log/:citizen_uid`.
-- THE SYSTEM SHALL log an entry for every downstream call regardless of
+- THE SYSTEM SHALL log an entry for every department call regardless of
   success or failure — a failed request must still be fully traceable.
+- WHEN a citizen views their documents THE SYSTEM SHALL show their
+  `linked_references` (which departments are verified) via
+  `GET /api/v1/documents`.
 
 ## Story 7 — Graceful failure
-As a citizen, I want a clear explanation if my application can't be
-processed, so that I'm not left with a crashed page or silence.
+As a citizen, I want a clear explanation if a department can't be
+reached, so that I'm not left with a crashed page or silence.
 
 **Acceptance criteria**
-- IF the Land Records service returns a 404 THEN THE SYSTEM SHALL
-  display "Land record not found — please check your parcel reference"
-  on the dashboard, not a generic error or a blank state.
-- IF any downstream service is unreachable THEN THE SYSTEM SHALL
-  display a retry-safe error state and SHALL still write an audit log
-  entry marked `failed`.
+- IF a department is unreachable, times out, or rejects the request
+  (after any built-in retry, e.g. the National Identity Registry
+  short-lived-token retry) THEN THE SYSTEM SHALL set the application to
+  `failed`, show a clear honest message, and SHALL still write a
+  `failed` row to `application_department_calls` and `audit_log`.
+- THE SYSTEM SHALL never silently substitute fake data for a failed
+  department call.
+
+## Story 8 — Reuse (the actual point)
+As a returning citizen, I want a department I've already verified to be
+reusable, so that a second application doesn't make me re-enter anything.
+
+**Acceptance criteria**
+- WHEN a `linked_references` row already exists with `verified = true`
+  for a department THE SYSTEM SHALL, for a future application needing
+  that department, skip re-entry and go straight to a fresh (still
+  consented, still logged) data fetch.
 
 ---
 
 ## Explicitly not covered by this spec
-Grievance ticket submission, multi-certificate applications, citizen
-registration/onboarding, and any admin-facing views. See
-`.kiro/steering/product.md` for full scope boundaries.
+Admin-facing views, multi-department dashboards beyond the citizen's own
+applications, and any department beyond the three above. See
+`.kiro/steering/product.md` for full scope boundaries and `appflow.md`
+for the end-to-end sequence.
