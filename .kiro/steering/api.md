@@ -52,6 +52,35 @@ consent record exists — this is a real check, not just a UI gate.
 Returns the citizen's `linked_references`, i.e. what's currently
 verified with which department, for the "My documents" view.
 
+### Relay outcome convention (applies to EVERY department, all of 3a/3b)
+The relay endpoint (`POST /api/v1/applications/:id/verify`) distinguishes
+two kinds of "it didn't work", and they use different HTTP statuses on
+purpose:
+
+- **Gateway-side authorization / request problems → 4xx.** No department
+  call is attempted. Examples: missing/invalid citizen token (401),
+  application not owned or not found (404), missing consent (403),
+  unsupported department/type or invalid input (400).
+- **Department-side failure → HTTP 200 with `status: "failed"` in the
+  body.** Once a department call is actually attempted and it fails —
+  the department is down, times out, returns not-found, or rejects the
+  request — the gateway responds **200**, and the body carries the
+  outcome:
+  ```json
+  { "success": true,
+    "data": { "status": "failed", "department": "...", "outcome": "unreachable|timeout|not_found|rejected|auth_error|unexpected", "message": "<honest, non-sensitive>" },
+    "error": null }
+  ```
+  A department failure is a **normal, expected result of a completed
+  request**, not a transport error — so it is NOT a 4xx/5xx. The
+  frontend renders it as a calm "couldn't verify / try again" state, and
+  the failure is still written to `application_department_calls` +
+  `audit_log`. The gateway never substitutes fake success on failure.
+
+This convention is locked as of Step 3a (Digital Tax Records). National
+Identity Registry and Driving Licence relay paths MUST follow it exactly
+— do not invent a per-department status scheme.
+
 ---
 
 ## Part 2 — Department-facing APIs (already built, gateway calls these)
@@ -61,7 +90,7 @@ verified with which department, for the "My documents" view.
 - `GET /pan/{pan_reference}/fields`
 - Header required: `X-Gateway-Key`
 - **401** missing key → `"Access denied: Missing X-Gateway-Key header for gateway service authentication."`
-- **401** invalid key → `"Access denied: Invalid X-Gateway-Key ..."` (confirm current exact wording in `app/routes/pan.py` before hardcoding a match against it — this was recently changed to align with the other two sites)
+- **401** invalid key → `"Access denied: Invalid X-Gateway-Key provided."` (aligned with the other two sites as of Step 3a; the gateway client keys off the 401 status, not this exact string)
 - **400** if given a real 10-character PAN format instead of a synthetic reference
 - **200** success shape:
   ```json

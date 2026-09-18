@@ -27,3 +27,116 @@ CREATE TABLE IF NOT EXISTS citizens (
 -- Case-insensitive uniqueness on email so "A@x.com" and "a@x.com" collide.
 CREATE UNIQUE INDEX IF NOT EXISTS citizens_email_lower_uidx
     ON citizens (lower(email));
+
+-- ------------------------------------------------------------
+-- Department enum (shared by linked_references + application_department_calls)
+-- Kept as a CHECK rather than a native ENUM so adding a department later
+-- is a one-line change, not an ALTER TYPE dance.
+-- Values are the canonical strings from database-schema.md / structure.md.
+-- ------------------------------------------------------------
+
+-- ------------------------------------------------------------
+-- linked_references — maps a citizen to their reference at each department.
+-- Holds references only, never the department's underlying data.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS linked_references (
+    id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    citizen_id           UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+    department           TEXT NOT NULL
+                         CHECK (department IN (
+                            'digital_tax_records',
+                            'national_identity_registry',
+                            'driving_licence_jan_aadhaar')),
+    department_reference TEXT NOT NULL,
+    linked_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    verified             BOOLEAN NOT NULL DEFAULT false,
+    -- One citizen has at most one row per department.
+    CONSTRAINT linked_references_citizen_department_uniq
+        UNIQUE (citizen_id, department)
+);
+
+CREATE INDEX IF NOT EXISTS linked_references_citizen_idx
+    ON linked_references (citizen_id);
+
+-- ------------------------------------------------------------
+-- applications — a citizen request that needs data from a department.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS applications (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+    type       TEXT NOT NULL,
+    status     TEXT NOT NULL DEFAULT 'submitted'
+               CHECK (status IN (
+                  'submitted',
+                  'gateway_relay',
+                  'department_verifying',
+                  'complete',
+                  'failed')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS applications_citizen_idx
+    ON applications (citizen_id);
+
+-- ------------------------------------------------------------
+-- application_department_calls — one row per outbound department call.
+-- Created now so GET /applications/:id can return an (empty) history;
+-- rows are only WRITTEN starting in Phase 3 (department clients).
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS application_department_calls (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    application_id   UUID NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+    department       TEXT NOT NULL
+                     CHECK (department IN (
+                        'digital_tax_records',
+                        'national_identity_registry',
+                        'driving_licence_jan_aadhaar')),
+    endpoint_called  TEXT NOT NULL,
+    status_code      INTEGER,
+    succeeded        BOOLEAN NOT NULL,
+    response_summary TEXT,
+    called_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    duration_ms      INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS application_department_calls_application_idx
+    ON application_department_calls (application_id);
+
+-- ------------------------------------------------------------
+-- consent_grants — the citizen approved a specific data share before it
+-- happened. The gateway MUST find a matching row before a department call.
+-- fields_requested stored as JSON text (an array of field-name strings).
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS consent_grants (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    citizen_id       UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+    application_id   UUID NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+    department       TEXT NOT NULL
+                     CHECK (department IN (
+                        'digital_tax_records',
+                        'national_identity_registry',
+                        'driving_licence_jan_aadhaar')),
+    fields_requested TEXT NOT NULL,   -- JSON array, e.g. ["PAN number","identity match"]
+    granted_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS consent_grants_application_idx
+    ON consent_grants (application_id);
+CREATE INDEX IF NOT EXISTS consent_grants_lookup_idx
+    ON consent_grants (application_id, department);
+
+-- ------------------------------------------------------------
+-- audit_log — append-only trail of every notable gateway action.
+-- The table a judge is pointed at. citizen_id nullable for system events.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS audit_log (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    citizen_id  UUID REFERENCES citizens(id) ON DELETE SET NULL,
+    action      TEXT NOT NULL,
+    detail      TEXT,             -- JSON text
+    occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS audit_log_citizen_idx
+    ON audit_log (citizen_id);

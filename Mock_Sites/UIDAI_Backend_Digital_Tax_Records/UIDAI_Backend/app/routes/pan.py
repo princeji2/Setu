@@ -31,7 +31,7 @@ def verify_gateway_key(x_gateway_key: Optional[str] = Header(None, alias="X-Gate
     if x_gateway_key != GATEWAY_API_KEY:
         raise HTTPException(
             status_code=401,
-            detail="Access denied: Invalid X-Gateway-Key header."
+            detail="Access denied: Invalid X-Gateway-Key provided."
         )
     return x_gateway_key
 

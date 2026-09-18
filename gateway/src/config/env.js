@@ -52,6 +52,18 @@ const config = {
       .map((o) => o.trim())
       .filter(Boolean),
   },
+
+  // Per-department integration config (Layer 2). One entry per department;
+  // each has its OWN gateway key — never a single shared key (see api.md).
+  // Step 3a wires only digital_tax_records; the other two land in 3b.
+  departments: {
+    digital_tax_records: {
+      baseUrl: process.env.DTR_SERVICE_URL || 'http://127.0.0.1:8000',
+      gatewayKey: process.env.DTR_GATEWAY_KEY || '',
+    },
+  },
+
+  departmentCallTimeoutMs: parseInt(process.env.DEPARTMENT_CALL_TIMEOUT_MS, 10) || 5000,
 };
 
 module.exports = config;
