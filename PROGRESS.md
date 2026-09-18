@@ -15,7 +15,7 @@ Authoritative detail lives in `.kiro/specs/certificate-application/tasks.md`.
 | — | **Phase 3 complete — all three departments wired, tested, verified live** | ✅ |
 | 4 | Cross-cutting consistency pass: relay-consistency audit, parameterized `phase4.test.js`, live 3-services-up stop-one-department failure walkthrough w/ real Postgres proof | ✅ Done |
 | 4b | **Reuse path** (verify once → reuse across future applications) — `findVerified` + relay reuse skip, unit + live e2e + real Postgres proof | ✅ Done |
-| 5 | Citizen frontend (from `refrences/`) | ⬜ Not started |
+| 5 | Citizen frontend (from `refrences/`) | ✅ Done — see `frontend/OPEN_ITEMS.md` for what's rough |
 | 6 | Pitch assets (PPT, backup video, rehearsal) | ⬜ Not started |
 | 7 | Demo-day contingency prep | ⬜ Not started |
 
@@ -170,3 +170,95 @@ _(Both former standing open items — reuse semantics unproven, and the
    command + port confirmed against that service's own files).
 3. **Gateway** (only if serving HTTP): `npm start` in `gateway/`
    (tests don't need it started separately — supertest drives in-process).
+4. **Frontend** (only needed for a full demo run): `node server.js` in
+   `frontend/` — serves the citizen app on `http://localhost:3000`,
+   expects the gateway at `http://localhost:4000`.
+
+For a full three-department demo, all of the following must be running
+concurrently:
+- Postgres
+- Digital Tax Records — `venv\Scripts\python.exe -m uvicorn app.main:app
+  --host 127.0.0.1 --port 8000` in
+  `Mock_Sites/UIDAI_Backend_Digital_Tax_Records/UIDAI_Backend`
+- National Identity Registry — `npm start` in
+  `Mock_Sites/Independent Identity Registration Portal/Independent
+  Identity Registration Portal/SETU` (port 5000)
+- Driving Licence & Jan Aadhaar Portal — `node backend/server.js` in
+  `Mock_Sites/driving-licence-jan-aadhaar-portal/driving-licence-jan-
+  aadhaar-portal` (port 3001)
+- Gateway — `npm start` in `gateway/` (port 4000)
+- Frontend — `node server.js` in `frontend/` (port 3000)
+
+## Phase 5 (citizen frontend) — confirmed
+
+- **Stack**: vanilla HTML/CSS/JS, no build tool/bundler/framework —
+  decided explicitly for the Sept 30 runway (React+Vite+TS was
+  considered and set aside; see `tech.md`'s locked-stack note). Served
+  by a ~60-line `http` static file server (`frontend/server.js`) on port
+  3000. Talks to the gateway's real API at `http://localhost:4000` —
+  hardcoded in `frontend/public/js/api.js` since the two apps are
+  deliberately decoupled, not sharing config.
+- **Design source**: `refrences/setu_sih26129_demo.html` was the primary
+  structural/visual reference (per `HOW_TO_USE_REFRENCES.md`'s 90/10
+  rule), adapted rather than copied. Full rationale for what was kept vs.
+  cut lives in `.kiro/specs/certificate-application/design.md`'s "Visual
+  direction" section. Three reference-mock features were deliberately
+  **not** built because nothing in the real gateway backs them (would
+  require fabricating data): the admin "Department view" KPI tab, the
+  live "Connected platforms" health numbers, and the "Ask Setu" chatbot.
+- **Every screen calls the real gateway** — auth, dashboard, find a
+  service (consent modal + relay), documents, applications list/detail.
+  No mocked data anywhere in the frontend.
+- **On-screen reuse + audit visibility**: no new backend read-endpoint
+  was added this phase (per the agreed Phase 5 scope). Reuse is proven
+  on screen via the gateway's own `reused: true` flag on the verify
+  response plus the `linked_references`-backed reuse badge on service
+  cards; audit visibility is proven via the EXISTING
+  `GET /applications/:id` → `application_department_calls` history
+  (endpoint, status code, masked `response_summary`, duration) — the
+  DB-level proof for a judge still lives in
+  `gateway/scripts/phase4b-reuse-walkthrough.js`, unchanged.
+- **Verified live against all three departments**, not just described:
+  Digital Tax Records, National Identity Registry, and Driving Licence &
+  Jan Aadhaar Portal were each driven through register → consent →
+  verify against the real gateway, confirming both the happy path and
+  each department's distinct masked `response_summary` shape render
+  correctly (including DLJA's longer 7-field summary, at both desktop and
+  mobile viewport widths).
+- **A real race-condition bug was found and fixed during this phase**:
+  navigating away from a view while its data fetch was still in flight
+  (e.g. right after a relay completed) crashed with a null-innerHTML
+  error. Fixed with `frontend/public/js/render-guard.js` — a render
+  generation token every view checks before touching the DOM after an
+  await. Re-verified with a deliberate adversarial navigation sequence.
+- **GSAP** is used in exactly one place — the relay centerpiece's track
+  transitions and result reveal — per `tech.md`'s "reserved... not used
+  decoratively" rule. Vendored locally at
+  `frontend/public/js/vendor/gsap.min.js` (core build, no plugins, no
+  CDN dependency) rather than loaded externally, so the demo has zero
+  network dependency on a third party. Fully respects
+  `prefers-reduced-motion`.
+- **No automated frontend test suite.** Verification for this phase was
+  manual: curl against the live gateway, plus a disposable Playwright
+  script run against the real running stack and deleted after each use
+  — a deliberate speed tradeoff, not an oversight (see
+  `frontend/OPEN_ITEMS.md`).
+- **Infrastructure-unreachable failure path confirmed live too**: DLJA
+  was stopped mid-browser-session and a driving-licence application was
+  started against it — rendered the same calm failure state as the
+  business-level failure path, no crash, honest `outcome: unreachable`.
+- **What's still rough**: see `frontend/OPEN_ITEMS.md` — session-expiry
+  UX and toast stacking, both deliberately left as-is per a Sept 18
+  review (low risk for a single-fresh-account demo run). The tablet-width
+  check on the longest `response_summary` was completed Sept 18 (see
+  OPEN_ITEMS.md's "Verified clean" section) — no issues found, no code
+  changes needed.
+
+## Phase 5 — closed (Sept 18)
+
+Tablet-width pass was the only open item blocking Phase 5 closure.
+Verified clean live against the real stack (see `frontend/OPEN_ITEMS.md`).
+Session-expiry UX and toast stacking are explicit scope decisions, not
+deferred work — see `frontend/OPEN_ITEMS.md`'s "Rough / needs a pass"
+section for the reasoning kept on record. No further frontend work is
+planned unless something breaks in rehearsal.

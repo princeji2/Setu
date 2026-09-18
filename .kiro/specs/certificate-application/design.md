@@ -73,9 +73,62 @@ States to handle on every screen: loading, success, business-level
 network/infrastructure failure (distinct, retry-safe, still logged).
 
 ## Visual direction
-Clean, trustworthy, govtech — muted palette, generous whitespace, no
-gradients or glow. Restraint reads as credibility for a government-facing
-tool. GSAP reserved for the live relay/status reveal, not decoration.
+
+Decided against `refrences/` (Phase 5 kickoff). Per `HOW_TO_USE_REFRENCES.md`'s
+90/10 rule: `setu_sih26129_demo.html` is the closest-to-final structural
+reference (it already names the three real departments) and is the primary
+source; `dashboard.png`/`scrolanimation.png` are visual/motion references;
+the `.txt` "component" files (signin/signup/hero/lock-screen/feature1/
+background/button1/2) are React+Tailwind+shadcn snippets for a stack we are
+NOT using — mined only for underlying intent (tone, interaction concept),
+never copied as markup, since their literal look (dark glassmorphism,
+gradient/liquid buttons, shader-gradient auth panels) is a generic-AI-SaaS
+aesthetic that would work against "deliberate and specific to this project."
+
+**Palette / type (taken near-verbatim from the demo HTML — it already
+nails the govtech-editorial brief):** warm paper background (`#FAF6EE`,
+deep `#F3EDDF`), ink text (`#211D18` / soft `#6B6357`), indigo as the one
+primary action color (`#1E3350` / deep `#122036`), terracotta as the one
+accent (`#B85C2B` / soft `#F2E1D3`), sage for success/verified
+(`#3E7A5C` / soft `#E1EDE4`), gold used sparingly. Source Serif 4 for
+headings (institutional weight), Inter for body/UI (readability). No
+gradients, no glow, no dark mode — restraint is the differentiator from
+every other AI-generated SaaS mock in `refrences/`.
+
+**Structure (adapted from the demo HTML's tab/view pattern):** a single
+shell with a topbar (brand mark + citizen name) and tab-switched views —
+but trimmed to only what's actually backed by an endpoint. Kept:
+Dashboard, Find a service, Documents, Applications. **Cut** relative to
+the reference mock: the "Department view" (admin/KPI) tab — explicitly
+out of scope per `product.md`; the "Connected platforms" tab as a live
+page — folded into a static footnote instead since the gateway has no
+live-health endpoint to back "12,450 requests / 97.8% success" style
+numbers, and inventing them would violate the "never fabricate" spirit
+that governs the whole project; and the "Ask Setu" chat assistant — a
+canned-KB chatbot answering from a hardcoded script is the single most
+"stock template with data dropped in" element in the reference folder,
+and isn't backed by any real gateway capability. Cutting it is a
+deliberate scope decision, not an oversight — noted in the open-items
+checklist rather than silently dropped.
+
+**The one motif carried through everywhere:** the hub-and-spoke network
+diagram from the dashboard hero (citizen at center, three department
+nodes around it) is the visual thesis of the whole project — it's kept
+and reused as the login-screen backdrop and as the skeleton for the
+relay-status track (submitted → gateway_relay → department_verifying →
+complete/failed), rather than invented fresh per screen.
+
+**Motion:** GSAP only, reserved for the relay-status reveal (per
+`tech.md` — not decorative elsewhere). No Motion/Framer/Three.js/Lenis —
+those appear in `refrences/Animation_lib_etc.jpeg` as general inspiration
+but are outside the locked stack. Everything else uses plain CSS
+transitions; restraint applies to motion as much as to color.
+
+**Buttons:** solid indigo fill for primary, terracotta outline/ghost for
+secondary, sage for a "verified/reuse" affordance — a real pressed/hover
+state (slight depth + scale), not the liquid/gradient-blur treatment in
+`refrences/button1.txt` / `button2.txt`, which reads as generic and
+clashes with the paper palette.
 
 ## Error handling design
 - Business-level response (e.g. reference not found) is a normal

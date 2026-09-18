@@ -1,0 +1,118 @@
+'use strict';
+
+/**
+ * Thin fetch client for the Setu gateway's citizen-facing API (Layer 1).
+ * Every call here hits the REAL gateway over HTTP — nothing in this file
+ * is mocked or stubbed. Token is kept in localStorage and attached as a
+ * Bearer header on every protected call.
+ *
+ * Base URL is deliberately hardcoded to the gateway's documented default
+ * (see gateway/.env: PORT=4000) rather than guessed from window.location,
+ * since the frontend and gateway are two separate apps on two separate
+ * ports (frontend:3000, gateway:4000) per tech.md.
+ */
+
+const API_BASE = 'http://localhost:4000/api/v1';
+const TOKEN_KEY = 'setu.token';
+const CITIZEN_KEY = 'setu.citizen';
+
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function getCitizen() {
+  const raw = localStorage.getItem(CITIZEN_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function setSession(token, citizen) {
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(CITIZEN_KEY, JSON.stringify(citizen));
+}
+
+function clearSession() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(CITIZEN_KEY);
+}
+
+/**
+ * ApiError carries the gateway's own error code/message through to the UI
+ * so screens can render an honest, specific message rather than a generic
+ * "something went wrong" — matching the "fail honestly" rule in structure.md.
+ */
+class ApiError extends Error {
+  constructor(code, message, status) {
+    super(message);
+    this.name = 'ApiError';
+    this.code = code;
+    this.status = status;
+  }
+}
+
+/** Thrown when fetch itself fails (gateway process not running, DNS, CORS). */
+class NetworkError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
+async function request(method, path, body, { auth = true } = {}) {
+  const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+  if (auth) {
+    const token = getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    // The gateway process isn't reachable at all — distinct from a
+    // department being down, which the gateway itself reports as a normal
+    // 200 { status: 'failed' } response (see api.md's relay convention).
+    throw new NetworkError('Could not reach the Setu gateway. Is it running on port 4000?');
+  }
+
+  let payload = null;
+  try {
+    payload = await res.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!res.ok || (payload && payload.success === false)) {
+    const err = (payload && payload.error) || {};
+    throw new ApiError(err.code || 'UNKNOWN', err.message || `Request failed (${res.status}).`, res.status);
+  }
+
+  return payload ? payload.data : null;
+}
+
+const api = {
+  auth: {
+    register: (fullName, email, password) =>
+      request('POST', '/auth/register', { full_name: fullName, email, password }, { auth: false }),
+    login: (email, password) =>
+      request('POST', '/auth/login', { email, password }, { auth: false }),
+  },
+  applications: {
+    list: () => request('GET', '/applications'),
+    create: (type) => request('POST', '/applications', { type }),
+    get: (id) => request('GET', `/applications/${id}`),
+    verify: (id, reference) => request('POST', `/applications/${id}/verify`, reference ? { reference } : {}),
+  },
+  consent: {
+    grant: (applicationId, department, fieldsRequested) =>
+      request('POST', '/consent', { application_id: applicationId, department, fields_requested: fieldsRequested }),
+  },
+  documents: {
+    list: () => request('GET', '/documents'),
+  },
+};
+
+export { api, ApiError, NetworkError, getToken, getCitizen, setSession, clearSession, API_BASE };

@@ -1,0 +1,55 @@
+/*
+  Design tokens — Setu citizen frontend.
+
+  Palette/type carried over near-verbatim from refrences/setu_sih26129_demo.html
+  (see .kiro/specs/certificate-application/design.md "Visual direction" for the
+  rationale): warm paper background, ink text, indigo as the one primary
+  action color, terracotta as the one accent, sage for verified/success.
+  No gradients, no glow, no dark mode — restraint is deliberate here, not a
+  placeholder waiting for "real" styling later.
+*/
+
+:root {
+  /* Surfaces */
+  --paper: #FAF6EE;
+  --paper-deep: #F3EDDF;
+  --card: #FFFFFE;
+
+  /* Ink */
+  --ink: #211D18;
+  --ink-soft: #6B6357;
+
+  /* Brand */
+  --indigo: #1E3350;
+  --indigo-deep: #122036;
+  --terracotta: #B85C2B;
+  --terracotta-soft: #F2E1D3;
+  --sage: #3E7A5C;
+  --sage-soft: #E1EDE4;
+  --gold: #B4862F;
+
+  /* Lines */
+  --line: #E2D9C6;
+  --line-strong: #CFC3A8;
+
+  /* Status */
+  --danger: #A6402E;
+  --danger-soft: #F4DCD5;
+
+  /* Radius / shadow */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --shadow-card: 0 1px 2px rgba(30, 51, 80, 0.06);
+  --shadow-modal: 0 24px 60px rgba(18, 32, 54, 0.28);
+  --shadow-float: 0 10px 24px rgba(18, 32, 54, 0.22);
+
+  /* Type */
+  --font-serif: 'Source Serif 4', Georgia, serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Motion (plain CSS transitions outside the GSAP relay reveal) */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 140ms;
+  --dur-med: 240ms;
+}
