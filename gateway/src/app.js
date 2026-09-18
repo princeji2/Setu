@@ -32,6 +32,8 @@ const { createRelayService } = require('./citizen-api/services/relay-service');
 
 // Department clients (Layer 2)
 const { createDigitalTaxRecordsClient } = require('./department-clients/digital-tax-records-client');
+const { createNationalIdentityRegistryClient } = require('./department-clients/national-identity-registry-client');
+const { createDrivingLicenceJanAadhaarClient } = require('./department-clients/driving-licence-jan-aadhaar-client');
 
 // Routers
 const { createAuthRouter } = require('./citizen-api/routes/auth');
@@ -47,8 +49,11 @@ function createApp({
   auditRepository = pgAuditRepository,
   // Layer 2 clients registry, keyed by department. Injectable so tests can
   // supply a fake client (e.g. to simulate a department being down).
-  // Step 3a wires only digital_tax_records.
-  departmentClients = { digital_tax_records: createDigitalTaxRecordsClient() },
+  departmentClients = {
+    digital_tax_records: createDigitalTaxRecordsClient(),
+    national_identity_registry: createNationalIdentityRegistryClient(),
+    driving_licence_jan_aadhaar: createDrivingLicenceJanAadhaarClient(),
+  },
 } = {}) {
   const app = express();
 

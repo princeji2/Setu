@@ -36,12 +36,26 @@ data, and not crash the whole request.
 
 ### 2. `National_Identity_Registry` (Node/Express + PostgreSQL)
 
-- **Gateway-facing endpoint:** confirm exact path before wiring — referenced elsewhere as something like `/api/registration/{reference}/fields`. Don't assume; check this service's actual route file.
-- **Auth header:** `X-Gateway-Key`
+- **Gateway-facing endpoint:** `GET /api/registration/:identityReference/fields`
+  (confirmed against the real route file + live probe in Step 3b; the
+  path param is `identityReference` and it is mounted under
+  `/api/registration`).
+- **Port:** `5000`. Own DB `aadhaar_portal_db`. Run with `npm start`.
+- **Auth header:** `X-Gateway-Key` (static string compare)
+- **Gateway key:** `setu_gateway_secret_key_demo_2026` (its own value;
+  different from the other departments — store as `NIR_GATEWAY_KEY`)
 - **Auth failure responses:**
   - Missing key → `401` — `"Access denied: Missing X-Gateway-Key header for gateway service authentication."`
   - Invalid key → `401` — `"Access denied: Invalid X-Gateway-Key provided."`
-- **Known quirk:** this service uses short-lived tokens for some flows — token can expire mid-request, so the gateway needs a refresh/retry path here, not just a single fire-and-forget call
+- **Not found:** `404` — `"Identity reference '<ref>' not found in registration database."`
+- **Format rejection:** `400` for real 12-digit numeric refs (synthetic-only).
+- **Success shape:** `{ "success": true, "data": { "identityReference", "fields": [...], "sourceDepartment" }, "error": null }` — note `identityReference`, not `reference`.
+- **CORRECTION (Step 3b):** the earlier "short-lived token / retry-on-expiry"
+  note was wrong for the integration path. The `/fields` endpoint uses a
+  plain static `X-Gateway-Key` check — no token expiry, no retry needed.
+  Short-lived JWTs exist only on the public captcha and admin-login flows,
+  which the gateway never calls. Build the client like DTR's: single call,
+  no expiry-retry.
 - **Base URL:** configurable via env (e.g. `NIR_SERVICE_URL`)
 
 ### 3. `driving-licence-jan-aadhaar-portal` (Node/Express + PostgreSQL)
@@ -53,6 +67,17 @@ data, and not crash the whole request.
   - Invalid key → `401` — `"Access denied: Invalid X-Gateway-Key provided."`
 - **Success shape:** `{ "success": true, "data": <masked registration>, "error": null }`
 - **Not found:** `404` — `{ "success": false, "data": null, "error": "Registration not found." }`
+- **CONFIRMED (Step 3b):** port **3001**, both `/api/v1/gateway/...` and
+  `/api/gateway/...` aliases work, key `setu_gateway_secret_key_demo_2026`
+  (coincides in value with NIR but is its own department secret —
+  `DLJA_GATEWAY_KEY`). The masked `data` object's reference field is
+  `registration_reference` (a THIRD distinct name vs DTR `reference` /
+  NIR `identityReference`) and has **no `fields[]` array** — it carries a
+  single `verification_status` (dev mock emits `FORMAT_VALID` or
+  `VERIFICATION_FAILED`; `VERIFIED` is reserved for a future real
+  provider). References are `REG-XXXXXXXX` and are created only via POST
+  `/api/v1/registrations` — the DB ships with none seeded. Gateway client
+  treats `verification_status ∈ {VERIFIED, FORMAT_VALID}` as verified.
 - **Base URL:** configurable via env (e.g. `DLJA_SERVICE_URL`)
 
 ## What the gateway needs to do, concretely

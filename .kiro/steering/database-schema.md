@@ -113,11 +113,28 @@ department calls. This is the table you'd point a judge at.
   for the current request, it fetches it live and either passes it
   through or discards it; it doesn't become gateway-owned state.
 
-## Open question — confirm before building
+## Resolved — `response_summary` content (decided Phase 4 → 4b)
 
-Should `application_department_calls.response_summary` ever contain
-masked-but-real field values (e.g. "income bracket: 5-10L") for
-audit/demo purposes, or should it stay purely metadata (status code +
-timing, no content)? This affects how convincing the "audit trail"
-demo moment is, but also increases what's stored about the citizen.
-Decide this deliberately, don't default into it.
+**Decision: masked-but-real field values, NOT metadata-only.**
+`application_department_calls.response_summary` on a successful call
+carries real fetched values in a masked form, e.g.
+`verified=true; fullName=U*** A****, filingStatus=FILED,
+incomeBracket=5-10L, dob=1980-**-**, address=*** 110001`.
+
+Rationale: the reuse-path demo is the centrepiece, and an audit log
+proving the gateway fetched *actual* data (then reused it without
+re-asking) is a far stronger judge moment than a summary that only says
+"a call happened." Masking preserves the same protection we already
+apply to sensitive values while keeping the proof convincing.
+
+Masking is centralised in `gateway/src/utils/mask.js` (single source of
+truth) and applied inside each department client's `translate()` — the
+raw sensitive value never leaves the client, so only masked forms reach
+Postgres. Rules: personal names → initials (`U*** A****`); DOB → year
+only (`1980-**-**`); address → trailing pincode only (`*** 110001`);
+coarse/categorical values (filing status, income bracket, gender,
+assessment year, verification_status, counts) kept verbatim; the
+reference/public handle kept verbatim (it already appears in
+`endpoint_called`); values already masked at source pass through
+unchanged; unknown fields default to masked. On failure,
+`response_summary` is the honest error string (no field content).

@@ -7,9 +7,11 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "migrate": "node src/db/migrate.js",
-    "test": "node --test tests/auth.test.js tests/phase2.test.js tests/phase3a.test.js",
+    "test": "node --test tests/auth.test.js tests/phase2.test.js tests/phase3a.test.js tests/phase3b.test.js tests/phase3c.test.js tests/phase4.test.js tests/phase4b.test.js",
     "test:integration": "node --test tests/auth.integration.test.js",
     "test:e2e": "node --test tests/dtr.e2e.test.js",
+    "test:e2e:nir": "node --test tests/nir.e2e.test.js",
+    "test:e2e:dlja": "node --test tests/dlja.e2e.test.js",
     "test:all": "node --test"
   },
   "keywords": [

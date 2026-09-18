@@ -74,6 +74,25 @@ This is the moment to make vivid in a demo: start a second
 application that needs the same department's data as the first, and
 show it skip straight past re-entry.
 
+**How it works (implemented, Phase 4b).** `POST /api/v1/applications/:id/verify`
+takes `reference` as *optional*. When it's omitted, the gateway looks up the
+citizen's verified `linked_references` row for that application's department
+(repository `findVerified`) and uses the stored `department_reference`. If
+there's nothing verified yet and no reference is supplied, it returns `400`
+(genuinely first-time — nothing to reuse). Reuse skips **only** the re-entry:
+consent is still enforced per application (a fresh `consent_grants` row is
+still required — reuse never bypasses Story 3), the fetch is still a live HTTP
+call (reuse re-fetches, never serves cached department data), and the call is
+still written to `application_department_calls` + `audit_log`. The reuse is
+tagged `reused_reference: true` in the `department_call` audit entry, and the
+verify response carries `reused: true`, so the skip is provable to a judge,
+not inferred from timing.
+
+Live proof: `node scripts/phase4b-reuse-walkthrough.js` (needs Postgres + DTR
+up) verifies once with a reference, then runs a second application with NO
+reference and prints the real `linked_references`, `application_department_calls`,
+and `audit_log` rows showing the reuse.
+
 ## Failure-mode walkthrough (for demo Q&A)
 
 A judge is likely to ask "what if a department is down?" Be ready to

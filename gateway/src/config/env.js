@@ -61,6 +61,14 @@ const config = {
       baseUrl: process.env.DTR_SERVICE_URL || 'http://127.0.0.1:8000',
       gatewayKey: process.env.DTR_GATEWAY_KEY || '',
     },
+    national_identity_registry: {
+      baseUrl: process.env.NIR_SERVICE_URL || 'http://127.0.0.1:5000',
+      gatewayKey: process.env.NIR_GATEWAY_KEY || '',
+    },
+    driving_licence_jan_aadhaar: {
+      baseUrl: process.env.DLJA_SERVICE_URL || 'http://127.0.0.1:3001',
+      gatewayKey: process.env.DLJA_GATEWAY_KEY || '',
+    },
   },
 
   departmentCallTimeoutMs: parseInt(process.env.DEPARTMENT_CALL_TIMEOUT_MS, 10) || 5000,

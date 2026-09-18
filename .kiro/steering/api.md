@@ -52,6 +52,23 @@ consent record exists — this is a real check, not just a UI gate.
 Returns the citizen's `linked_references`, i.e. what's currently
 verified with which department, for the "My documents" view.
 
+### `POST /api/v1/applications/:id/verify`
+Runs the relay for one application: consent check → live department fetch →
+log → resolve `complete`/`failed`.
+
+Request body: `{ "reference": "<department reference>" }`.
+- **`reference` is OPTIONAL** (Phase 4b, reuse — Story 8). If omitted, the
+  gateway reuses the citizen's already-verified reference for that
+  application's department (from `linked_references`). If none is supplied
+  **and** none is verified yet, the call is rejected `400 VALIDATION`
+  (genuinely first-time — there's nothing to reuse).
+- Reuse skips only the re-entry. Consent is still required for this
+  application (a matching `consent_grants` row), the department is still
+  fetched live (never cached), and the call is still logged.
+- On success the response `data` includes `reused: true|false`; the
+  corresponding `audit_log` `department_call` entry carries
+  `reused_reference: true|false`, so the reuse is provable, not inferred.
+
 ### Relay outcome convention (applies to EVERY department, all of 3a/3b)
 The relay endpoint (`POST /api/v1/applications/:id/verify`) distinguishes
 two kinds of "it didn't work", and they use different HTTP statuses on
@@ -109,17 +126,43 @@ Identity Registry and Driving Licence relay paths MUST follow it exactly
 
 ### National Identity Registry (Node/Express + PostgreSQL)
 
-- **Endpoint path: not yet confirmed.** Referenced elsewhere as
-  something like `/api/registration/{reference}/fields`, but this was
-  secondhand, not verified directly against that service's route
-  file. **Confirm this before wiring the gateway client** — don't
-  build against a guess.
-- Header required: `X-Gateway-Key`
+- **Endpoint**: `GET /api/registration/:identityReference/fields`
+  (confirmed against the real route file + live probe in Step 3b — the
+  earlier `/api/registration/{reference}/fields` guess was close but the
+  path param is `identityReference` and it is mounted under
+  `/api/registration`).
+- **Port**: `5000`. Own DB `aadhaar_portal_db` (seeded refs e.g.
+  `TESTAADHAAR0001`, `GATEWAY-DEMO-001`). Run with `npm start`.
+- **Gateway key**: `setu_gateway_secret_key_demo_2026` (its OWN key —
+  different value from Digital Tax Records; store as `NIR_GATEWAY_KEY`).
+- Header required: `X-Gateway-Key` (static string compare — see the
+  correction below).
 - **401** missing key → `"Access denied: Missing X-Gateway-Key header for gateway service authentication."`
 - **401** invalid key → `"Access denied: Invalid X-Gateway-Key provided."`
-- **Known quirk:** uses short-lived tokens for some flows — a token
-  can expire mid-request. The gateway client for this department needs
-  a retry-once-on-expiry path, not just a single call.
+- **404** unknown reference → `"Identity reference '<ref>' not found in registration database."`
+- **400** real 12-digit numeric reference rejected (synthetic-only,
+  `^[A-Z0-9_-]{4,32}$`). This is NIR's equivalent of DTR's real-PAN check.
+- **200** success shape (note the field is `identityReference`, NOT
+  `reference` like DTR):
+  ```json
+  {
+    "success": true,
+    "data": {
+      "identityReference": "TESTAADHAAR0001",
+      "fields": [ { "name": "fullName", "value": "...", "verified": true, "lastUpdated": "..." } ],
+      "sourceDepartment": "National Identity Registry — Demo Department"
+    },
+    "error": null
+  }
+  ```
+- **CORRECTION (Step 3b):** the previously-documented "short-lived
+  token / retry-on-expiry quirk" does **not** apply to this endpoint.
+  The gateway-facing `/fields` route is protected by a plain static
+  `X-Gateway-Key` comparison — no JWT, no expiry, no mid-request token
+  refresh. (Short-lived JWTs exist only on the public captcha flow and
+  admin login, neither of which the gateway calls.) The NIR client is
+  therefore built identically to the DTR client, with no retry-on-expiry
+  path. Verified by reading `gatewayAuthMiddleware.js` + live probes.
 
 ### Driving Licence & Jan Aadhaar Portal (Node/Express + PostgreSQL)
 

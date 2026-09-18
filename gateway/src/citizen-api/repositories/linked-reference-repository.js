@@ -22,6 +22,24 @@ const pgLinkedReferenceRepository = {
   },
 
   /**
+   * Find a citizen's already-verified reference for a department, if any.
+   * Powers the reuse path (Story 8): when this returns a row, the gateway
+   * can go straight to a fresh (still consented, still logged) fetch using
+   * the stored `department_reference` instead of asking the citizen to
+   * re-enter it. Returns null when there's nothing to reuse.
+   */
+  async findVerified({ citizenId, department }) {
+    const res = await query(
+      `SELECT id, citizen_id, department, department_reference, linked_at, verified
+       FROM linked_references
+       WHERE citizen_id = $1 AND department = $2 AND verified = true
+       LIMIT 1`,
+      [citizenId, department]
+    );
+    return res.rows[0] || null;
+  },
+
+  /**
    * Record (or update) a citizen's reference at a department and mark it
    * verified. One row per (citizen, department) — see the unique
    * constraint — so we upsert on conflict.
@@ -53,6 +71,14 @@ function createInMemoryLinkedReferenceRepository(seed = []) {
   return {
     async listByCitizen(citizenId) {
       return rows.filter((r) => r.citizen_id === citizenId);
+    },
+
+    async findVerified({ citizenId, department }) {
+      return (
+        rows.find(
+          (r) => r.citizen_id === citizenId && r.department === department && r.verified === true
+        ) || null
+      );
     },
 
     async markVerified({ citizenId, department, departmentReference }) {

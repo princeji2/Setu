@@ -30,15 +30,17 @@
  */
 
 const config = require('../config/env');
+const { maskValue } = require('../utils/mask');
 
 const DEPARTMENT = 'digital_tax_records';
 
 /**
  * Translate the DTR-native success payload into the small internal shape
- * the gateway cares about. We keep it minimal and non-sensitive: the
- * reference, whether it verified, and the field NAMES that were returned
- * (not their values — see the response_summary decision in
- * database-schema.md). The relay decides what, if anything, to persist.
+ * the gateway cares about: the reference, whether it verified, the field
+ * NAMES, and MASKED-but-real field values (masked-but-real response_summary
+ * decision — see src/utils/mask.js and database-schema.md). The gateway
+ * never keeps the raw sensitive value; masking happens here before the
+ * value leaves the client. The relay decides what, if anything, to persist.
  */
 function translate(rawData) {
   const fields = Array.isArray(rawData.fields) ? rawData.fields : [];
@@ -49,6 +51,8 @@ function translate(rawData) {
     // marked them verified. DTR sets verified:true per field on a match.
     verified: fields.length > 0 && fields.every((f) => f.verified === true),
     field_names: fields.map((f) => f.name),
+    // Masked-but-real pairs for the audit summary. Raw values never stored.
+    masked_fields: fields.map((f) => ({ name: f.name, value: maskValue(f.name, f.value) })),
   };
 }
 
