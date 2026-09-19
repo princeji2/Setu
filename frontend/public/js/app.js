@@ -20,6 +20,7 @@ import { renderDocuments } from './views/documents.js';
 import { renderApplicationsList, renderApplicationDetail } from './views/applications.js';
 import { nextRenderToken } from './render-guard.js';
 import { mountFabricBackground } from './fabric-bg.js';
+import { mountChatbot } from './chatbot.js';
 
 // Sidebar nav (reference layout). Each item keeps its data-tab id + label
 // and gains a line icon. The router/handlers are unchanged.
@@ -184,6 +185,12 @@ function boot() {
   // mounted once behind the whole app. Fixed, pointer-events:none, honours
   // reduced-motion. Persists across view/tab changes since it lives on body.
   mountFabricBackground();
+
+  // Floating "Ask about Setu" help chatbot. Mounted once onto <body>
+  // (outside #appRoot), so it persists across every view/tab re-render —
+  // present identically on landing, auth, dashboard, services, documents
+  // and applications with no per-view wiring.
+  mountChatbot();
 
   // A 401 on any protected call means the stored token is stale. Clear it
   // (api.js already did) and drop back to the landing/auth screen with a

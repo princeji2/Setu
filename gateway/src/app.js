@@ -31,6 +31,7 @@ const { createConsentService } = require('./citizen-api/services/consent-service
 const { createDocumentsService } = require('./citizen-api/services/documents-service');
 const { createRelayService } = require('./citizen-api/services/relay-service');
 const { createAdminService } = require('./citizen-api/services/admin-service');
+const { createChatService } = require('./citizen-api/services/chat-service');
 
 // Department clients (Layer 2)
 const { createDigitalTaxRecordsClient } = require('./department-clients/digital-tax-records-client');
@@ -43,6 +44,7 @@ const { createApplicationsRouter } = require('./citizen-api/routes/applications'
 const { createConsentRouter } = require('./citizen-api/routes/consent');
 const { createDocumentsRouter } = require('./citizen-api/routes/documents');
 const { createAdminRouter } = require('./citizen-api/routes/admin');
+const { createChatRouter } = require('./citizen-api/routes/chat');
 
 function createApp({
   citizenRepository = pgCitizenRepository,
@@ -106,6 +108,13 @@ function createApp({
   app.use('/api/v1/applications', createApplicationsRouter(applicationService, relayService));
   app.use('/api/v1/consent', createConsentRouter(consentService));
   app.use('/api/v1/documents', createDocumentsRouter(documentsService));
+
+  // Chatbot proxy — PUBLIC (no requireAuth), because the "Ask about Setu"
+  // widget runs on the pre-login landing/auth screens too. Forwards a
+  // visitor question to Gemini with a grounded system prompt; the Gemini
+  // key never leaves the server. See chat-service.js.
+  const chatService = createChatService();
+  app.use('/api/v1/chat', createChatRouter(chatService));
 
   // ------------------------------------------------------------
   // Officials/admin read console (Phase A) — cross-citizen, read-only,

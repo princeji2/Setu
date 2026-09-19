@@ -85,6 +85,20 @@ const config = {
   },
 
   departmentCallTimeoutMs: parseInt(process.env.DEPARTMENT_CALL_TIMEOUT_MS, 10) || 5000,
+
+  // Chatbot proxy (Gemini). The key lives ONLY here, server-side — it is
+  // never sent to the browser. The frontend chat widget calls the gateway's
+  // own POST /api/v1/chat, which forwards to Gemini using this key. Keeping
+  // it out of the client bundle is the whole reason the call is proxied.
+  // If unset, the /api/v1/chat endpoint reports an honest "chat unavailable"
+  // rather than crashing — the widget's canned answers still work offline.
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY || '',
+    // Fast, cheap model that suits short grounded Q&A for a demo.
+    // (gemini-2.0-flash was retired upstream; 3.6-flash is the current fast tier.)
+    model: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
+    timeoutMs: parseInt(process.env.GEMINI_TIMEOUT_MS, 10) || 12000,
+  },
 };
 
 module.exports = config;
