@@ -59,6 +59,18 @@ function summarizeCall(data) {
   return `verified=${data.verified}; fields=${(data.field_names || []).join(',')}`;
 }
 
+/**
+ * Fold any structural data-quality flags onto the end of the success summary
+ * text so they surface in the application_department_calls.response_summary
+ * column with no schema change. Clean responses (empty flags) append nothing,
+ * keeping the common case identical to before. Flag strings are already
+ * non-sensitive (names/counts/status tokens, never raw values).
+ */
+function appendFlags(summary, flags) {
+  if (!Array.isArray(flags) || flags.length === 0) return summary;
+  return `${summary}; data_quality_flags=${flags.join('|')}`;
+}
+
 // Which application type maps to which department + how to derive the
 // reference from the citizen's consent/application input.
 const TYPE_TO_DEPARTMENT = {
@@ -142,6 +154,13 @@ function createRelayService({
     const result = await client.fetchFields(resolvedReference);
     const succeeded = result.outcome === 'success';
 
+    // Structural data-quality flags the client attached at translate() time
+    // (success only; empty array is the normal, clean case). Purely
+    // informational — never affects `succeeded` or status resolution below.
+    const dataQualityFlags = (succeeded && result.data && Array.isArray(result.data.data_quality_flags))
+      ? result.data.data_quality_flags
+      : [];
+
     // --- Log the call (always) ---
     await applicationRepository.recordCall({
       applicationId,
@@ -152,8 +171,10 @@ function createRelayService({
       // Masked-but-real summary on success (values masked in the client via
       // src/utils/mask.js — raw values never reach here); honest error on
       // failure. See the response_summary decision in database-schema.md.
+      // Any data-quality flags are folded onto the end of the success summary
+      // text (no schema change) so they're visible in the calls row too.
       responseSummary: succeeded
-        ? summarizeCall(result.data)
+        ? appendFlags(summarizeCall(result.data), dataQualityFlags)
         : result.error,
       durationMs: result.durationMs,
     });
@@ -172,6 +193,9 @@ function createRelayService({
         // reference — the gateway resolved it from a prior verified row
         // (Story 8). Explicit in the audit trail, not inferred from timing.
         reused_reference: reusedReference,
+        // Structural data-quality flags (empty array when the response looked
+        // clean). Proves the gateway actively checks quality; never blocks.
+        data_quality_flags: dataQualityFlags,
       },
     });
 

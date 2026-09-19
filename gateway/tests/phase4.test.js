@@ -372,3 +372,130 @@ test('[mask] DLJA: holder name masked, source-masked ids pass through, status pr
   assert.ok(!/jan_aadhaar_id=/.test(summary), 'identifier fields are not surfaced into the summary');
   assert.ok(!/licence_number=/.test(summary), 'identifier fields are not surfaced into the summary');
 });
+
+// ------------------------------------------------------------
+// Data-quality flags (structural checks at translate()). These assert the
+// SUCCESS-branch translate() attaches data_quality_flags: [] on clean
+// payloads and the expected flag string on malformed ones. They never touch
+// the relay's pass/fail resolution — a flagged call is still a success.
+// Reuses the same translateDtr/Nir/Dlja imports declared above.
+// ------------------------------------------------------------
+
+// --- DTR / NIR (fields[] shape via flagFieldArray) ---
+test('[dq] DTR clean payload -> empty data_quality_flags', () => {
+  const data = translateDtr({
+    reference: 'SYNPAN-000123',
+    sourceDepartment: 'Digital Tax Records — Demo Department',
+    fields: [
+      { name: 'fullName', value: 'User Alpha', verified: true },
+      { name: 'filingStatus', value: 'FILED', verified: true },
+    ],
+  });
+  assert.deepEqual(data.data_quality_flags, []);
+});
+
+test('[dq] DTR missing reference -> missing_reference flag', () => {
+  const data = translateDtr({
+    reference: '',
+    sourceDepartment: 'Digital Tax Records — Demo Department',
+    fields: [{ name: 'fullName', value: 'User Alpha', verified: true }],
+  });
+  assert.ok(data.data_quality_flags.includes('missing_reference'));
+});
+
+test('[dq] DTR empty fields -> empty_fields flag', () => {
+  const data = translateDtr({
+    reference: 'SYNPAN-000123',
+    sourceDepartment: 'Digital Tax Records — Demo Department',
+    fields: [],
+  });
+  assert.ok(data.data_quality_flags.includes('empty_fields'));
+});
+
+test('[dq] DTR verified field with blank value -> empty_verified_value flag', () => {
+  const data = translateDtr({
+    reference: 'SYNPAN-000123',
+    sourceDepartment: 'Digital Tax Records — Demo Department',
+    fields: [
+      { name: 'fullName', value: '', verified: true },
+      { name: 'filingStatus', value: 'FILED', verified: true },
+    ],
+  });
+  assert.ok(data.data_quality_flags.some((f) => f.startsWith('empty_verified_value:')));
+  assert.ok(data.data_quality_flags.some((f) => f.includes('fullName')));
+});
+
+test('[dq] NIR clean payload -> empty data_quality_flags', () => {
+  const data = translateNir({
+    identityReference: 'TESTAADHAAR0001',
+    sourceDepartment: 'National Identity Registry — Demo Department',
+    fields: [
+      { name: 'fullName', value: 'Aarav Sharma', verified: true },
+      { name: 'gender', value: 'Female', verified: true },
+    ],
+  });
+  assert.deepEqual(data.data_quality_flags, []);
+});
+
+test('[dq] NIR empty fields -> empty_fields flag', () => {
+  const data = translateNir({
+    identityReference: 'TESTAADHAAR0001',
+    sourceDepartment: 'National Identity Registry — Demo Department',
+    fields: [],
+  });
+  assert.ok(data.data_quality_flags.includes('empty_fields'));
+});
+
+test('[dq] NIR missing reference -> missing_reference flag', () => {
+  const data = translateNir({
+    identityReference: '',
+    sourceDepartment: 'National Identity Registry — Demo Department',
+    fields: [{ name: 'fullName', value: 'Aarav Sharma', verified: true }],
+  });
+  assert.ok(data.data_quality_flags.includes('missing_reference'));
+});
+
+test('[dq] NIR field name/count mismatch -> field_names_mismatch flag', () => {
+  // A raw field with no `name` maps to `undefined` in the client's
+  // field_names (kept), but is filtered out of rawNames — so the counts
+  // diverge and translate() should surface the mismatch.
+  const data = translateNir({
+    identityReference: 'TESTAADHAAR0001',
+    sourceDepartment: 'National Identity Registry — Demo Department',
+    fields: [
+      { name: 'fullName', value: 'Aarav Sharma', verified: true },
+      { value: 'Female', verified: true },
+    ],
+  });
+  assert.ok(data.data_quality_flags.includes('field_names_mismatch'));
+});
+
+// --- DLJA (verification_status shape via flagRegistration) ---
+test('[dq] DLJA clean payload -> empty data_quality_flags', () => {
+  const data = translateDlja({
+    registration_reference: 'REG-6C9E5AB5',
+    licence_holder_name: 'Demo Driver',
+    verification_status: 'FORMAT_VALID',
+    family_members_count: 3,
+  });
+  assert.deepEqual(data.data_quality_flags, []);
+});
+
+test('[dq] DLJA unknown verification_status -> unknown_verification_status flag', () => {
+  const data = translateDlja({
+    registration_reference: 'REG-6C9E5AB5',
+    licence_holder_name: 'Demo Driver',
+    verification_status: 'WEIRD_STATUS',
+    family_members_count: 3,
+  });
+  assert.ok(data.data_quality_flags.some((f) => f === 'unknown_verification_status:WEIRD_STATUS'));
+});
+
+test('[dq] DLJA missing reference -> missing_reference flag', () => {
+  const data = translateDlja({
+    registration_reference: '',
+    licence_holder_name: 'Demo Driver',
+    verification_status: 'FORMAT_VALID',
+  });
+  assert.ok(data.data_quality_flags.includes('missing_reference'));
+});

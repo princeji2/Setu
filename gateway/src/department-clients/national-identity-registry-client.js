@@ -25,6 +25,7 @@
 
 const config = require('../config/env');
 const { maskValue } = require('../utils/mask');
+const { flagFieldArray } = require('../utils/data-quality');
 
 const DEPARTMENT = 'national_identity_registry';
 
@@ -38,12 +39,15 @@ const DEPARTMENT = 'national_identity_registry';
  */
 function translate(rawData) {
   const fields = Array.isArray(rawData.fields) ? rawData.fields : [];
+  const fieldNames = fields.map((f) => f.name);
   return {
     reference: rawData.identityReference,
     source_department: rawData.sourceDepartment,
     verified: fields.length > 0 && fields.every((f) => f.verified === true),
-    field_names: fields.map((f) => f.name),
+    field_names: fieldNames,
     masked_fields: fields.map((f) => ({ name: f.name, value: maskValue(f.name, f.value) })),
+    // Structural data-quality flags (never blocks; logged for accountability).
+    data_quality_flags: flagFieldArray({ reference: rawData.identityReference, fields, fieldNames }),
   };
 }
 

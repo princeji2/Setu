@@ -32,6 +32,7 @@
 
 const config = require('../config/env');
 const { maskValue } = require('../utils/mask');
+const { flagRegistration } = require('../utils/data-quality');
 
 const DEPARTMENT = 'driving_licence_jan_aadhaar';
 
@@ -65,6 +66,12 @@ function translate(rawData) {
     // at source (they pass through mask() unchanged); licence_holder_name is
     // masked here. Dates/counts/verification_status are non-identifying.
     masked_fields: presentFields.map((k) => ({ name: k, value: maskValue(k, rawData[k]) })),
+    // Structural data-quality flags (never blocks; logged for accountability).
+    data_quality_flags: flagRegistration({
+      reference: rawData.registration_reference,
+      verification_status: rawData.verification_status,
+      field_names: presentFields,
+    }),
   };
 }
 
