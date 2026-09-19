@@ -74,61 +74,138 @@ network/infrastructure failure (distinct, retry-safe, still logged).
 
 ## Visual direction
 
-Decided against `refrences/` (Phase 5 kickoff). Per `HOW_TO_USE_REFRENCES.md`'s
-90/10 rule: `setu_sih26129_demo.html` is the closest-to-final structural
-reference (it already names the three real departments) and is the primary
-source; `dashboard.png`/`scrolanimation.png` are visual/motion references;
-the `.txt` "component" files (signin/signup/hero/lock-screen/feature1/
-background/button1/2) are React+Tailwind+shadcn snippets for a stack we are
-NOT using — mined only for underlying intent (tone, interaction concept),
-never copied as markup, since their literal look (dark glassmorphism,
-gradient/liquid buttons, shader-gradient auth panels) is a generic-AI-SaaS
-aesthetic that would work against "deliberate and specific to this project."
+> **Correction (Phase 1 reset).** The earlier version of this section
+> decided *against* the `refrences/` look and made the demo HTML the
+> primary visual source, producing a warm-paper/serif "govtech-editorial"
+> theme. That was the wrong call — it contradicted the citizen-provided
+> references, which ARE the intended design, and `HOW_TO_USE_REFRENCES.md`
+> says to match them ~90%. This section is rewritten to the correct source
+> hierarchy so a future agent does not repeat the mistake.
 
-**Palette / type (taken near-verbatim from the demo HTML — it already
-nails the govtech-editorial brief):** warm paper background (`#FAF6EE`,
-deep `#F3EDDF`), ink text (`#211D18` / soft `#6B6357`), indigo as the one
-primary action color (`#1E3350` / deep `#122036`), terracotta as the one
-accent (`#B85C2B` / soft `#F2E1D3`), sage for success/verified
-(`#3E7A5C` / soft `#E1EDE4`), gold used sparingly. Source Serif 4 for
-headings (institutional weight), Inter for body/UI (readability). No
-gradients, no glow, no dark mode — restraint is the differentiator from
-every other AI-generated SaaS mock in `refrences/`.
+### Source hierarchy (authoritative)
 
-**Structure (adapted from the demo HTML's tab/view pattern):** a single
-shell with a topbar (brand mark + citizen name) and tab-switched views —
-but trimmed to only what's actually backed by an endpoint. Kept:
-Dashboard, Find a service, Documents, Applications. **Cut** relative to
-the reference mock: the "Department view" (admin/KPI) tab — explicitly
-out of scope per `product.md`; the "Connected platforms" tab as a live
-page — folded into a static footnote instead since the gateway has no
-live-health endpoint to back "12,450 requests / 97.8% success" style
-numbers, and inventing them would violate the "never fabricate" spirit
-that governs the whole project; and the "Ask Setu" chat assistant — a
-canned-KB chatbot answering from a hardcoded script is the single most
-"stock template with data dropped in" element in the reference folder,
-and isn't backed by any real gateway capability. Cutting it is a
-deliberate scope decision, not an oversight — noted in the open-items
-checklist rather than silently dropped.
+1. **`refrences/dashboard.png` — PRIMARY visual source.** The whole
+   look-and-feel target: a clean, LIGHT SaaS dashboard. Light cool-grey
+   canvas, crisp white cards on hairline cool-grey borders, near-black
+   primary action buttons, one restrained blue accent, generous 4px-based
+   padding rhythm, a modern grotesque sans. `scrolanimation.png` is the
+   companion motion reference.
+2. **The `.txt` section references — per-section sources for the section
+   each names.** They are React+Tailwind+shadcn snippets for a stack we
+   are NOT using, so they are mined for *intent, layout, and interaction*
+   (never copied as markup), each applied to its own section:
+   - `signin.txt` / `signup.txt` → the auth screen (split-panel, sliding
+     sign-in/sign-up), reconciled to the gateway's real email+password
+     auth (NO social/OAuth login — the gateway doesn't have it).
+   - `background.txt` → the interactive dark particle/mesh backdrop,
+     scoped to the auth screen, reimplemented in vanilla JS.
+   - `button1.txt` / `button2.txt` / `butten.jpeg` / `2butten.jpeg` →
+     CTA shape, weight, and hierarchy. Their literal liquid/gradient-blur
+     effects are reference for *feel*, not to be reproduced pixel-for-pixel.
+   - `hero1.txt` / `feature1.txt` / `lock screen 1.txt` → the landing/
+     hero, feature sections, and locked/session-expired state.
+   - `Animation_lib_etc.jpeg` → motion-library inspiration (GSAP is the
+     one in our locked stack; the others are out of scope).
+3. **`refrences/setu_sih26129_demo.html` — FEATURE / INTERACTION reference
+   ONLY. DO NOT use the demo HTML as a visual source.** It contributes the
+   view-switching pattern (tabs → sections), the consent-modal → relay
+   flow, and the fact that it already names the three real departments.
+   Its palette, its Source Serif 4 type, and its warm-paper surfaces are
+   explicitly NOT to be copied — that is exactly the aesthetic Phase 1
+   removed.
 
-**The one motif carried through everywhere:** the hub-and-spoke network
-diagram from the dashboard hero (citizen at center, three department
-nodes around it) is the visual thesis of the whole project — it's kept
-and reused as the login-screen backdrop and as the skeleton for the
-relay-status track (submitted → gateway_relay → department_verifying →
-complete/failed), rather than invented fresh per screen.
+### Palette / type (from dashboard.png — see `tokens.css` for exact hexes)
 
-**Motion:** GSAP only, reserved for the relay-status reveal (per
-`tech.md` — not decorative elsewhere). No Motion/Framer/Three.js/Lenis —
-those appear in `refrences/Animation_lib_etc.jpeg` as general inspiration
-but are outside the locked stack. Everything else uses plain CSS
-transitions; restraint applies to motion as much as to color.
+LIGHT UI. Canvas `#F7F8FA`, cards `#FFFFFF`, hairline borders `#EAECEF` /
+`#DDE1E6`. Text: near-black `#101317` → mid-grey `#5A6069` → muted
+`#9AA0A8`. Single dark **primary action** colour is near-black
+`#111317` → `#000` on hover (the legacy `--indigo` token name is kept but
+now holds this near-black). One restrained **accent**, blue `#2E6BFF`
+(the legacy `--terracotta` token name is kept but now holds this blue).
+Semantic success `#1F9254`, warning `#B7791F`, danger `#D0342C`, info =
+accent blue. Radius 12px cards / 10px inner / pill. Shadows are a whisper
+(`0 1px 2px` resting) — separation is border-first. **Type is a modern
+grotesque sans (Inter) only — Source Serif 4 is removed; no serif tokens,
+no warm-paper hexes.**
 
-**Buttons:** solid indigo fill for primary, terracotta outline/ghost for
-secondary, sage for a "verified/reuse" affordance — a real pressed/hover
-state (slight depth + scale), not the liquid/gradient-blur treatment in
-`refrences/button1.txt` / `button2.txt`, which reads as generic and
-clashes with the paper palette.
+### Structure (tab/view pattern — behavioural, from the demo HTML)
+
+A single shell: topbar (brand mark + citizen name) and tab-switched views,
+trimmed to only what an endpoint backs. Kept: Dashboard, Find a service,
+Documents, Applications. **Cut** relative to the demo mock (unchanged
+scope decisions): the "Department view" (admin/KPI) tab — out of scope per
+`product.md`; a live "Connected platforms" health page — no live-health
+endpoint backs it, faking numbers violates the "never fabricate" rule; the
+"Ask Setu" chatbot — a canned-KB script with no real gateway capability.
+These stay cut; the reset is about the *look*, not re-expanding scope.
+
+### The one motif carried through
+
+The hub-and-spoke network diagram (citizen at center, three department
+nodes) remains the visual thesis — reused as the auth-screen backdrop
+motif and as the relay-status track skeleton (submitted → gateway_relay →
+department_verifying → complete/failed).
+
+### Motion
+
+GSAP only, reserved for the relay-status reveal (per `tech.md`) plus the
+interactive auth backdrop; not decorative elsewhere. Motion tokens live in
+`tokens.css` and honour `prefers-reduced-motion`. Motion libraries in
+`Animation_lib_etc.jpeg` beyond GSAP are out of the locked stack.
+
+### Buttons
+
+Near-black solid fill for primary (dashboard.png's CTA), hairline-outline
+ghost for secondary, success-green for a "verified/reuse" affordance, with
+a real pressed/hover depth. Shape/weight/hierarchy take from
+`button1.txt` / `button2.txt` / the button images; their literal
+liquid/gradient-blur is reference for feel, applied with restraint.
+
+### Final build (Phase 6 closeout — what actually shipped)
+
+The 6-phase re-skin is complete and the description above matches the
+built result. Confirming the final state and the one addition:
+
+- **Light app shell** (landing, dashboard, services, documents,
+  applications, consent, relay) is governed entirely by `dashboard.png`:
+  `#F7F8FA` canvas, white cards, hairline borders, whisper shadows, solid
+  near-black primary CTAs, blue accent used sparingly. Tokens in
+  `tokens.css`.
+- **One dark surface only:** the auth screen's interactive particle
+  backdrop (`particles.js`, concept from `background.txt`), scoped to that
+  screen. Every other surface is light.
+- **`setu_sih26129_demo.html` was NOT used as a visual source anywhere in
+  the final build.** Its structure informed the tab/view + consent→relay
+  interaction pattern only (behaviour), which predates this rebuild. Its
+  warm-paper palette and Source Serif type are fully gone.
+- **Landing page (`views/landing.js`) is new** — it did not exist before
+  this rebuild. Pre-auth marketing surface (fixed blurred nav, hero with
+  gradient-text headline + dual CTA + network-diagram preview, feature
+  grid, departments band, minimal footer). Content is grounded in real
+  project facts: the three departments come from the gateway's
+  `application-service.js` `KNOWN_TYPES` / `relay-service.js`
+  `TYPE_TO_DEPARTMENT`; feature copy describes only built capabilities;
+  no stats/testimonials are invented. It is the unauthenticated entry
+  point; a valid session skips straight to the app shell; logout returns
+  to it.
+- **The hub-spoke network diagram + brand mark (`netmap.js`) are now
+  token-driven** — colours resolved from `:root` at call time (with
+  fallbacks equal to current tokens), so the motif tracks the light
+  system instead of the old hardcoded indigo/terracotta.
+- **Motion:** GSAP for the relay reveal (tuned for the light palette in
+  Phase 5) and the landing entrance/scroll reveals (core GSAP +
+  IntersectionObserver, no ScrollTrigger plugin). The auth particle field
+  is its own dependency-free canvas loop. All honour
+  `prefers-reduced-motion`.
+- **Keyboard access (Phase 6):** the two click-only elements
+  (`.app-top-click`, `tr.row-click`) are now `role="button"` +
+  `tabindex="0"` with an Enter/Space keydown path equivalent to their
+  click, plus a visible focus ring. All other interactive elements were
+  already real `<button>`s.
+- **Gateway wiring unchanged throughout:** no view's data fetching, error
+  handling, or session flow was altered in any phase — verified live end
+  to end (register → apply → consent → relay → reuse → documents →
+  detail) against the real gateway + Digital Tax Records mock at closeout.
 
 ## Error handling design
 - Business-level response (e.g. reference not found) is a normal

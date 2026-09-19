@@ -10,19 +10,24 @@
 import { api } from '../api.js';
 import { CATALOG, findServiceByDepartment } from '../catalog.js';
 import { openServiceFlow } from './relay.js';
-import { escapeHtml, timeAgo, DEPARTMENT_LABELS } from '../util.js';
+import { escapeHtml, timeAgo, DEPARTMENT_LABELS, departmentTheme, departmentArtHtml } from '../util.js';
 import { isStale } from '../render-guard.js';
+import { revealStagger } from '../anim.js';
 
 function docCardHtml(doc) {
   const service = findServiceByDepartment(doc.department);
+  const theme = departmentTheme(doc.department);
   const statusClass = doc.verified ? 'status-ok' : 'status-warn';
   const statusLabel = doc.verified ? 'Verified' : 'Needs verification';
   return `
-  <div class="doc-card">
-    <span class="status ${statusClass}">${statusLabel}</span>
+  <div class="doc-card ${theme.themeClass}">
+    <div class="doc-card-head">
+      ${departmentArtHtml(doc.department, 'md')}
+      <span class="status ${statusClass}">${statusLabel}</span>
+    </div>
     <h3>${escapeHtml(DEPARTMENT_LABELS[doc.department] || doc.department)}</h3>
-    <p>Reference ${escapeHtml(doc.department_reference)} &middot; ${doc.verified ? 'updated' : 'linked'} ${timeAgo(doc.linked_at)}</p>
-    ${service ? `<button class="btn btn-ghost btn-sm btn-block" data-reuse-department="${doc.department}">${doc.verified ? 'Reuse this document' : 'Retry verification'}</button>` : ''}
+    <p>Reference <span class="doc-ref">${escapeHtml(doc.department_reference)}</span> &middot; ${doc.verified ? 'updated' : 'linked'} ${timeAgo(doc.linked_at)}</p>
+    ${service ? `<button class="btn btn-primary btn-sm btn-block" data-reuse-department="${doc.department}">${doc.verified ? 'Reuse this document' : 'Retry verification'}</button>` : ''}
   </div>`;
 }
 
@@ -46,6 +51,7 @@ async function renderDocuments(root, token) {
   gridEl.innerHTML = documents.length
     ? documents.map(docCardHtml).join('')
     : `<div class="empty-note">Nothing linked yet. Start a service from "Find a service" to link your first document.</div>`;
+  if (documents.length) revealStagger(gridEl.querySelectorAll('.doc-card'));
 
   gridEl.querySelectorAll('[data-reuse-department]').forEach((btn) => {
     btn.addEventListener('click', () => {

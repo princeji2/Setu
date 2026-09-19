@@ -1,55 +1,318 @@
 /*
   Design tokens — Setu citizen frontend.
 
-  Palette/type carried over near-verbatim from refrences/setu_sih26129_demo.html
-  (see .kiro/specs/certificate-application/design.md "Visual direction" for the
-  rationale): warm paper background, ink text, indigo as the one primary
-  action color, terracotta as the one accent, sage for verified/success.
-  No gradients, no glow, no dark mode — restraint is deliberate here, not a
-  placeholder waiting for "real" styling later.
+  SOURCE OF TRUTH: refrences/dashboard.png (primary look-and-feel target,
+  per HOW_TO_USE_REFRENCES.md). That reference is a clean, light SaaS
+  dashboard: a very light cool-grey canvas, crisp white cards on hairline
+  cool-grey borders, near-black primary action buttons, a restrained blue
+  accent, and a modern grotesque sans throughout. NO serif, NO warm-paper
+  hexes, NO heavy shadows.
+
+  IMPORTANT — this file changes token VALUES, not the token API. Every
+  name that app.css and the view modules already consume is preserved so
+  Phase 2 (app.css rebuild) inherits without a rename cascade. Names that
+  are being repurposed rather than removed are flagged inline. New scales
+  (spacing, type, z-index, extended shadow/motion) are additive.
+
+  Dark/light relationship: this is a LIGHT UI. The "dark" in the palette
+  lives in exactly two deliberate places — the primary action colour
+  (near-black buttons) and text. Surfaces stay light. The interactive
+  dark particle backdrop from refrences/background.txt is scoped to the
+  auth screen in a later phase and is NOT the app canvas, so it gets its
+  own tokens there rather than inverting this whole system.
 */
 
 :root {
-  /* Surfaces */
-  --paper: #FAF6EE;
-  --paper-deep: #F3EDDF;
-  --card: #FFFFFE;
+  /* ============================================================
+     SURFACES / BACKGROUND NEUTRALS
+     dashboard.png: canvas is a light cool grey (#F7F8FA), cards are
+     pure white. The separation is border-first, shadow-second.
+     ============================================================ */
+  --paper: #F7F8FA;        /* app canvas behind cards (was warm #FAF6EE) */
+  --paper-deep: #EEF1F5;   /* recessed fills: inner stat boxes, hover rows, code blocks (was #F3EDDF) */
+  --card: #FFFFFF;         /* card / elevated surface (was #FFFFFE) */
+  --surface-raised: #FFFFFF; /* NEW: explicit alias for elevated surfaces (modals, popovers) */
+  --surface-sunken: #F2F4F7; /* NEW: sunken wells inside cards */
 
-  /* Ink */
-  --ink: #211D18;
-  --ink-soft: #6B6357;
+  /* ============================================================
+     BORDERS — cool-grey hairlines, ~1px. Two weights only.
+     ============================================================ */
+  --line: #EAECEF;         /* default hairline card/divider border (was #E2D9C6) */
+  --line-strong: #DDE1E6;  /* stronger border: inputs, active edges (was #CFC3A8) */
 
-  /* Brand */
-  --indigo: #1E3350;
-  --indigo-deep: #122036;
-  --terracotta: #B85C2B;
-  --terracotta-soft: #F2E1D3;
-  --sage: #3E7A5C;
-  --sage-soft: #E1EDE4;
-  --gold: #B4862F;
+  /* ============================================================
+     TEXT COLOUR HIERARCHY
+     Near-black headings → mid-grey body → muted labels/placeholder.
+     ============================================================ */
+  --ink: #101317;          /* primary text / headings (was #211D18) */
+  --ink-soft: #5A6069;     /* secondary/body text (was #6B6357) */
+  --ink-muted: #9AA0A8;    /* NEW: tertiary — "coming soon", labels, placeholders */
 
-  /* Lines */
-  --line: #E2D9C6;
-  --line-strong: #CFC3A8;
+  /* ============================================================
+     PRIMARY ACTION COLOUR — the single dark. Near-black buttons.
+     `--indigo` / `--indigo-deep` names are KEPT (app.css + JS + netmap.js
+     reference them heavily); their VALUES are repointed from the old
+     indigo to the dashboard.png near-black action colour. Read these as
+     "the primary action colour" regardless of the legacy name.
+     ============================================================ */
+  --indigo: #111317;       /* primary action base (was #1E3350) */
+  --indigo-deep: #000000;  /* primary action hover — goes fully black (was #122036) */
+  --primary: #111317;      /* NEW: name-correct alias for --indigo */
+  --primary-hover: #000000;/* NEW: hover */
+  --primary-active: #000000;/* NEW: active/pressed */
+  --primary-disabled: #C3C7CD; /* NEW: disabled fill */
+  --on-primary: #FFFFFF;   /* NEW: text/icon on the primary colour */
 
-  /* Status */
-  --danger: #A6402E;
-  --danger-soft: #F4DCD5;
+  /* ============================================================
+     ACCENT — one restrained blue (the avatar chip / subtle interactive
+     accents in dashboard.png). Used sparingly, never as a fill everywhere.
+     `--terracotta` / `--terracotta-soft` names are KEPT but repointed to
+     this blue accent so existing kicker/accent rules don't render orange
+     against the new neutrals.
+     ============================================================ */
+  --accent: #2E6BFF;         /* NEW: canonical accent */
+  --accent-soft: #E7EEFF;    /* NEW: accent tint background */
+  --terracotta: #2E6BFF;     /* KEPT NAME, repointed to accent (was #B85C2B) */
+  --terracotta-soft: #E7EEFF;/* KEPT NAME, repointed to accent-soft (was #F2E1D3) */
 
-  /* Radius / shadow */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
-  --shadow-card: 0 1px 2px rgba(30, 51, 80, 0.06);
-  --shadow-modal: 0 24px 60px rgba(18, 32, 54, 0.28);
-  --shadow-float: 0 10px 24px rgba(18, 32, 54, 0.22);
+  /* ============================================================
+     SEMANTIC — success / warning / danger / info.
+     `--sage` (success) and `--danger` names KEPT; values modernised to
+     sit against a light-grey canvas rather than warm paper.
+     ============================================================ */
+  --success: #1F9254;      /* NEW canonical */
+  --success-soft: #E3F5EA; /* NEW */
+  --sage: #1F9254;         /* KEPT NAME, repointed (was #3E7A5C) */
+  --sage-soft: #E3F5EA;    /* KEPT NAME, repointed (was #E1EDE4) */
 
-  /* Type */
-  --font-serif: 'Source Serif 4', Georgia, serif;
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --warning: #B7791F;      /* NEW canonical */
+  --warning-soft: #FBF0DB; /* NEW */
+  --gold: #B7791F;         /* KEPT NAME, repointed (was #B4862F) */
 
-  /* Motion (plain CSS transitions outside the GSAP relay reveal) */
+  --danger: #D0342C;       /* KEPT NAME, repointed (was #A6402E) */
+  --danger-soft: #FBE3E1;  /* KEPT NAME, repointed (was #F4DCD5) */
+
+  --info: #2E6BFF;         /* NEW: shares the accent blue */
+  --info-soft: #E7EEFF;    /* NEW */
+
+  /* ============================================================
+     RADIUS SCALE — dashboard.png cards read ~12px; inner boxes ~10px;
+     pills fully round. Existing sm/md/lg names KEPT, values re-tuned.
+     ============================================================ */
+  --radius-xs: 6px;        /* NEW: chips, small controls */
+  --radius-sm: 10px;       /* inner stat boxes, inputs (was 4px) */
+  --radius-md: 12px;       /* cards / panels — the dominant radius (was 8px) */
+  --radius-lg: 16px;       /* large surfaces, modals (was 10px) */
+  --radius-pill: 999px;    /* NEW: fully-round pills / avatars / FAB */
+
+  /* ============================================================
+     SHADOW SCALE — very soft, low-opacity. Separation is border-first;
+     shadow is a whisper. Existing card/modal/float names KEPT.
+     ============================================================ */
+  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.04);              /* NEW: resting card */
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04);            /* KEPT, softened */
+  --shadow-sm: 0 2px 6px rgba(16, 24, 40, 0.06);              /* NEW */
+  --shadow-float: 0 4px 16px rgba(16, 24, 40, 0.08);          /* KEPT, softened (was heavy indigo) */
+  --shadow-modal: 0 20px 48px rgba(16, 24, 40, 0.16);         /* KEPT, cooled + softened */
+  --shadow-focus: 0 0 0 3px rgba(46, 107, 255, 0.28);         /* NEW: accessible focus ring (accent blue) */
+
+  /* Overlay / on-color — NEW. Fills the Phase-2 gap: modal/relay scrims
+     had no scrim token, and white-on-a-colored-fill had no token. */
+  --overlay: rgba(16, 24, 40, 0.35);  /* NEW: modal/relay scrim */
+  --on-color: #FFFFFF;                /* NEW: text/icon on any colored (accent/success/ink) fill */
+
+  /* ============================================================
+     SPACING SCALE — 4px base rhythm matching dashboard.png's card
+     padding (~24px), inter-card gap (~20px), section gutters (~32px).
+     NEW scale (none existed before).
+     ============================================================ */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;   /* inter-card gap */
+  --space-6: 24px;   /* card padding */
+  --space-8: 32px;   /* section gutter */
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ============================================================
+     TYPE — modern grotesque sans. Inter is the closest free match to
+     dashboard.png's geometric-grotesque and is already loaded. NO serif.
+
+     `--font-serif` is intentionally KEPT AS A TOKEN but repointed to the
+     SAME sans stack. Rationale: several app.css rules (headings, .brand
+     .word, .stat .n, .serif) still reference it until Phase 2 removes
+     them; if this token vanished those rules would fall back to the
+     browser default serif and visibly regress. Repointing to sans keeps
+     the interim state coherent. DEPRECATED — remove the last consumer in
+     Phase 2, then delete this token.
+     ============================================================ */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: var(--font-sans); /* DEPRECATED alias — see note above */
+  --font-mono: 'SF Mono', 'Consolas', 'Roboto Mono', ui-monospace, monospace; /* NEW: endpoints/summaries */
+
+  /* Type scale (size / line-height pairs) — NEW */
+  --text-xs: 11.5px;   --leading-xs: 1.45;
+  --text-sm: 13px;     --leading-sm: 1.5;
+  --text-base: 15px;   --leading-base: 1.55;
+  --text-md: 17px;     --leading-md: 1.4;
+  --text-lg: 20px;     --leading-lg: 1.3;
+  --text-xl: 24px;     --leading-xl: 1.25;
+  --text-2xl: 30px;    --leading-2xl: 1.18;
+  --text-3xl: 38px;    --leading-3xl: 1.1;
+
+  /* Weights — grotesque reads best at 400/500/600/700 */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Letter-spacing — tighten large display, keep body neutral */
+  --tracking-tight: -0.02em;   /* headings */
+  --tracking-tighter: -0.035em;/* large display */
+  --tracking-normal: 0;
+  --tracking-wide: 0.02em;     /* uppercase labels / eyebrows */
+
+  /* ============================================================
+     Z-INDEX SCALE — NEW. Named layers so later phases stop guessing.
+     Matches the values the current app.css already uses ad hoc
+     (topbar 30, modal 70, relay 80, toast 90) plus a background layer
+     below everything for the auth particle field.
+     ============================================================ */
+  --z-background: -1;  /* interactive backdrop canvas (auth phase) */
+  --z-base: 0;
+  --z-sticky: 30;      /* topbar */
+  --z-dropdown: 40;
+  --z-modal: 70;       /* consent modal */
+  --z-relay: 80;       /* relay centerpiece */
+  --z-toast: 90;
+
+  /* ============================================================
+     MOTION — durations + easings, sized for GSAP to consume as well as
+     CSS transitions. Existing --ease / --dur-fast / --dur-med KEPT.
+     ============================================================ */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);         /* KEPT: standard UI ease-out */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);       /* NEW: expressive reveal (GSAP + CSS) */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);   /* NEW: symmetric transitions */
+  --dur-fast: 140ms;   /* KEPT: hovers, focus */
+  --dur-med: 240ms;    /* KEPT: view/state transitions */
+  --dur-slow: 420ms;   /* NEW: relay reveal beats */
+}
+
+/*
+  prefers-reduced-motion story.
+  Motion tokens above are the single source of duration. When the OS asks
+  for reduced motion we collapse all CSS-transition durations to ~0 here
+  (GSAP-driven relay motion honours the same preference in relay.js via
+  prefersReducedMotion(), so this covers the plain-CSS side). Nothing is
+  load-bearing for correctness — only feel — so zeroing durations is safe.
+*/
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0.01ms;
+    --dur-med: 0.01ms;
+    --dur-slow: 0.01ms;
+  }
+}
+
+/*
+  ============================================================
+  CLEAN / TRUST-FIRST THEME LAYER — additive override (final direction).
+  ============================================================
+  Design read (design-taste-frontend §0): public-sector citizen service →
+  trust-first dials (variance 3-4, motion 2-3, high contrast). The earlier
+  neumorphic layer is fully retired here: no dual-shadow relief, no
+  monochromatic embossing. This is a calm light system — off-white canvas,
+  crisp white cards on hairline cool-grey borders, depth from SUBTLE
+  BACKGROUND-TINTED shadows (apple-design §12 / design-taste §4.4: no pure
+  black shadows), a single restrained deep-blue accent, and a legible sans
+  hierarchy (Lexend / Source Sans 3).
+
+  Only token NAMES already consumed by app.css/JS are repointed — no new
+  API. Guardrails held: text >=4.5:1, real accent focus ring, department
+  colours kept for MEANING (never colour-only), reduced-motion honoured.
+*/
+:root {
+  /* ============================================================
+     EARTHY / EDITORIAL THEME (from the design-system reference).
+     Palette: Background #F4F1E8, Text/Primary #2D3A1F (dark olive),
+     Accent #B8A678 (muted gold), Surface #E8E2D0 (beige), Border #CDD2C9
+     (sage grey). Fonts: Fraunces (serif) display, Sora (sans) body. A
+     warm, grounded, editorial scheme. Only token NAMES already consumed
+     by app.css/JS are repointed — no new API.
+     ============================================================ */
+  /* Surfaces — cream background, beige surface for cards/wells. */
+  --paper: #F4F1E8;          /* app canvas (reference Background) */
+  --paper-deep: #E8E2D0;     /* recessed wells / inner boxes (reference Surface) */
+  --card: #FBFAF4;           /* cards: a touch lighter than the canvas so they lift */
+  --surface-raised: #FBFAF4; /* modals / popovers */
+  --surface-sunken: #E8E2D0; /* sunken wells (reference Surface) */
+
+  /* Borders — sage-grey hairlines (reference Border). */
+  --line: #CDD2C9;
+  --line-strong: #B9C0B3;
+
+  /* Text hierarchy — dark olive ink (reference Text), stepped for hierarchy. */
+  --ink: #2D3A1F;            /* headings / primary (dark olive, very high contrast) */
+  --ink-soft: #4A553A;       /* body / secondary (olive, AA on cream) */
+  --ink-muted: #6E7862;      /* tertiary / labels (muted olive-grey, ~4.5:1) */
+
+  /* Primary action — the dark olive (reference Primary). White text AA. */
+  --primary: #2D3A1F;
+  --primary-hover: #3A4A2A;
+  --primary-active: #222E17;
+  --primary-disabled: #B9C0B3;
+  --on-primary: #F4F1E8;
+
+  /* Accent — muted gold (reference Accent). For links/tints; darkened for
+     text use so it passes AA on cream. */
+  --accent: #8A7847;         /* darkened gold for text/links (AA on cream) */
+  --accent-soft: #EDE6D2;    /* pale gold tint for chips/tiles */
+  --terracotta: #8A7847;     /* KEPT NAME, repointed to accent */
+  --terracotta-soft: #EDE6D2;
+  --info: #8A7847;
+  --info-soft: #EDE6D2;
+
+  /* Semantic — olive success, warm-gold warning, brick danger to sit in
+     the earthy family. */
+  --success: #4A6B32;  --success-soft: #E2EAD6;   /* deep olive-green */
+  --sage: #4A6B32;     --sage-soft: #E2EAD6;
+  --warning: #9A6B2F;  --warning-soft: #F0E6CF;   /* amber-brown */
+  --gold: #B8A678;                                 /* the accent gold, for badges */
+  --danger: #A23B2B;   --danger-soft: #F0DCD4;    /* brick red */
+
+  /* Radius — one calm, consistent scale (design-taste §4.4 shape lock). */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Shadows — soft, olive-tinted (never pure black on the warm canvas).
+     Separation is border-first; shadow is a gentle lift. */
+  --shadow-xs:    0 1px 2px rgba(45, 58, 31, 0.05);
+  --shadow-card:  0 1px 2px rgba(45, 58, 31, 0.05);
+  --shadow-sm:    0 2px 10px rgba(45, 58, 31, 0.08);
+  --shadow-float: 0 10px 28px rgba(45, 58, 31, 0.12);
+  --shadow-modal: 0 26px 64px rgba(45, 58, 31, 0.20);
+  /* Real, visible focus ring for keyboard users (a11y guardrail) — gold. */
+  --shadow-focus: 0 0 0 3px rgba(184, 166, 120, 0.55);
+
+  --on-color: #F4F1E8;
+  --overlay: rgba(45, 58, 31, 0.42);
+
+  /* Type — reference pairing: Fraunces (serif) display, Sora (sans) body. */
+  --font-sans: 'Sora', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-serif: var(--font-display); /* now a real serif again */
+
+  /* Motion — apple-design springs/easings. Calm for trust-first. */
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
-  --dur-fast: 140ms;
-  --dur-med: 240ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.5, 1); /* gentle overshoot */
+  --dur-fast: 120ms;   /* press / hover — near-instant feedback */
+  --dur-med: 220ms;
+  --dur-slow: 360ms;
 }

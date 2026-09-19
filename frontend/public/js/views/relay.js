@@ -195,22 +195,28 @@ function createTrackController(trackEl) {
         dot.classList.add('done');
         if (line) line.classList.add('done');
         if (gsapReady && !reduced) {
-          window.gsap.fromTo(dot, { scale: 1.35 }, { scale: 1, duration: 0.32, ease: 'back.out(2.2)' });
-          window.gsap.fromTo(line, { scaleX: 0 }, { scaleX: 1, duration: 0.36, ease: 'power2.out', transformOrigin: 'left center' });
+          // Completed node "snaps" in with a small settle; the line then
+          // draws left-to-right. Slightly longer than the old dark-tuned
+          // values so the green reads deliberately against the light card
+          // rather than flickering by.
+          window.gsap.fromTo(dot, { scale: 1.4 }, { scale: 1, duration: 0.38, ease: 'back.out(2)' });
+          window.gsap.fromTo(line, { scaleX: 0 }, { scaleX: 1, duration: 0.44, ease: 'power2.out', transformOrigin: 'left center' });
         }
       } else if (i === nowIndex) {
         dot.classList.remove('done', 'failed');
         dot.classList.add('now');
         if (gsapReady && !reduced) {
-          window.gsap.fromTo(dot, { scale: 0.85 }, { scale: 1, duration: 0.28, ease: 'power2.out' });
-          // Subtle breathing pulse to read as "in progress, not stalled" —
-          // scale/opacity only (avoids animating box-shadow directly,
-          // which is fragile across browsers and fights the CSS glow the
-          // .now class already applies via box-shadow).
+          window.gsap.fromTo(dot, { scale: 0.8 }, { scale: 1, duration: 0.3, ease: 'power2.out' });
+          // Breathing pulse to read as "in progress, not stalled". Tuned
+          // for the LIGHT card: the dot stays fully opaque (fading a blue
+          // dot toward transparent on white reads as "stalling", the old
+          // dark-palette behaviour) — instead it gently swells in scale
+          // only, so it reads as a live, solid, breathing node against the
+          // white surface. The .now CSS class supplies a static blue glow
+          // ring via box-shadow underneath this.
           liveTween = window.gsap.to(dot, {
-            opacity: 0.55,
-            scale: 1.12,
-            duration: 0.7,
+            scale: 1.22,
+            duration: 0.85,
             repeat: -1,
             yoyo: true,
             ease: 'sine.inOut',
@@ -234,7 +240,10 @@ function createTrackController(trackEl) {
       } else if (i === failedIndex) {
         dot.classList.add('failed');
         if (gsapReady && !reduced) {
-          window.gsap.fromTo(dot, { scale: 1.3 }, { scale: 1, duration: 0.4, ease: 'power3.out' });
+          // A failure lands with weight — a firm, slightly longer settle
+          // (no bounce) so the red reads as a deliberate stop against the
+          // light card, matching the success node's deliberateness.
+          window.gsap.fromTo(dot, { scale: 1.35 }, { scale: 1, duration: 0.46, ease: 'power3.out' });
         }
       }
     });
@@ -270,10 +279,16 @@ async function runRelay(applicationId, reference, service) {
 
   veil.classList.add('open');
   if (gsapReady && !reduced) {
-    window.gsap.fromTo(card, { opacity: 0, y: 16, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.32, ease: 'power2.out' });
+    // Card rises + fades in a touch more deliberately than the old value,
+    // to settle cleanly onto the light backdrop (a faster pop read as
+    // abrupt against white in the light-palette pass).
+    window.gsap.fromTo(card, { opacity: 0, y: 18, scale: 0.975 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: 'power3.out' });
   }
 
-  const pace = reduced ? 60 : 280;
+  // Pacing between the submitted -> gateway_relay -> department_verifying
+  // beats. Slightly longer than before so each step is legible on the
+  // light card; reduced-motion keeps it near-instant.
+  const pace = reduced ? 60 : 320;
   track.advanceTo(0, 0);
   await sleep(pace);
   track.advanceTo(1, 1);
@@ -303,7 +318,10 @@ async function runRelay(applicationId, reference, service) {
 
   if (result.status === 'complete') {
     track.advanceTo(4, -1);
-    await sleep(reduced ? 40 : 220);
+    // Let the completed (all-green) track register before the result
+    // panel reveals — a beat longer on the light card so the success
+    // reads. Reduced-motion keeps it near-instant.
+    await sleep(reduced ? 40 : 260);
     renderRelaySuccess(result, applicationId);
   } else {
     // Department-side failure: submitted + gateway_relay both happened;
@@ -324,8 +342,10 @@ async function runRelay(applicationId, reference, service) {
  * deliberateness as a success.
  */
 function revealResult(el) {
+  // Reduced-motion (or no GSAP): the panel is simply already visible in
+  // its final state — instant and fully legible, not frozen mid-tween.
   if (typeof window.gsap === 'undefined' || prefersReducedMotion()) return;
-  window.gsap.fromTo(el.firstElementChild, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' });
+  window.gsap.fromTo(el.firstElementChild, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.44, ease: 'power3.out' });
 }
 
 function renderRelaySuccess(result, applicationId) {

@@ -20,17 +20,24 @@
 import { api } from '../api.js';
 import {
   escapeHtml, timeAgo, DEPARTMENT_LABELS, APPLICATION_TYPE_LABELS,
-  STATUS_LABELS, statusChipClass,
+  STATUS_LABELS, statusChipClass, departmentTheme,
 } from '../util.js';
 import { isStale } from '../render-guard.js';
+import { revealStagger } from '../anim.js';
 
 function tableRowHtml(app) {
   const lastCall = app.department_calls[app.department_calls.length - 1];
   const department = lastCall ? lastCall.department : null;
+  const deptCell = department
+    ? (() => {
+        const theme = departmentTheme(department);
+        return `<span class="dept-tag ${theme.themeClass}"><span class="dept-tag-glyph">${theme.icon}</span>${escapeHtml(DEPARTMENT_LABELS[department] || department)}</span>`;
+      })()
+    : '—';
   return `
-  <tr class="row-click" data-open-application="${app.id}">
+  <tr class="row-click" data-open-application="${app.id}" role="button" tabindex="0" aria-label="Open ${escapeHtml(APPLICATION_TYPE_LABELS[app.type] || app.type)} application">
     <td><b>${escapeHtml(APPLICATION_TYPE_LABELS[app.type] || app.type)}</b></td>
-    <td>${department ? escapeHtml(DEPARTMENT_LABELS[department] || department) : '—'}</td>
+    <td>${deptCell}</td>
     <td><span class="chip ${statusChipClass(app.status)}">${escapeHtml(STATUS_LABELS[app.status] || app.status)}</span></td>
     <td>${timeAgo(app.updated_at || app.created_at)}</td>
   </tr>`;
@@ -63,11 +70,18 @@ async function renderApplicationsList(root, token) {
       <tbody>${applications.map(tableRowHtml).join('')}</tbody>
     </table>`;
 
-  panel.querySelectorAll('[data-open-application]').forEach((row) =>
-    row.addEventListener('click', () =>
-      window.dispatchEvent(new CustomEvent('setu:open-application', { detail: { id: row.dataset.openApplication } }))
-    )
-  );
+  revealStagger(panel.querySelectorAll('tbody tr'), { scale: 1, y: 10 });
+
+  panel.querySelectorAll('[data-open-application]').forEach((row) => {
+    const open = () =>
+      window.dispatchEvent(new CustomEvent('setu:open-application', { detail: { id: row.dataset.openApplication } }));
+    row.addEventListener('click', open);
+    // Equivalent keyboard path (row is role="button" tabindex="0").
+    // Enter/Space trigger the SAME action as the click — no behaviour change.
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); open(); }
+    });
+  });
 }
 
 function callRowHtml(call) {
@@ -124,6 +138,7 @@ async function renderApplicationDetail(root, applicationId, token) {
           : '<div class="empty-note">No department calls have been made for this application yet.</div>'
       }</div>
     </div>`);
+  revealStagger(root.querySelectorAll('.call-row'), { scale: 1, y: 10 });
 }
 
 export { renderApplicationsList, renderApplicationDetail };

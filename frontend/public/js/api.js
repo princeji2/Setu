@@ -12,7 +12,7 @@
  * ports (frontend:3000, gateway:4000) per tech.md.
  */
 
-const API_BASE = 'http://localhost:4000/api/v1';
+const API_BASE = 'http://localhost:4999/api/v1';
 const TOKEN_KEY = 'setu.token';
 const CITIZEN_KEY = 'setu.citizen';
 
@@ -57,6 +57,18 @@ class NetworkError extends Error {
   }
 }
 
+/**
+ * Global handler invoked whenever a protected call comes back 401 — i.e.
+ * the stored token is missing/expired/rejected. app.js registers a handler
+ * that clears the session and bounces to the auth screen, so a stale token
+ * surfaces as "please log in again" instead of an endless "couldn't load"
+ * on every data view. Kept as a callback so this file stays framework-free.
+ */
+let onUnauthorized = null;
+function setUnauthorizedHandler(fn) {
+  onUnauthorized = fn;
+}
+
 async function request(method, path, body, { auth = true } = {}) {
   const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
   if (auth) {
@@ -87,6 +99,14 @@ async function request(method, path, body, { auth = true } = {}) {
 
   if (!res.ok || (payload && payload.success === false)) {
     const err = (payload && payload.error) || {};
+    // A 401 on a call we sent WITH auth means the stored token is stale —
+    // clear it and let the app bounce back to login. Skip this for calls
+    // that never carried a token (auth=false, e.g. login itself), so a
+    // wrong password on the login form doesn't trigger a session wipe loop.
+    if (res.status === 401 && auth && onUnauthorized) {
+      clearSession();
+      onUnauthorized();
+    }
     throw new ApiError(err.code || 'UNKNOWN', err.message || `Request failed (${res.status}).`, res.status);
   }
 
@@ -115,4 +135,4 @@ const api = {
   },
 };
 
-export { api, ApiError, NetworkError, getToken, getCitizen, setSession, clearSession, API_BASE };
+export { api, ApiError, NetworkError, getToken, getCitizen, setSession, clearSession, setUnauthorizedHandler, API_BASE };

@@ -124,3 +124,81 @@ These map 1:1 to gaps versus `refrences/setu_sih26129_demo.html` — see
 - The frontend expects the gateway at `http://localhost:4000` (hardcoded
   in `public/js/api.js` — the two apps are deliberately decoupled, not
   reading each other's config).
+
+
+---
+
+# Frontend visual rebuild — closeout (6-phase re-skin)
+
+The frontend was re-skinned from the warm-paper/serif theme (which came
+from the demo HTML and was never the intended look) to the light
+`dashboard.png` design system the citizen actually provided in
+`refrences/`. Done in six reviewed phases. All gateway-wired JS behaviour
+was preserved throughout — only styling, markup wrappers, one new view,
+and a scoped keyboard-accessibility fix changed.
+
+## What shipped
+
+- **Design tokens (`tokens.css`)** — light system: `#F7F8FA` canvas,
+  white cards, hairline borders, whisper shadows, near-black primary
+  (`--primary`/legacy `--indigo`), blue accent (`--accent`/legacy
+  `--terracotta`), success/warning/danger/info, full spacing/type/radius/
+  shadow/z-index/motion scales, `prefers-reduced-motion` block. Source
+  Serif 4 removed; Inter only. Legacy token NAMES kept (no rename
+  cascade); `--font-serif` deprecated alias → sans.
+- **App shell + all inner views (`app.css`)** — restyled to the light
+  system; every existing class name reused, zero structural change.
+  Underline tabs, white cards, semantic-tint status chips, solid
+  near-black buttons, light consent modal + relay chrome.
+- **Auth screen** — dark interactive particle backdrop (`particles.js`,
+  dependency-free canvas) + centered light card; pill inputs with icons;
+  sign-in/sign-up switch. Email+password only (no OAuth). Submit/session
+  logic byte-identical.
+- **Landing page (`views/landing.js`)** — NEW pre-auth surface; light;
+  real-fact content; network-diagram motif; GSAP + IntersectionObserver
+  reveals.
+- **Relay motion** — GSAP timing/easing re-tuned for the light palette;
+  the "in progress" node breathes by scale (no opacity-fade "stall");
+  state machine untouched.
+- **`netmap.js`** — brand mark + hub-spoke diagram now token-driven.
+- **Keyboard access** — dashboard application items + applications table
+  rows are now keyboard-operable (`role="button"`, `tabindex`,
+  Enter/Space, focus ring).
+
+## Verified at closeout
+
+- Full gateway flow live (register → application → consent → relay verify
+  → documents verified → **reuse with no reference → `reused:true`** →
+  application detail call history with masked summary) against the real
+  gateway + Digital Tax Records mock. Zero behaviour regression.
+- `get_diagnostics` clean on all touched files; CSS braces balanced; all
+  `var()` references resolve; all assets serve 200; `setu_sih26129_demo`
+  palette + Source Serif fully absent from the build.
+
+## Known gaps / wants-a-human-eye (honest list)
+
+- **No in-browser click-through was possible in the build environment**
+  (no browser tool). Everything was verified via served assets, live API
+  calls, code paths, and static analysis. The following specifically
+  still want one manual pass in a real browser:
+  - Auth particle field renders + reacts to pointer; reduced-motion shows
+    the static frame; navigating away leaves no leaked canvas/rAF.
+  - Relay reveal *feel* on the light card, and its reduced-motion path
+    landing states instantly and legibly.
+  - Keyboard tab order across all screens; Enter/Space on the two
+    now-focusable rows behaving exactly like a click.
+  - Landing + auth + shell at mobile widths.
+- **No real dashboard screenshot in the landing hero** — the hero uses
+  the project's own network-diagram motif instead of a product
+  screenshot (hero1.txt/lock screen 1.txt show a screenshot). Deliberate:
+  a real screenshot is content we don't have; not faked.
+- **Minor intentional inconsistencies left as-is:** landing feature-grid
+  gap (`--space-5`) is looser than the shell grids (`--space-4`) for
+  marketing breathing room; `.lp-preview-card` uses a heavier shadow as
+  the hero focal element; `.side-card` uses slightly tighter vertical
+  padding. All deliberate, not drift.
+- **Deliberately still NOT built** (unchanged scope decisions from the
+  original frontend, re-confirmed): no Department/KPI admin tab, no live
+  "Connected platforms" health page, no "Ask Setu" chatbot, no raw
+  `audit_log` viewer, no automated frontend test suite. Faking any of
+  these would violate the project's "never fabricate" rule.

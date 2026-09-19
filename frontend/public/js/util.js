@@ -72,6 +72,75 @@ function trackStepIndex(status) {
   return idx === -1 ? 0 : idx;
 }
 
+/* ------------------------------------------------------------------
+ * Shared per-department visual theme (colour + glyph). One source of
+ * truth so the dashboard credential cards, the "Find a service" grid,
+ * "My documents", and the applications list all colour-code the three
+ * departments identically. Purely presentational — no data invented.
+ * ------------------------------------------------------------------ */
+const DEPARTMENT_THEME = {
+  digital_tax_records: {
+    themeClass: 'theme-tax',
+    accent: '#4A6B32',
+    kind: 'Tax record',
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>`,
+    // Large glossy 3D illustration for the department, in the vein of the
+    // dashboard.png reference (each service card carries a big colourful
+    // 3D glyph rather than a flat line icon). Emoji render as full-colour
+    // 3D glyphs on every OS and need no image assets / network — so the
+    // demo stays offline-safe. Tax records -> receipt.
+    art: '🧾',
+    artLabel: 'Tax record',
+  },
+  national_identity_registry: {
+    themeClass: 'theme-identity',
+    accent: '#8A7847',
+    kind: 'Identity',
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>`,
+    art: '🪪', // identity card
+    artLabel: 'Identity card',
+  },
+  driving_licence_jan_aadhaar: {
+    themeClass: 'theme-licence',
+    accent: '#9A6B2F',
+    kind: 'Driving licence',
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="8" cy="12" r="2.2"/><path d="M13 10h6M13 14h4"/></svg>`,
+    art: '🚗', // driving licence
+    artLabel: 'Driving licence',
+  },
+};
+
+function departmentTheme(department) {
+  return DEPARTMENT_THEME[department] || DEPARTMENT_THEME.digital_tax_records;
+}
+
+/**
+ * The big 3D glossy illustration for a department, wrapped so callers just
+ * drop it into a card. Decorative (aria-hidden) — meaning is already
+ * carried by the card's title/kind/colour. `size` picks a scale class.
+ */
+function departmentArtHtml(department, size = 'md') {
+  const theme = departmentTheme(department);
+  return `<span class="dept-art dept-art-${size}" role="img" aria-label="${escapeHtml(theme.artLabel)}">${theme.art}</span>`;
+}
+
+/**
+ * Markup for the inline data-fetch error banner. Used by any view whose
+ * data fetch can fail (dashboard, services). Rendering the banner is not
+ * enough — callers must wire the retry button (class `.deb-retry`) to
+ * re-run their own fetch. Kept here so the error language + markup stay
+ * identical everywhere. `message` is plain text (escaped here).
+ */
+function dataErrorBannerHtml(message) {
+  const icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5v.01"/></svg>`;
+  return `
+  <div class="data-error-banner" role="alert">
+    <span class="deb-ico" aria-hidden="true">${icon}</span>
+    <span class="deb-text">${escapeHtml(message || "Couldn't reach the gateway.")}</span>
+    <button type="button" class="btn btn-ghost btn-sm deb-retry">Retry</button>
+  </div>`;
+}
+
 function initials(fullName) {
   if (!fullName) return '?';
   const parts = String(fullName).trim().split(/\s+/);
@@ -88,5 +157,9 @@ export {
   statusChipClass,
   TRACK_STEPS,
   trackStepIndex,
+  dataErrorBannerHtml,
   initials,
+  DEPARTMENT_THEME,
+  departmentTheme,
+  departmentArtHtml,
 };
