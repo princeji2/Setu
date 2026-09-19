@@ -82,6 +82,14 @@ function authScreenHtml() {
             <button type="submit" class="auth-submit" id="registerSubmit">Create account</button>
             <p class="auth-switch">Already with us? <button type="button" class="auth-link" id="toLogin">Sign in</button></p>
           </form>
+
+          <!-- Officials console pointer. Deliberately low-emphasis: this is a
+               "wrong portal?" footnote for government officials, NOT a citizen
+               action. Plain <a> to /admin.html — no auth handoff, since
+               admin.html has its own separate X-Admin-Key gate. -->
+          <p class="auth-officials-footer">
+            <a href="/admin.html">Officials Console &rarr;</a>
+          </p>
         </div>
       </div>
 

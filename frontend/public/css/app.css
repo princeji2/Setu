@@ -814,6 +814,20 @@ tr.row-click:hover td { background: var(--surface-sunken); }
 .auth-link:hover { color: var(--primary); }
 .auth-link:focus-visible { outline: none; box-shadow: var(--shadow-focus); border-radius: var(--radius-xs); }
 
+/* --- officials console footnote (low-emphasis, NOT a citizen action) --- */
+.auth-officials-footer {
+  margin: var(--space-8) 0 0;
+  text-align: center;
+}
+.auth-officials-footer a {
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+.auth-officials-footer a:hover { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px; }
+.auth-officials-footer a:focus-visible { outline: none; box-shadow: var(--shadow-focus); border-radius: var(--radius-xs); }
+
 /* --- brand panel (the reference's large gradient half) --- */
 .auth-brand-panel {
   position: relative; overflow: hidden;
