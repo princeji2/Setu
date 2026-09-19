@@ -100,6 +100,81 @@ Identity Registry and Driving Licence relay paths MUST follow it exactly
 
 ---
 
+## Part 1b — Officials/admin read console (gateway's own, Phase A)
+
+A small, **read-only**, **cross-citizen** surface for the officials view
+the problem statement calls for ("officials may lack a consolidated view
+of beneficiaries, applications, approvals, grievances and service
+outcomes"). It reads existing gateway tables only — Phase A records no new
+data. Kept clearly separate from the citizen-facing API above.
+
+**Auth — separate credential, NOT the citizen JWT.** Every route here is
+gated by a single shared secret sent as the `X-Admin-Key` header, compared
+against the gateway's `ADMIN_KEY` env var (see `.env.example`). This is
+deliberately independent from `require-auth.js` (which scopes queries to
+one citizen) — the officials surface never rides on citizen auth. This is
+prototype-grade per `product.md` (real enough to demo, not hardened); a
+real `official` role on `citizens` is the documented later upgrade.
+- Missing `X-Admin-Key` → **401** `{ code: "UNAUTHENTICATED" }`
+- Wrong key (or `ADMIN_KEY` unset) → **403** `{ code: "FORBIDDEN" }`
+- Bad filter value → **400** `{ code: "VALIDATION" }`
+
+### `GET /api/v1/admin/stats`
+Aggregate numbers for the dashboard, computed server-side. Shape:
+```json
+{ "success": true, "data": {
+    "total_citizens": 3,
+    "total_applications": 5,
+    "applications_by_status": { "submitted": 1, "gateway_relay": 0, "department_verifying": 0, "complete": 3, "failed": 1 },
+    "success_rate": 75.0,
+    "consent_grants": 4,
+    "reuse_count": 1,
+    "last_24h": { "calls": 2, "failures": 1 },
+    "departments": [
+      { "department": "digital_tax_records", "calls": 3, "succeeded": 3, "failed": 0, "success_rate": 100.0, "avg_duration_ms": 42 },
+      { "department": "national_identity_registry", "calls": 1, "succeeded": 0, "failed": 1, "success_rate": 0.0, "avg_duration_ms": 5001 },
+      { "department": "driving_licence_jan_aadhaar", "calls": 0, "succeeded": 0, "failed": 0, "success_rate": null, "avg_duration_ms": 0 }
+    ]
+  }, "error": null }
+```
+- `success_rate` is over **resolved** applications only (`complete + failed`);
+  `null` when nothing has resolved yet (render as "—", not 0%).
+- Per-department `success_rate` is `null` when that department has 0 calls.
+- All five statuses and all three departments are always present (0 when absent).
+- `reuse_count` = `audit_log` rows with `action='department_call'` and
+  `detail.reused_reference = true` — the provable reuse count (Story 8).
+- `last_24h` = a rolling-window pulse over `application_department_calls`
+  where `called_at > now() - 24h`: `calls` is all outbound department calls
+  in that window, `failures` is the subset where `succeeded = false`. It is
+  **purely additive** — it sits alongside, and never replaces, the all-time
+  totals (`departments[]`, `total_applications`, etc.). Both counts are
+  always present (`0` when the window is empty); this is a snapshot the UI
+  can poll, not a stored time-series.
+
+### `GET /api/v1/admin/applications`
+All applications across all citizens, joined to the owning citizen's
+display name + email, newest first. Filters:
+- `?status=` — one of `submitted|gateway_relay|department_verifying|complete|failed`
+- `?department=` — one of the three department enum values; matches
+  applications that made at least one call to that department (applications
+  have no department column — the department lives on the calls).
+
+Row shape: `{ id, type, status, created_at, updated_at, citizen_id, citizen_name, citizen_email }`.
+
+### `GET /api/v1/admin/audit-log`
+The `audit_log` trail, newest first, `detail` parsed to an object. Filters:
+- `?action=` — e.g. `department_call`, `consent_granted`, `application_status_change`, `department_call_refused`
+- `?citizen_id=` — restrict to one citizen
+- `?limit=` — default 100, capped at 500
+
+Row shape: `{ id, citizen_id, action, detail, occurred_at }`.
+
+No PII beyond what the citizen tables already hold (name/email); no raw
+department payloads — `detail` carries only what the citizen flow already
+wrote (masked summaries live in `application_department_calls`, not here).
+
+---
+
 ## Part 2 — Department-facing APIs (already built, gateway calls these)
 
 ### Digital Tax Records (UIDAI Backend — FastAPI + SQLite)

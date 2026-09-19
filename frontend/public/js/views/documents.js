@@ -12,7 +12,8 @@ import { CATALOG, findServiceByDepartment } from '../catalog.js';
 import { openServiceFlow } from './relay.js';
 import { escapeHtml, timeAgo, DEPARTMENT_LABELS, departmentTheme, departmentArtHtml } from '../util.js';
 import { isStale } from '../render-guard.js';
-import { revealStagger } from '../anim.js';
+import { revealStagger, playJustVerified } from '../anim.js';
+import { consumeJustVerified } from '../just-verified.js';
 
 function docCardHtml(doc) {
   const service = findServiceByDepartment(doc.department);
@@ -20,7 +21,7 @@ function docCardHtml(doc) {
   const statusClass = doc.verified ? 'status-ok' : 'status-warn';
   const statusLabel = doc.verified ? 'Verified' : 'Needs verification';
   return `
-  <div class="doc-card ${theme.themeClass}">
+  <div class="doc-card ${theme.themeClass}" data-department="${doc.department}">
     <div class="doc-card-head">
       ${departmentArtHtml(doc.department, 'md')}
       <span class="status ${statusClass}">${statusLabel}</span>
@@ -52,6 +53,14 @@ async function renderDocuments(root, token) {
     ? documents.map(docCardHtml).join('')
     : `<div class="empty-note">Nothing linked yet. Start a service from "Find a service" to link your first document.</div>`;
   if (documents.length) revealStagger(gridEl.querySelectorAll('.doc-card'));
+
+  // If a relay just verified a department, play a single mount-time reveal
+  // on that one card's status badge (badge colour settle + check reveal +
+  // one gentle pulse) rather than letting it appear already-green. The
+  // signal is consumed once, so re-visiting Documents later shows the calm
+  // resting state.
+  const justVerified = consumeJustVerified();
+  if (justVerified) playJustVerified(gridEl.querySelector(`.doc-card[data-department="${justVerified}"] .status`));
 
   gridEl.querySelectorAll('[data-reuse-department]').forEach((btn) => {
     btn.addEventListener('click', () => {

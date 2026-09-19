@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setu — Officials Console</title>
+<meta name="description" content="Setu Officials Console — a read-only, cross-citizen view of applications, service outcomes, and the gateway audit trail.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Inherit the citizen app's design tokens + base component styles so the
+     console looks native (same cards, chips, buttons, type). admin.css adds
+     only the few console-specific layout bits on top. -->
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+  <!-- Key gate: shown until a valid admin key is entered. -->
+  <div id="adminGate" class="admin-gate" hidden></div>
+
+  <!-- Console shell: header + content, populated by admin-dashboard.js. -->
+  <div id="adminRoot" hidden>
+    <header class="admin-header">
+      <div class="admin-brand">
+        <span class="admin-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/><path d="M9 21v-6h6v6"/></svg>
+        </span>
+        <div class="admin-word">
+          Setu <span class="admin-word-sep">·</span> <b>Officials Console</b>
+        </div>
+        <span class="admin-badge">Read-only</span>
+      </div>
+      <div class="admin-header-right">
+        <span id="adminRefreshedAt" class="admin-refreshed"></span>
+        <button id="adminRefresh" class="btn btn-ghost btn-sm" type="button">Refresh</button>
+        <button id="adminSignOut" class="btn btn-ghost btn-sm" type="button">Change key</button>
+      </div>
+    </header>
+
+    <nav class="admin-nav" id="adminNav" aria-label="Console sections">
+      <button class="admin-nav-btn active" data-view="activity" type="button">Activity</button>
+      <button class="admin-nav-btn" data-view="applications" type="button">Applications</button>
+      <button class="admin-nav-btn" data-view="audit" type="button">Audit log</button>
+    </nav>
+
+    <main class="admin-main" id="adminMain"></main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module" src="/js/admin-dashboard.js"></script>
+</body>
+</html>

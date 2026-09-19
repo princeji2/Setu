@@ -12,7 +12,7 @@
  * ports (frontend:3000, gateway:4000) per tech.md.
  */
 
-const API_BASE = 'http://localhost:4999/api/v1';
+const API_BASE = 'http://localhost:4000/api/v1';
 const TOKEN_KEY = 'setu.token';
 const CITIZEN_KEY = 'setu.citizen';
 

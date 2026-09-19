@@ -83,8 +83,10 @@ main.shell, #modalHost, #toast { position: relative; z-index: var(--z-base); }
   gap: var(--space-2);
   white-space: nowrap;
 }
-/* apple-design §1: tactile press feedback, instant. */
-.btn:active { transform: scale(0.97); }
+/* apple-design §1: tactile press feedback, instant. The press must land
+   faster than the hover settle, so it reads as a direct physical response
+   rather than a lazy tween — scope just the transform to --dur-instant. */
+.btn:active { transform: scale(0.97); transition: transform var(--dur-instant) var(--ease); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 .btn:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 
@@ -972,4 +974,147 @@ tr.row-click:hover td { background: var(--surface-sunken); }
   .lp-nav-inner { padding: 12px var(--space-5); }
   .lp-hero-inner { padding: var(--space-12) var(--space-5) var(--space-10); }
   .lp-features-inner, .lp-depts-inner, .lp-final-inner { padding: var(--space-12) var(--space-5); }
+}
+
+/* ============================================================
+   INTERACTION POLISH (apple-design §1/§10, animate §7)
+   Two craft fixes over the existing hover states, kept additive so no
+   earlier rule is disturbed:
+
+   1. POINTER GATING. Every hover that MOVES an element (the -2px card
+      lifts) is re-scoped to fine pointers only. On touch, `:hover` sticks
+      after a tap and leaves a card frozen mid-lift until the next tap
+      elsewhere — the classic false-hover. Colour/shadow-only hovers are
+      harmless on touch and are left global. We only gate the transforms.
+
+   2. SMOOTH TEXT-LINK / CHIP TRANSITIONS. Text links and status chips
+      changed colour instantly (no transition property named for `color`).
+      Give them the same quick, named colour transition the buttons use so
+      nothing in the UI snaps between states.
+
+   transform + opacity only — compositor-friendly, no layout/paint.
+   Everything degrades through the motion tokens: under
+   prefers-reduced-motion the durations collapse to ~0 (tokens.css), so
+   these become instant, never removed-and-jarring.
+   ============================================================ */
+
+/* Smooth the colour shift on text-style links + status chips. */
+.section-head .link,
+.auth-link,
+.cred-foot-link,
+.chip,
+.cred-status,
+.status-badge,
+.doc-card .status {
+  transition: color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+/* Gate the moving (translateY lift) hovers to devices with a real hover +
+   fine pointer. The lift itself is unchanged; it just no longer sticks on
+   touch. The resting transition (already declared on each card) stays, so
+   the lift eases both in on hover and back out on leave. */
+@media (hover: hover) and (pointer: fine) {
+  .stat:hover { transform: translateY(-2px); }
+  .cred-card:hover { transform: translateY(-2px); }
+  .service:hover { transform: translateY(-2px); }
+  .doc-card:hover { transform: translateY(-2px); }
+  .lp-feature:hover { transform: translateY(-2px); }
+  .auth-submit:hover:not(:disabled) { transform: translateY(-1px); }
+}
+/* On coarse/no-hover pointers, keep the shadow/colour affordance from the
+   base rules but ensure no residual transform is left applied. */
+@media not all and (hover: hover) and (pointer: fine) {
+  .stat:hover, .cred-card:hover, .service:hover,
+  .doc-card:hover, .lp-feature:hover, .auth-submit:hover { transform: none; }
+}
+
+/* ============================================================
+   TAB-SWITCH VIEW TRANSITION (apple-design §7, animate §5)
+   The router used to swap #viewRoot's innerHTML instantly — the new tab's
+   content teleported in. This gives the whole panel a short fade + upward
+   settle on every navigation, so switching Dashboard / Find a service /
+   Documents / Applications reads as a considered arrival, not a hard cut.
+
+   - transform + opacity only (compositor-friendly, no layout thrash).
+   - ease-out (never ease-in on UI): decelerates into place.
+   - duration is the --dur-med motion token, so prefers-reduced-motion
+     collapses it to ~0; the media query below also drops the transform
+     entirely, leaving a pure (near-instant) opacity settle for comprehension.
+   - runs alongside the per-card GSAP staggers inside each view: the panel
+     eases in as a unit while its cards stagger on top — one coherent motion,
+     not two competing ones (the panel move is only 8px / 220ms, short
+     enough not to fight the card reveal).
+   ============================================================ */
+@keyframes viewEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.view-enter { animation: viewEnter var(--dur-med) var(--ease-out); }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Keep a gentle opacity settle (aids comprehension of the swap) but drop
+     all positional movement — the vestibular-safe equivalent. */
+  @keyframes viewEnter { from { opacity: 0; } to { opacity: 1; } }
+  .view-enter { animation: viewEnter 140ms linear; }
+}
+
+/* ============================================================
+   "JUST VERIFIED" STATUS REVEAL (animate §2 state-indication, §7)
+   When a relay flips a department from "Not linked" to "Verified", the
+   view re-renders and the badge would otherwise appear already-green with
+   no transition (the old element is gone — see just-verified.js). This
+   plays a single, tasteful reveal on ONLY that one badge:
+
+     - a soft ring flash in the success colour, expanding then fading, so
+       the eye is drawn to exactly what changed (state indication);
+     - one gentle scale pulse (1 -> 1.06 -> 1) so the badge reads as
+       "just settled into place", not merely recoloured.
+
+   It's a one-shot: the class is removed after ~1.4s (anim.js), so the
+   resting state is the calm green badge with no residual motion. Applies
+   to all three badge shapes (credential card, connected-departments chip,
+   documents card) via a shared class. transform + box-shadow only.
+
+   The ring uses the badge's own ::after so no extra DOM is needed; the
+   badges are already position-relative-friendly inline-flex pills.
+   ============================================================ */
+.just-verified {
+  position: relative;
+  animation: justVerifiedPulse 620ms var(--ease-out) 1;
+}
+.just-verified::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--radius-pill);
+  /* success-tinted ring; expands + fades so it reads as a confirmation
+     ripple rather than a persistent outline. */
+  box-shadow: 0 0 0 2px var(--success);
+  opacity: 0;
+  pointer-events: none;
+  animation: justVerifiedRing 720ms var(--ease-out) 1;
+}
+@keyframes justVerifiedPulse {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+@keyframes justVerifiedRing {
+  0%   { opacity: 0.9; transform: scale(0.94); }
+  70%  { opacity: 0.35; }
+  100% { opacity: 0; transform: scale(1.12); }
+}
+
+/* Reduced motion: no scale, no expanding ring (both are movement). Keep a
+   brief, static success-tint flash on the badge background only — a
+   non-vestibular cue that the state changed, per apple-design §14. */
+@media (prefers-reduced-motion: reduce) {
+  .just-verified { animation: justVerifiedFlash 260ms linear 1; }
+  .just-verified::after { display: none; }
+  @keyframes justVerifiedFlash {
+    0%   { box-shadow: 0 0 0 2px var(--success); }
+    100% { box-shadow: 0 0 0 2px transparent; }
+  }
 }

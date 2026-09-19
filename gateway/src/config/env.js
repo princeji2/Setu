@@ -46,6 +46,19 @@ const config = {
     bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 10,
   },
 
+  // Officials/admin read-only console (Phase A). A single shared secret,
+  // NOT a citizen JWT and NOT a department gateway key — it gates the
+  // cross-citizen read endpoints under /api/v1/admin only. Deliberately a
+  // separate credential so the officials surface never rides on citizen
+  // auth (require-auth.js) and stays a clean, isolated layer. Prototype-
+  // grade per product.md (real enough to demo, not hardened). Under
+  // NODE_ENV=test a deterministic fallback lets the suite drive admin
+  // routes without a configured .env.
+  admin: {
+    key: required('ADMIN_KEY', process.env.ADMIN_KEY)
+      || (env === 'test' ? 'test-only-admin-key' : ''),
+  },
+
   cors: {
     origins: (process.env.CORS_ORIGINS || 'http://localhost:3000')
       .split(',')

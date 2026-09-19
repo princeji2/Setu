@@ -25,6 +25,7 @@
 
 import { api, ApiError, NetworkError } from '../api.js';
 import { toast, escapeHtml, DEPARTMENT_LABELS } from '../util.js';
+import { markJustVerified } from '../just-verified.js';
 
 let onSettled = null; // callback invoked after a relay completes, to refresh other views
 
@@ -323,6 +324,10 @@ async function runRelay(applicationId, reference, service) {
     // reads. Reduced-motion keeps it near-instant.
     await sleep(reduced ? 40 : 260);
     renderRelaySuccess(result, applicationId);
+    // Hand off to the next view render (fired by onSettled below) so the
+    // one card whose department just flipped to Verified plays a single
+    // mount-time reveal instead of blinking green. Consumed once.
+    markJustVerified(result.department);
   } else {
     // Department-side failure: submitted + gateway_relay both happened;
     // it failed while "department_verifying" (index 2) was in flight.

@@ -22,6 +22,7 @@ const { pgApplicationRepository } = require('./citizen-api/repositories/applicat
 const { pgConsentRepository } = require('./citizen-api/repositories/consent-repository');
 const { pgLinkedReferenceRepository } = require('./citizen-api/repositories/linked-reference-repository');
 const { pgAuditRepository } = require('./citizen-api/repositories/audit-repository');
+const { pgAdminRepository } = require('./citizen-api/repositories/admin-repository');
 
 // Services
 const { createAuthService } = require('./citizen-api/services/auth-service');
@@ -29,6 +30,7 @@ const { createApplicationService } = require('./citizen-api/services/application
 const { createConsentService } = require('./citizen-api/services/consent-service');
 const { createDocumentsService } = require('./citizen-api/services/documents-service');
 const { createRelayService } = require('./citizen-api/services/relay-service');
+const { createAdminService } = require('./citizen-api/services/admin-service');
 
 // Department clients (Layer 2)
 const { createDigitalTaxRecordsClient } = require('./department-clients/digital-tax-records-client');
@@ -40,6 +42,7 @@ const { createAuthRouter } = require('./citizen-api/routes/auth');
 const { createApplicationsRouter } = require('./citizen-api/routes/applications');
 const { createConsentRouter } = require('./citizen-api/routes/consent');
 const { createDocumentsRouter } = require('./citizen-api/routes/documents');
+const { createAdminRouter } = require('./citizen-api/routes/admin');
 
 function createApp({
   citizenRepository = pgCitizenRepository,
@@ -47,6 +50,7 @@ function createApp({
   consentRepository = pgConsentRepository,
   linkedReferenceRepository = pgLinkedReferenceRepository,
   auditRepository = pgAuditRepository,
+  adminRepository = pgAdminRepository,
   // Layer 2 clients registry, keyed by department. Injectable so tests can
   // supply a fake client (e.g. to simulate a department being down).
   departmentClients = {
@@ -67,7 +71,11 @@ function createApp({
       return callback(new Error('Not allowed by CORS'));
     },
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+    // X-Admin-Key is the officials-console credential (Phase B). Browsers
+    // preflight it as a non-simple header, so it must be allowed here or the
+    // console's cross-origin fetch (3000 -> 4000) is blocked. Additive; does
+    // not affect any citizen-facing call.
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'X-Admin-Key'],
     credentials: true,
   }));
 
@@ -98,6 +106,14 @@ function createApp({
   app.use('/api/v1/applications', createApplicationsRouter(applicationService, relayService));
   app.use('/api/v1/consent', createConsentRouter(consentService));
   app.use('/api/v1/documents', createDocumentsRouter(documentsService));
+
+  // ------------------------------------------------------------
+  // Officials/admin read console (Phase A) — cross-citizen, read-only,
+  // gated by X-Admin-Key (requireAdmin), NOT the citizen JWT. Fully
+  // additive to Layer 1; touches no citizen route or department client.
+  // ------------------------------------------------------------
+  const adminService = createAdminService({ adminRepository });
+  app.use('/api/v1/admin', createAdminRouter(adminService));
 
   // 404 for unknown API paths
   app.use((req, res) => {

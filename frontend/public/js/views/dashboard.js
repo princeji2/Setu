@@ -17,7 +17,8 @@ import {
   dataErrorBannerHtml,
 } from '../util.js';
 import { isStale, nextRenderToken } from '../render-guard.js';
-import { revealStagger, revealRise } from '../anim.js';
+import { revealStagger, revealRise, playJustVerified } from '../anim.js';
+import { consumeJustVerified } from '../just-verified.js';
 
 /* Greeting header (reference top bar): time-aware greeting + the citizen's
    name + the two primary actions on the right. */
@@ -123,7 +124,7 @@ function connectedDeptsHtml(documents) {
     const ref = doc && doc.department_reference ? escapeHtml(doc.department_reference) : '';
     const btnLabel = state === 'verified' ? 'Get my data' : state === 'linked' ? 'Verify now' : 'Connect';
     return `
-    <div class="conn-row ${theme.themeClass}">
+    <div class="conn-row ${theme.themeClass}" data-department="${svc.department}">
       <span class="conn-glyph">${theme.icon}</span>
       <div class="conn-body">
         <div class="conn-name">${escapeHtml(svc.departmentLabel)}</div>
@@ -170,7 +171,7 @@ function credCardHtml(department, doc) {
     ? `<span class="cred-foot-note">${verified ? `Verified ${escapeHtml(timeAgo(doc.linked_at))}` : `Linked ${escapeHtml(timeAgo(doc.linked_at))} — not yet verified`}</span>`
     : `<button type="button" class="cred-foot-link" data-goto-tab="services">Link this record from a service<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>`;
   return `
-  <div class="cred-card ${theme.themeClass}">
+  <div class="cred-card ${theme.themeClass}" data-department="${department}">
     <div class="cred-head">
       ${departmentArtHtml(department, 'md')}
       <span class="cred-status ${statusClass}"><span class="cdot"></span>${statusLabel}</span>
@@ -279,8 +280,18 @@ async function renderDashboard(root, token) {
   const stepEl = document.getElementById('stepStrip');
   if (stepEl) { stepEl.innerHTML = stepStripHtml(documents, applications); wireGoto(stepEl); revealStagger(stepEl.querySelectorAll('.step')); }
 
+  // A department that was just verified in a relay (the re-render that
+  // brought us here was fired by that relay's onSettled). Read once; used
+  // to play a single "just verified" reveal on that one card below.
+  const justVerified = consumeJustVerified();
+
   const credEl = document.getElementById('credGrid');
-  if (credEl) { credEl.innerHTML = credGridHtml(documents); wireGoto(credEl); revealStagger(credEl.querySelectorAll('.cred-card')); }
+  if (credEl) {
+    credEl.innerHTML = credGridHtml(documents);
+    wireGoto(credEl);
+    revealStagger(credEl.querySelectorAll('.cred-card'));
+    if (justVerified) playJustVerified(credEl.querySelector(`.cred-card[data-department="${justVerified}"]`));
+  }
 
   const statusEl = document.getElementById('statusCard');
   if (statusEl) statusEl.innerHTML = statusCardHtml(documents, applications);
@@ -293,6 +304,7 @@ async function renderDashboard(root, token) {
       btn.addEventListener('click', () => window.dispatchEvent(new CustomEvent('setu:goto-tab', { detail: 'services' })))
     );
     revealStagger(connEl.querySelectorAll('.conn-row'), { y: 8 });
+    if (justVerified) playJustVerified(connEl.querySelector(`.conn-row[data-department="${justVerified}"] .conn-chip`));
   }
 
   const appsEl = document.getElementById('dashboardApps');

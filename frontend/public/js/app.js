@@ -76,6 +76,27 @@ function setActiveTab(tabId) {
   document.querySelectorAll('#tabNav button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tabId));
 }
 
+/**
+ * Subtle content transition on tab switch (apple-design §7 spatial
+ * consistency + animate §5: a short ease-out fade + rise so the new view
+ * arrives rather than teleporting). This animates the view CONTAINER, not
+ * its children, so it's independent of each view's own async render and of
+ * the per-card GSAP staggers inside — the panel eases in as a whole while
+ * its cards stagger in on top. Purely a CSS class re-trigger (one reflow),
+ * no JS animation loop. prefers-reduced-motion collapses it (see app.css:
+ * the keyframe duration is a motion token that zeroes under reduced-motion,
+ * and the media query drops the transform outright).
+ */
+function playViewEnter(el) {
+  if (!el) return;
+  el.classList.remove('view-enter');
+  // Force a reflow so removing + re-adding the class restarts the animation
+  // even on rapid consecutive tab clicks (without this the browser
+  // coalesces the class toggle and the animation never replays).
+  void el.offsetWidth;
+  el.classList.add('view-enter');
+}
+
 async function loadTab(tabId) {
   currentTab = tabId;
   currentApplicationId = null;
@@ -84,6 +105,7 @@ async function loadTab(tabId) {
   const viewRoot = document.getElementById('viewRoot');
   viewRoot.scrollIntoView({ block: 'start' });
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  playViewEnter(viewRoot); // subtle fade+rise on the whole panel per tab switch
 
   if (tabId === 'dashboard') return renderDashboard(viewRoot, token);
   if (tabId === 'services') return renderServices(viewRoot, token);
@@ -96,6 +118,7 @@ async function openApplicationDetail(applicationId) {
   const token = nextRenderToken();
   setActiveTab('applications');
   const viewRoot = document.getElementById('viewRoot');
+  playViewEnter(viewRoot);
   await renderApplicationDetail(viewRoot, applicationId, token);
 }
 

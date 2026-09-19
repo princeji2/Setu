@@ -55,6 +55,13 @@ rule as the rest of the repo.
   crashes — `render-guard.js` invalidates stale renders. Found and fixed
   during the NIR/DLJA pass; re-verified with a deliberate adversarial
   navigation sequence.
+- **Data-fetch error surface**: when `dashboard.js` or `services.js`
+  can't load its data (gateway unreachable, non-2xx, timeout), it shows
+  an inline `.data-error-banner` (shared `dataErrorBannerHtml` in
+  `util.js`, danger-soft tokens) with a **Retry** that re-runs the fetch
+  — no full reload. A legitimately empty/new account still shows the
+  normal "0 of 3 / no activity yet" state, never the banner. Verified
+  live by pointing `api.js` at a dead port.
 
 ## Rough / needs a pass before the real demo
 

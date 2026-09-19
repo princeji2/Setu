@@ -70,4 +70,32 @@ function revealRise(targets, opts = {}) {
   });
 }
 
-export { revealStagger, revealRise, prefersReducedMotion };
+/**
+ * One-shot "just verified" reveal for the single card/badge whose
+ * department flipped from Not linked -> Verified in the relay that just
+ * completed (see just-verified.js for why the element is brand-new rather
+ * than a persistent node we could transition).
+ *
+ * Deliberately CSS-first (no GSAP): it toggles a `.just-verified` class
+ * and forces one reflow so the animation replays reliably even if the same
+ * card is re-tagged on a rapid second relay. The actual motion — the badge
+ * settling to green, a check-mark drawing in, and a single gentle pulse —
+ * lives in app.css keyframes, which collapse to an instant, movement-free
+ * state under prefers-reduced-motion. So this helper does NOTHING
+ * motion-specific itself; if the element is missing it's a safe no-op.
+ *
+ * @param {Element|null} el  the status badge/chip element to reveal
+ */
+function playJustVerified(el) {
+  if (!el) return;
+  el.classList.remove('just-verified');
+  // Force a reflow so remove + re-add restarts the CSS animation.
+  void el.offsetWidth;
+  el.classList.add('just-verified');
+  // Clean the class up after the animation window so it never lingers to
+  // replay on an unrelated layout change. Generous timeout (well past the
+  // ~900ms reveal); harmless if the node is gone by then.
+  window.setTimeout(() => { if (el && el.classList) el.classList.remove('just-verified'); }, 1400);
+}
+
+export { revealStagger, revealRise, prefersReducedMotion, playJustVerified };
