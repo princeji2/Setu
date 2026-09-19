@@ -21,6 +21,12 @@ interchangeably.
 Base path suggestion: `/api/v1/...` — adjust to match whatever
 convention the gateway project ends up using, but be consistent.
 
+### `GET /api/v1/health`
+Unauthenticated liveness probe. Returns
+`{ "success": true, "data": { "service": "setu-gateway", "status": "ok" }, "error": null }`.
+Used by `start-all.ps1` / manual checks to confirm the gateway booted; takes
+no auth and touches no database.
+
 ### `POST /api/v1/auth/register` / `POST /api/v1/auth/login`
 Standard citizen account creation/login against the `citizens` table.
 Returns a session token (JWT or similar) scoped to the gateway only —
@@ -172,6 +178,14 @@ Row shape: `{ id, citizen_id, action, detail, occurred_at }`.
 No PII beyond what the citizen tables already hold (name/email); no raw
 department payloads — `detail` carries only what the citizen flow already
 wrote (masked summaries live in `application_department_calls`, not here).
+
+For `action='department_call'`, `detail` includes a `data_quality_flags`
+array — structural checks the department client ran at `translate()`
+(empty array when the response looked clean). It's non-blocking (never
+affects `outcome`/status) and non-sensitive (field names / counts /
+status tokens only, never raw values). See `database-schema.md`
+"Data-quality flags". The same flags are also folded onto the end of the
+matching `application_department_calls.response_summary` text.
 
 ---
 

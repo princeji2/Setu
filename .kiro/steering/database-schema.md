@@ -138,3 +138,35 @@ reference/public handle kept verbatim (it already appears in
 `endpoint_called`); values already masked at source pass through
 unchanged; unknown fields default to masked. On failure,
 `response_summary` is the honest error string (no field content).
+
+## Data-quality flags (structural checks at `translate()`)
+
+On a successful department call, each client's `translate()` runs a
+lightweight **structural** data-quality pass (see
+`gateway/src/utils/data-quality.js`) and attaches a `data_quality_flags`
+array to its result. These are consistency checks on what the department
+returned — a missing reference on a 200, an empty field set, a field
+marked `verified:true` but returned blank, a normalized `field_names`
+count that doesn't match the raw fields, or (DLJA) a `verification_status`
+outside the documented vocabulary. They are **not** correctness checks —
+the gateway can't know whether a value is "right."
+
+This is deliberately **non-blocking**: flags never change `succeeded`,
+`verified`, or the application's status resolution. A flagged-but-
+successful call is still `complete`. The point is to show the gateway
+*actively checks* what a department hands back rather than blindly
+trusting it.
+
+Where the flags land (no schema change — both are existing storage):
+- **`application_department_calls.response_summary`** — on success, any
+  flags are folded onto the end of the masked summary text as
+  `; data_quality_flags=<flag>|<flag>`. A clean response (empty array)
+  appends nothing, so the common case is byte-identical to before.
+- **`audit_log.detail`** (`action='department_call'`) — carries a
+  `data_quality_flags` array (empty when clean), alongside
+  `reused_reference`.
+
+Flag strings are non-sensitive by construction — they carry field
+*names*, counts, or categorical status tokens, never a raw field value —
+so folding them into either place leaks nothing the masked summary
+wouldn't already show.
