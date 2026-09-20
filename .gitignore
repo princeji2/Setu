@@ -1,0 +1,4 @@
+# Local secrets — never commit
+NEON_CREDENTIALS.md
+.env
+.env.local

@@ -33,6 +33,13 @@ data, and not crash the whole request.
 - **Validation:** rejects real 10-character PAN formats — only accepts synthetic references like `SYNPAN-000123`
 - **Success shape:** `{ "success": true, "data": { "reference", "sourceDepartment", "fields": [...] }, "error": null }`
 - **Base URL:** configurable via env (e.g. `DTR_SERVICE_URL`), not hardcoded — this service runs on its own port
+- **Demo data / seeding:** the SQLite `.db` file is gitignored and, on an
+  ephemeral host (e.g. Render free tier), wiped on restart. `app/main.py`
+  now idempotently seeds synthetic demo records (`SYNPAN-000123`,
+  `SYNPAN-000456`, `DEMO-000789`) at startup via `app/seed_demo_records.py`
+  so gateway lookups don't 404 on a fresh boot. Toggle with
+  `SEED_DEMO_DATA` (default on). For deployment SSL/env details see
+  `.kiro/steering/tech.md` "Deployment".
 
 ### 2. `National_Identity_Registry` (Node/Express + PostgreSQL)
 

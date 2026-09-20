@@ -13,6 +13,14 @@ const dbConfig = {
   connectionTimeoutMillis: 5000,
 };
 
+// Managed Postgres providers (e.g. Render's free tier) require SSL for
+// external connections. Gate it behind DB_SSL so local dev is unchanged
+// (DB_SSL unset/false → no SSL). rejectUnauthorized:false accepts the
+// provider's certificate chain, matching the DLJA portal and the gateway.
+if (process.env.DB_SSL === 'true') {
+  dbConfig.ssl = { rejectUnauthorized: false };
+}
+
 const pool = new Pool(dbConfig);
 
 // Event listener for pool errors

@@ -13,7 +13,12 @@
  * grade posture in product.md while keeping the key off durable storage.
  */
 
-const API_BASE = 'http://localhost:4000/api/v1';
+// Resolves from window.SETU_API_BASE (set inline in admin.html) with the
+// local default as fallback — same convention as the citizen client
+// (js/api.js). Production sets the global to the deployed gateway URL;
+// local dev leaves it unset and uses localhost:4000.
+const API_BASE = (typeof window !== 'undefined' && window.SETU_API_BASE)
+  || 'http://localhost:4000/api/v1';
 const ADMIN_KEY_STORAGE = 'setu.adminKey';
 
 function getAdminKey() {

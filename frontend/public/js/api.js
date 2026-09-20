@@ -6,13 +6,17 @@
  * is mocked or stubbed. Token is kept in localStorage and attached as a
  * Bearer header on every protected call.
  *
- * Base URL is deliberately hardcoded to the gateway's documented default
- * (see gateway/.env: PORT=4000) rather than guessed from window.location,
- * since the frontend and gateway are two separate apps on two separate
- * ports (frontend:3000, gateway:4000) per tech.md.
+ * Base URL resolves from window.SETU_API_BASE (set inline in index.html)
+ * and falls back to the gateway's documented local default. The frontend
+ * and gateway are two separate apps on two separate ports (frontend:3000,
+ * gateway:4000) per tech.md, so the base can't be guessed from
+ * window.location. In production the deployed frontend sets
+ * window.SETU_API_BASE to the deployed gateway URL; local dev leaves it
+ * unset and gets localhost:4000 unchanged.
  */
 
-const API_BASE = 'http://localhost:4000/api/v1';
+const API_BASE = (typeof window !== 'undefined' && window.SETU_API_BASE)
+  || 'http://localhost:4000/api/v1';
 const TOKEN_KEY = 'setu.token';
 const CITIZEN_KEY = 'setu.citizen';
 

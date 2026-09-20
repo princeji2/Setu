@@ -15,6 +15,15 @@
 <link rel="stylesheet" href="/css/tokens.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/admin.css">
+<!-- Gateway API base. Runs before the console module (js/admin-api.js
+     reads this). Leave unset/blank for local dev — the client falls back
+     to http://localhost:4000/api/v1. For a deployed console, set it to the
+     deployed gateway URL, e.g.
+       window.SETU_API_BASE = 'https://setu-gateway.onrender.com/api/v1';
+     Keep the trailing '/api/v1' and no trailing slash. -->
+<script>
+  window.SETU_API_BASE = window.SETU_API_BASE || '';
+</script>
 </head>
 <body class="admin-body">
   <!-- Key gate: shown until a valid admin key is entered. -->

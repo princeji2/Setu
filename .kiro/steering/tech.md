@@ -116,3 +116,87 @@ summarized in `audit_log`, success or failure.
       local processes for the demo — decide based on demo-day network
       reliability; either way all three must run concurrently on distinct
       ports for any end-to-end test to be meaningful.
+
+---
+
+## Deployment (free-tier: Render + Vercel) — scoped, not yet deployed
+
+Target topology (decided): 4 separate Render web services — the gateway
+plus each of the 3 department mocks (DTR, NIR, DLJA), kept independent to
+preserve the service-separation constraint — with the static frontend on
+Vercel and the gateway's Postgres on Render's free tier. A cron-job.org
+ping every ~10-12 min keeps the free services warm (health/root endpoints
+below). Config-only for most services; three small code changes were
+required and are now in place:
+
+1. **DTR demo seed (code).** DTR's SQLite file is gitignored and Render's
+   filesystem is ephemeral, so a fresh boot had an empty `pan_records`
+   table and every gateway PAN lookup 404'd. `app/seed_demo_records.py`
+   now idempotently seeds the synthetic demo records (`SYNPAN-000123`,
+   `SYNPAN-000456`, `DEMO-000789`) into `pan_records` if absent; it is
+   called from `app/main.py` at startup, guarded by `SEED_DEMO_DATA`
+   (default on) and wrapped so a seed failure never blocks boot. Keep the
+   seeded reference set in sync with `gateway/scripts/demo-dtr-run.js`.
+2. **NIR SSL (code).** `SETU/backend/config/database.js` now enables
+   `ssl: { rejectUnauthorized: false }` when `DB_SSL === 'true'`, matching
+   the DLJA portal and the gateway. Required for Render managed Postgres;
+   local dev is unchanged when `DB_SSL` is unset/false.
+3. **Frontend API base (code).** `frontend/public/js/api.js` and
+   `admin-api.js` no longer hardcode `http://localhost:4000/api/v1`; they
+   read `window.SETU_API_BASE` (set inline in `index.html` / `admin.html`)
+   and fall back to the localhost default when it's blank. Local dev is
+   unchanged; a deployed frontend sets the global to the deployed gateway
+   URL (keep the trailing `/api/v1`, no trailing slash).
+
+Per-service env at deploy time (values as Render secrets, never committed):
+gateway — `DB_*` from Render PG + `DB_SSL=true`, `JWT_SECRET`, `ADMIN_KEY`,
+`CORS_ORIGINS`=Vercel URL, `DTR/NIR/DLJA_SERVICE_URL`=deployed URLs,
+`DTR/NIR/DLJA_GATEWAY_KEY` each matching that department's own
+`GATEWAY_API_KEY`; DTR — `GATEWAY_API_KEY`, `SEED_DEMO_DATA`; NIR/DLJA —
+`DB_*` + `DB_SSL=true`, `GATEWAY_API_KEY`. Run each service's
+migrate/seed once against its deployed DB (`npm run migrate` for the
+gateway; NIR `db:init`/`db:seed*`; DLJA `db:migrate`).
+
+Keep-alive endpoints (already exist, no new code): gateway
+`GET /api/v1/health`; DTR `GET /`; NIR `GET /health` (also `/`); DLJA
+`GET /api/v1/health` (also `/`).
+
+Deploy order: create the gateway Postgres → deploy the 3 departments
+(apply NIR SSL + DTR seed first) and capture their URLs → deploy the
+gateway with those URLs + run migrate → deploy the frontend with
+`SETU_API_BASE` = gateway URL → set the gateway's `CORS_ORIGINS` to the
+Vercel URL and restart. A gateway↔department key mismatch presents as a
+false "department down" — verify all three pairs after setting secrets.
+
+Note: Render free Postgres is deleted ~90 days after creation and only one
+is allowed per account — fine for the SIH window, but not a durable store.
+
+### Database hosting (decided)
+
+Each department keeps its own independent database — the service-separation
+constraint holds through to deployment. NIR and DLJA must NOT share one
+Postgres: both define `registrations`, `admins`, and `audit_logs` with
+different columns, and both create tables via `CREATE TABLE IF NOT EXISTS`
+against the default `public` schema (no `search_path`, no qualified names),
+so the second to migrate would silently inherit the first's schema and fail
+at query time. Postgres schemas/prefixes could isolate them but would need
+per-service code changes and undercut the "genuinely separate systems"
+pitch — rejected.
+
+- **Gateway → Render free Postgres** (one per account; the gateway takes it).
+- **NIR → Neon database #1.**
+- **DLJA → Neon database #2** (same Neon account, separate project/db —
+  Neon free allows multiple databases; Supabase free gives only one per
+  account, hence Neon for both).
+- **DTR → SQLite**, no external DB; the idempotent startup seed above keeps
+  it working on the ephemeral filesystem.
+
+Neon changes are **env-vars only, no code** — NIR and DLJA already read
+discrete `DB_*` and honor `DB_SSL` (the SSL fix above). Per service set
+`DB_HOST`/`DB_PORT`/`DB_NAME`/`DB_USER`/`DB_PASSWORD` from Neon and
+`DB_SSL=true` (Neon requires SSL), then run that service's existing
+migrate/seed once against its Neon DB (NIR `db:init` + `db:seed*`, DLJA
+`db:migrate` + `db:seed`). Note: Neon free computes cold-sleep like Render;
+the NIR `/health` ping runs a DB query so it keeps NIR's compute warm, but
+DLJA's health check doesn't touch the DB — hit a DB-backed endpoint shortly
+before demoing to wake it.

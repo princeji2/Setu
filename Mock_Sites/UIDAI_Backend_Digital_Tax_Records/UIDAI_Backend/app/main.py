@@ -1,3 +1,4 @@
+import os
 import re
 from typing import Optional, List
 from fastapi import (
@@ -46,6 +47,28 @@ from app.routes.pan import router as pan_router
 # =========================================================
 
 Base.metadata.create_all(bind=engine)
+
+
+# =========================================================
+# SEED DEMO DATA (idempotent, startup)
+# =========================================================
+# The gateway-facing lookup reads `pan_records`; the SQLite file is
+# gitignored and Render's free filesystem is ephemeral, so a fresh boot
+# starts with an empty table and every PAN lookup 404s. This seeds the
+# fixed synthetic demo records if absent so the demo survives cold
+# restarts. Idempotent (keyed on pan_reference) and non-fatal — a seed
+# failure logs a warning but never blocks startup. Set SEED_DEMO_DATA=false
+# to disable (e.g. if you manage demo data by hand).
+if os.getenv("SEED_DEMO_DATA", "true").strip().lower() != "false":
+    try:
+        from app.seed_demo_records import seed_demo_records
+        _seeded = seed_demo_records()
+        if _seeded:
+            print(f"[seed] Inserted {_seeded} demo PAN record(s).")
+        else:
+            print("[seed] Demo PAN records already present; nothing to insert.")
+    except Exception as exc:  # never let seeding block service startup
+        print(f"[seed] WARNING: demo seed skipped ({exc}).")
 
 
 # =========================================================
