@@ -137,9 +137,9 @@ Aggregate numbers for the dashboard, computed server-side. Shape:
     "reuse_count": 1,
     "last_24h": { "calls": 2, "failures": 1 },
     "departments": [
-      { "department": "digital_tax_records", "calls": 3, "succeeded": 3, "failed": 0, "success_rate": 100.0, "avg_duration_ms": 42 },
-      { "department": "national_identity_registry", "calls": 1, "succeeded": 0, "failed": 1, "success_rate": 0.0, "avg_duration_ms": 5001 },
-      { "department": "driving_licence_jan_aadhaar", "calls": 0, "succeeded": 0, "failed": 0, "success_rate": null, "avg_duration_ms": 0 }
+      { "department": "digital_tax_records", "calls": 3, "succeeded": 3, "failed": 0, "success_rate": 100.0, "avg_duration_ms": 42, "degraded": false },
+      { "department": "national_identity_registry", "calls": 1, "succeeded": 0, "failed": 1, "success_rate": 0.0, "avg_duration_ms": 5001, "degraded": true },
+      { "department": "driving_licence_jan_aadhaar", "calls": 0, "succeeded": 0, "failed": 0, "success_rate": null, "avg_duration_ms": 0, "degraded": false }
     ]
   }, "error": null }
 ```
@@ -156,6 +156,42 @@ Aggregate numbers for the dashboard, computed server-side. Shape:
   totals (`departments[]`, `total_applications`, etc.). Both counts are
   always present (`0` when the window is empty); this is a snapshot the UI
   can poll, not a stored time-series.
+- Per-department `degraded` (boolean, always present) is a **windowed**
+  health flag: `true` when that department's success rate over the **last 24h**
+  drops below 50%, `false` otherwise. It keys off the last-24h window, NOT the
+  all-time `success_rate` on the same object — an all-time rate is slow to trip
+  and slow to clear, so it wouldn't reflect "degraded right now". A department
+  with **zero** calls in the window is `false` (no recent activity is not a
+  failure signal). Non-blocking and purely visible — same spirit as the
+  data-quality flags; the gateway shows it watches, it doesn't act/page.
+
+### `GET /api/v1/admin/stats/trend`
+Hourly time-series of department calls, **computed on-the-fly** from
+`application_department_calls.called_at` (a `GROUP BY date_trunc('hour', …)`) —
+**no new table, no scheduled sampler, no migration**. Every individual call is
+already stored with a timestamp, so buckets are reconstructed after the fact.
+Filter:
+- `?hours=` — how many trailing hours to return (default 24, capped 168 = 7
+  days). Non-integer / `< 1` → **400** `{ code: "VALIDATION" }`.
+
+Shape:
+```json
+{ "success": true, "data": {
+    "window_hours": 24,
+    "buckets": [
+      { "hour": "2026-09-20T09:00:00.000Z", "calls": 0, "failures": 0, "success_rate": null },
+      { "hour": "2026-09-20T10:00:00.000Z", "calls": 4, "failures": 1, "success_rate": 75.0 }
+    ]
+  }, "error": null }
+```
+- Buckets are **contiguous and zero-filled**, oldest→newest, exactly
+  `window_hours` of them, ending at the current clock hour. An empty hour is a
+  real `0`-bar, never omitted — so the spacing can't lie about the trend.
+- `hour` is the UTC start-of-hour the bucket covers.
+- `success_rate` is `null` (not `0`) on hours with zero calls (render "—"); a
+  percentage (`succeeded/calls`) otherwise.
+- Hourly (not daily) on purpose: it populates **live during a demo** off the
+  current session's own calls, with no backdated seed data.
 
 ### `GET /api/v1/admin/applications`
 All applications across all citizens, joined to the owning citizen's

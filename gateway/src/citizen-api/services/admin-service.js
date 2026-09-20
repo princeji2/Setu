@@ -16,6 +16,8 @@
 const {
   DEPARTMENTS,
   APPLICATION_STATUSES,
+  DEFAULT_TREND_HOURS,
+  MAX_TREND_HOURS,
 } = require('../repositories/admin-repository');
 
 const DEPARTMENT_SET = new Set(DEPARTMENTS);
@@ -39,6 +41,18 @@ function createAdminService({ adminRepository }) {
   return {
     async getStats() {
       return adminRepository.stats();
+    },
+
+    async getTrend({ hours } = {}) {
+      let parsedHours = DEFAULT_TREND_HOURS;
+      if (hours != null && hours !== '') {
+        parsedHours = parseInt(hours, 10);
+        if (!Number.isInteger(parsedHours) || parsedHours < 1) {
+          throw new AdminError('VALIDATION', 'hours must be a positive integer.');
+        }
+        parsedHours = Math.min(parsedHours, MAX_TREND_HOURS);
+      }
+      return adminRepository.trend({ hours: parsedHours });
     },
 
     async listApplications({ status, department } = {}) {
@@ -83,4 +97,6 @@ module.exports = {
   AdminError,
   DEFAULT_AUDIT_LIMIT,
   MAX_AUDIT_LIMIT,
+  DEFAULT_TREND_HOURS,
+  MAX_TREND_HOURS,
 };

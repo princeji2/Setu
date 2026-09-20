@@ -108,6 +108,9 @@ async function adminGet(path, params) {
 
 const adminApi = {
   stats: () => adminGet('/admin/stats'),
+  // Hourly time-series for the trend chart. `filters.hours` (optional) maps to
+  // the endpoint's ?hours= (default 24, capped 168 server-side).
+  trend: (filters) => adminGet('/admin/stats/trend', filters),
   applications: (filters) => adminGet('/admin/applications', filters),
   auditLog: (filters) => adminGet('/admin/audit-log', filters),
 };

@@ -32,6 +32,18 @@ const APPLICATION_STATUSES = [
   'failed',
 ];
 
+// A department is flagged `degraded` when its success rate over the rolling
+// 24h window drops below this percentage. Windowed (not all-time) on purpose:
+// an all-time rate is slow to trip and slow to clear, so it wouldn't reflect
+// "degraded right now". Non-blocking, purely visible — same spirit as the
+// data-quality flags: the gateway shows it actively watches, it doesn't act.
+const DEGRADED_SUCCESS_RATE_THRESHOLD = 50.0;
+
+// Default / max span for the hourly trend endpoint. Hourly buckets over the
+// current session populate live during a demo (no backdated seed needed).
+const DEFAULT_TREND_HOURS = 24;
+const MAX_TREND_HOURS = 168; // 7 days of hourly buckets, hard ceiling
+
 // ------------------------------------------------------------
 // PostgreSQL-backed
 // ------------------------------------------------------------
@@ -51,6 +63,7 @@ const pgAdminRepository = {
       consentGrants,
       reuseCount,
       last24h,
+      deptCalls24h,
     ] = await Promise.all([
       query('SELECT COUNT(*)::int AS n FROM citizens'),
       query('SELECT COUNT(*)::int AS n FROM applications'),
@@ -84,6 +97,17 @@ const pgAdminRepository = {
          FROM application_department_calls
          WHERE called_at > now() - interval '24 hours'`
       ),
+      // Per-department 24h window — feeds the windowed `degraded` flag. Same
+      // table, same window as last_24h above, grouped by department so each
+      // department's recent success rate can be judged on its own.
+      query(
+        `SELECT department,
+                COUNT(*)::int AS calls,
+                COUNT(*) FILTER (WHERE succeeded)::int AS succeeded
+         FROM application_department_calls
+         WHERE called_at > now() - interval '24 hours'
+         GROUP BY department`
+      ),
     ]);
 
     return shapeStats({
@@ -95,7 +119,36 @@ const pgAdminRepository = {
       reuseCount: reuseCount.rows[0].n,
       last24hCalls: last24h.rows[0].calls,
       last24hFailures: last24h.rows[0].failed,
+      dept24hRows: deptCalls24h.rows,
     });
+  },
+
+  /**
+   * Hourly time-series of department calls over the last `hours` hours,
+   * computed on-the-fly from application_department_calls.called_at — no new
+   * table, no scheduled sampler, no migration. Every individual call is
+   * already stored with a timestamp, so a GROUP BY reconstructs any bucket
+   * after the fact.
+   *
+   * Buckets are zero-filled and contiguous (one per hour, oldest→newest) so
+   * an empty hour renders as a 0 bar rather than vanishing and misrepresenting
+   * the spacing. success_rate is null (not 0) on hours with zero calls.
+   */
+  async trend({ hours = DEFAULT_TREND_HOURS } = {}) {
+    // date_trunc('hour', ...) collapses each call onto the start of its hour.
+    // We only pull hours that actually have calls; shapeTrend zero-fills the
+    // rest against a clock generated in JS, so the query stays trivial.
+    const res = await query(
+      `SELECT date_trunc('hour', called_at) AS hour,
+              COUNT(*)::int AS calls,
+              COUNT(*) FILTER (WHERE NOT succeeded)::int AS failures
+       FROM application_department_calls
+       WHERE called_at > now() - ($1::int * interval '1 hour')
+       GROUP BY 1
+       ORDER BY 1`,
+      [hours]
+    );
+    return shapeTrend({ hours, rows: res.rows });
   },
 
   /**
@@ -180,6 +233,7 @@ function shapeStats({
   reuseCount,
   last24hCalls = 0,
   last24hFailures = 0,
+  dept24hRows = [],
 }) {
   // Applications by status — always emit every known status (0 when absent)
   // so the frontend can render a stable set of buckets.
@@ -195,14 +249,30 @@ function shapeStats({
   // resolved yet, so the UI can show "—" rather than a misleading 0%.
   const successRate = resolved > 0 ? Math.round((completed / resolved) * 1000) / 10 : null;
 
+  // Per-department 24h success rate — the basis for the windowed `degraded`
+  // flag. Kept separate from the all-time numbers so it can't skew them.
+  const dept24hRate = Object.fromEntries(DEPARTMENTS.map((d) => [d, null]));
+  for (const row of dept24hRows) {
+    if (!(row.department in dept24hRate)) continue;
+    const calls = Number(row.calls);
+    const succeeded = Number(row.succeeded);
+    dept24hRate[row.department] =
+      calls > 0 ? Math.round((succeeded / calls) * 1000) / 10 : null;
+  }
+
   // Per-department breakdown — always emit every department (0s when absent).
   const byDeptMap = Object.fromEntries(
-    DEPARTMENTS.map((d) => [d, { department: d, calls: 0, succeeded: 0, failed: 0, success_rate: null, avg_duration_ms: 0 }])
+    DEPARTMENTS.map((d) => [d, { department: d, calls: 0, succeeded: 0, failed: 0, success_rate: null, avg_duration_ms: 0, degraded: false }])
   );
   for (const row of deptRows) {
     if (!(row.department in byDeptMap)) continue;
     const calls = Number(row.calls);
     const succeeded = Number(row.succeeded);
+    // `degraded` is windowed: it reflects the last-24h rate, NOT the all-time
+    // success_rate on this same object. A department with no calls in the
+    // window is not degraded (null rate → false) — absence of recent activity
+    // is not a failure signal.
+    const recentRate = dept24hRate[row.department];
     byDeptMap[row.department] = {
       department: row.department,
       calls,
@@ -210,6 +280,7 @@ function shapeStats({
       failed: calls - succeeded,
       success_rate: calls > 0 ? Math.round((succeeded / calls) * 1000) / 10 : null,
       avg_duration_ms: Number(row.avg_duration_ms) || 0,
+      degraded: recentRate !== null && recentRate < DEGRADED_SUCCESS_RATE_THRESHOLD,
     };
   }
 
@@ -228,6 +299,55 @@ function shapeStats({
     },
     departments: DEPARTMENTS.map((d) => byDeptMap[d]),
   };
+}
+
+/**
+ * Turn sparse hourly rows (only hours that had calls) into a contiguous,
+ * zero-filled series of exactly `hours` buckets, oldest→newest, ending at the
+ * current hour. Shared by pg + in-memory so the contract is identical.
+ *
+ * Each bucket: { hour: ISO-8601 (start of hour, UTC), calls, failures,
+ * success_rate }. success_rate is null on zero-call hours (render "—"), a
+ * percentage otherwise. `hour` is the truncated hour start so buckets align
+ * to clock hours regardless of when the request lands.
+ */
+function shapeTrend({ hours = DEFAULT_TREND_HOURS, rows = [] } = {}) {
+  const n = Math.max(1, Number(hours) || DEFAULT_TREND_HOURS);
+
+  // Index the rows we got by their hour-start epoch for O(1) lookup.
+  const byHour = new Map();
+  for (const row of rows) {
+    const t = row.hour ? new Date(row.hour).getTime() : NaN;
+    if (!Number.isFinite(t)) continue;
+    const hourStart = Math.floor(t / 3600000) * 3600000;
+    const calls = Number(row.calls) || 0;
+    const failures = Number(row.failures) || 0;
+    // Fold in case two source rows land in the same hour (shouldn't with
+    // date_trunc, but the in-memory path groups in JS).
+    const prev = byHour.get(hourStart) || { calls: 0, failures: 0 };
+    byHour.set(hourStart, { calls: prev.calls + calls, failures: prev.failures + failures });
+  }
+
+  // Generate the contiguous clock: the current hour back through n-1 prior
+  // hours, then emit oldest→newest.
+  const currentHourStart = Math.floor(Date.now() / 3600000) * 3600000;
+  const buckets = [];
+  for (let i = n - 1; i >= 0; i -= 1) {
+    const hourStart = currentHourStart - i * 3600000;
+    const hit = byHour.get(hourStart) || { calls: 0, failures: 0 };
+    const calls = hit.calls;
+    const failures = hit.failures;
+    const succeeded = calls - failures;
+    buckets.push({
+      hour: new Date(hourStart).toISOString(),
+      calls,
+      failures,
+      // null (not 0) on hours with zero calls — no calls means no rate.
+      success_rate: calls > 0 ? Math.round((succeeded / calls) * 1000) / 10 : null,
+    });
+  }
+
+  return { window_hours: n, buckets };
 }
 
 function parseDetail(row) {
@@ -303,6 +423,17 @@ function createInMemoryAdminRepository({ citizens = [], applications = [], calls
       const last24hCalls = recent.length;
       const last24hFailures = recent.filter((c) => !c.succeeded).length;
 
+      // Per-department 24h rows for the windowed `degraded` flag — same window
+      // and grouping the pg query does, computed in JS for parity.
+      const dept24hRows = DEPARTMENTS.map((d) => {
+        const dc = recent.filter((c) => c.department === d);
+        return {
+          department: d,
+          calls: dc.length,
+          succeeded: dc.filter((c) => c.succeeded).length,
+        };
+      });
+
       return shapeStats({
         totalCitizens: get.citizens().length,
         totalApplications: apps.length,
@@ -312,7 +443,32 @@ function createInMemoryAdminRepository({ citizens = [], applications = [], calls
         reuseCount,
         last24hCalls,
         last24hFailures,
+        dept24hRows,
       });
+    },
+
+    async trend({ hours = DEFAULT_TREND_HOURS } = {}) {
+      const n = Math.max(1, Number(hours) || DEFAULT_TREND_HOURS);
+      const cutoff = Date.now() - n * 60 * 60 * 1000;
+      // Group calls within the window onto their hour start, mirroring the pg
+      // date_trunc('hour', ...); shapeTrend zero-fills the contiguous clock.
+      const grouped = new Map();
+      for (const c of get.calls()) {
+        const t = c.called_at ? new Date(c.called_at).getTime() : NaN;
+        if (!Number.isFinite(t) || t <= cutoff) continue;
+        const hourStart = Math.floor(t / 3600000) * 3600000;
+        const prev = grouped.get(hourStart) || { calls: 0, failures: 0 };
+        grouped.set(hourStart, {
+          calls: prev.calls + 1,
+          failures: prev.failures + (c.succeeded ? 0 : 1),
+        });
+      }
+      const rows = [...grouped.entries()].map(([hourStart, v]) => ({
+        hour: new Date(hourStart).toISOString(),
+        calls: v.calls,
+        failures: v.failures,
+      }));
+      return shapeTrend({ hours: n, rows });
     },
 
     async listApplications({ status = null, department = null } = {}) {
@@ -357,4 +513,7 @@ module.exports = {
   createInMemoryAdminRepository,
   DEPARTMENTS,
   APPLICATION_STATUSES,
+  DEGRADED_SUCCESS_RATE_THRESHOLD,
+  DEFAULT_TREND_HOURS,
+  MAX_TREND_HOURS,
 };

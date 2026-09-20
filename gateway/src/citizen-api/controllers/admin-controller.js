@@ -37,6 +37,15 @@ function createAdminController(adminService) {
       }
     },
 
+    async trend(req, res) {
+      try {
+        const data = await adminService.getTrend({ hours: req.query.hours });
+        return res.status(200).json({ success: true, data, error: null });
+      } catch (err) {
+        return sendError(res, err);
+      }
+    },
+
     async listApplications(req, res) {
       try {
         const data = await adminService.listApplications({
