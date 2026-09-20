@@ -752,66 +752,100 @@ tr.row-click:hover td { background: var(--surface-sunken); }
   background: transparent; /* kinetic-fabric backdrop shows through */
 }
 
-/* The card: two columns on desktop — form (0.94fr) + brand panel (1.06fr),
-   matching the reference's slightly wider visual half. */
+/* The card: two columns on desktop — a friendly illustration half on the
+   left and the form half on the right, matching the reference sign-up. On a
+   clean white card so the line-art and the form read crisply. */
 .auth-grid {
-  position: relative; width: 100%; max-width: 980px;
-  display: grid; grid-template-columns: 0.94fr 1.06fr;
-  min-height: 620px;
-  background: var(--card); border: 1px solid var(--line);
+  position: relative; width: 100%; max-width: 940px;
+  display: grid; grid-template-columns: 1fr 1fr;
+  min-height: 600px;
+  background: #FFFFFF; border: 1px solid var(--line);
   border-radius: var(--radius-lg); box-shadow: var(--shadow-modal);
   overflow: hidden;
 }
+
+/* --- illustration column (reference's hand-drawn faces half) --- */
+.auth-art-col {
+  position: relative; display: flex; flex-direction: column;
+  padding: var(--space-10) var(--space-8);
+  background: #FFFFFF;
+}
+.auth-brand { justify-content: flex-start; }
+.auth-art {
+  flex: 1; display: grid; place-items: center;
+  color: var(--ink); /* line-art inherits olive ink */
+}
+.auth-art-svg { width: 78%; max-width: 320px; height: auto; }
+.auth-art-spark { fill: var(--gold); stroke: var(--gold); }
 
 /* --- form column --- */
 .auth-form-col { display: flex; align-items: center; justify-content: center; padding: var(--space-12) var(--space-10); }
 .auth-form-inner { width: 100%; max-width: 380px; }
 
-.auth-brand { justify-content: flex-start; margin-bottom: var(--space-8); }
-
 .auth-form { display: flex; flex-direction: column; }
 .auth-form.hidden { display: none; }
 
 .auth-title { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--weight-bold); color: var(--ink); margin: 0 0 var(--space-2); letter-spacing: var(--tracking-tight); }
-.auth-sub { color: var(--ink-soft); font-size: var(--text-sm); line-height: var(--leading-sm); margin: 0 0 var(--space-6); max-width: 40ch; }
+.auth-sub { color: var(--ink-soft); font-size: var(--text-sm); line-height: var(--leading-sm); margin: 0 0 var(--space-8); }
 .auth-form-error { background: var(--danger-soft); color: var(--danger); border-radius: var(--radius-sm); padding: 10px 14px; font-size: var(--text-sm); margin-bottom: var(--space-4); }
 
-/* input: leading icon + field, boxed (reference uses rounded boxes) */
-.field-box {
-  display: grid; grid-template-columns: 44px 1fr; align-items: center;
-  width: 100%; height: 52px; margin: 0 0 var(--space-3);
-  background: var(--surface-sunken); border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+/* labeled field — label sits above a clean underlined input (reference style) */
+.af-field { display: block; margin: 0 0 var(--space-5); }
+.af-label {
+  display: block; font-size: var(--text-xs); color: var(--ink-muted);
+  margin: 0 0 var(--space-1); letter-spacing: var(--tracking-wide);
 }
-.field-box:focus-within { border-color: var(--accent); box-shadow: var(--shadow-focus); }
-.field-box .fb-icon { display: grid; place-items: center; color: var(--ink-muted); }
-.field-box .fb-icon svg { width: 18px; height: 18px; }
-.field-box input {
-  background: none; border: 0; outline: none; width: 100%; padding-right: var(--space-4);
-  font-size: var(--text-sm); color: var(--ink); font-weight: var(--weight-medium);
+.af-field input {
+  width: 100%; height: 34px; padding: 0 0 var(--space-1);
+  background: none; border: 0; border-bottom: 1.5px solid var(--line-strong);
+  outline: none; font-family: var(--font-sans); font-size: var(--text-base);
+  color: var(--ink); font-weight: var(--weight-medium);
+  transition: border-color var(--dur-fast) var(--ease);
 }
-.field-box input::placeholder { color: var(--ink-muted); font-weight: var(--weight-regular); }
+.af-field input::placeholder { color: var(--ink-muted); font-weight: var(--weight-regular); }
+.af-field input:focus { border-bottom-color: var(--accent); }
 
+/* password field: input + inline reveal eye */
+.af-input-wrap { position: relative; display: block; }
+.af-input-wrap input { padding-right: 34px; }
+.af-reveal {
+  position: absolute; right: 0; bottom: 3px;
+  display: grid; place-items: center; width: 28px; height: 28px;
+  background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink-muted);
+  transition: color var(--dur-fast) var(--ease);
+}
+.af-reveal svg { width: 18px; height: 18px; }
+.af-reveal:hover, .af-reveal.is-on { color: var(--ink); }
+.af-reveal:focus-visible { outline: none; box-shadow: var(--shadow-focus); border-radius: var(--radius-xs); }
+
+/* agreement checkbox (reference has consent checkboxes above the CTA) */
+.af-check {
+  display: grid; grid-template-columns: 18px 1fr; gap: var(--space-3);
+  align-items: start; margin: var(--space-6) 0 0;
+  font-size: var(--text-xs); line-height: var(--leading-sm); color: var(--ink-soft);
+  cursor: pointer;
+}
+.af-check input { width: 16px; height: 16px; margin-top: 2px; accent-color: var(--primary); cursor: pointer; }
+
+/* primary CTA — the reference's full-width yellow button */
 .auth-submit {
-  width: 100%; height: 50px; margin-top: var(--space-4); border: 0; outline: none;
-  border-radius: var(--radius-sm); background: var(--primary); color: var(--on-primary);
+  width: 100%; height: 50px; margin-top: var(--space-6); border: 0; outline: none;
+  border-radius: var(--radius-sm); background: var(--gold); color: var(--ink);
   font-family: var(--font-sans); font-weight: var(--weight-semibold); font-size: var(--text-base); cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
-  transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), filter var(--dur-fast) var(--ease);
 }
-.auth-submit:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.auth-submit:hover:not(:disabled) { filter: brightness(0.96); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
 .auth-submit:active:not(:disabled) { transform: scale(0.99); }
 .auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 .auth-submit:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 
-.auth-switch { margin: var(--space-5) 0 0; font-size: var(--text-sm); color: var(--ink-soft); }
 .auth-link {
   background: none; border: 0; padding: 0; cursor: pointer;
-  font: inherit; color: var(--accent); font-weight: var(--weight-semibold);
+  font: inherit; color: var(--ink); font-weight: var(--weight-semibold);
   text-decoration: underline; text-underline-offset: 2px;
 }
-.auth-link:hover { color: var(--primary); }
+.auth-link:hover { color: var(--accent); }
 .auth-link:focus-visible { outline: none; box-shadow: var(--shadow-focus); border-radius: var(--radius-xs); }
 
 /* --- officials console footnote (low-emphasis, NOT a citizen action) --- */
@@ -828,45 +862,16 @@ tr.row-click:hover td { background: var(--surface-sunken); }
 .auth-officials-footer a:hover { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px; }
 .auth-officials-footer a:focus-visible { outline: none; box-shadow: var(--shadow-focus); border-radius: var(--radius-xs); }
 
-/* --- brand panel (the reference's large gradient half) --- */
-.auth-brand-panel {
-  position: relative; overflow: hidden;
-  display: flex; align-items: flex-end;
-  padding: var(--space-12);
-  background: linear-gradient(150deg, var(--primary) 0%, var(--primary-active) 45%, var(--accent) 130%);
-  color: var(--on-primary);
-}
-/* soft moving glow so the panel isn't a flat fill (reference has a living
-   shader gradient; this is the calm, token-based equivalent). */
-.abp-glow {
-  position: absolute; width: 140%; height: 140%; top: -20%; right: -30%;
-  background: radial-gradient(closest-side, rgba(184,166,120,0.55), rgba(184,166,120,0) 70%);
-  filter: blur(10px); pointer-events: none;
-  animation: abpDrift 14s var(--ease-in-out) infinite alternate;
-}
-@keyframes abpDrift {
-  from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(-12%, 10%) scale(1.12); }
-}
-.abp-content { position: relative; z-index: 1; max-width: 30ch; }
-.abp-headline { font-family: var(--font-display); font-size: var(--text-3xl); line-height: var(--leading-3xl); font-weight: var(--weight-bold); letter-spacing: var(--tracking-tight); margin: 0 0 var(--space-4); color: #fff; }
-.abp-tagline { font-size: var(--text-base); line-height: var(--leading-base); color: rgba(255,255,255,0.85); margin: 0; }
-
-/* --- responsive: stack the brand panel on top, form below --- */
+/* --- responsive: stack the illustration on top, form below --- */
 @media (max-width: 860px) {
   .auth-grid { grid-template-columns: 1fr; max-width: 460px; min-height: 0; }
-  .auth-brand-panel { order: -1; min-height: 220px; padding: var(--space-8); align-items: flex-end; }
-  .abp-headline { font-size: var(--text-2xl); }
-  .auth-form-col { padding: var(--space-8) var(--space-6); }
+  .auth-art-col { order: -1; padding: var(--space-8) var(--space-8) var(--space-4); }
+  .auth-art-svg { width: 52%; max-width: 220px; }
+  .auth-form-col { padding: var(--space-6) var(--space-8) var(--space-10); }
 }
 @media (max-width: 480px) {
   .auth-screen { padding: 0; }
   .auth-grid { border-radius: 0; border: 0; min-height: 100vh; }
-}
-
-/* Reduced motion: freeze the panel glow drift (layout unaffected). */
-@media (prefers-reduced-motion: reduce) {
-  .abp-glow { animation: none; }
 }
 
 /* ============================================================

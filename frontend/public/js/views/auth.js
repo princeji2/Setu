@@ -24,63 +24,101 @@ import { api, ApiError, NetworkError, setSession } from '../api.js';
 import { brandMarkSvg } from '../netmap.js';
 import { toast, escapeHtml } from '../util.js';
 
+/* Line-art illustration for the left column — echoes the reference's
+   friendly hand-drawn faces, redrawn inline as a single SVG so the demo
+   keeps its zero-external-asset guarantee. Uses currentColor so it inherits
+   the olive ink. */
+function authArtSvg() {
+  return `<svg class="auth-art-svg" viewBox="0 0 320 300" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <!-- face, glasses (left) -->
+    <path d="M52 150c-14 0-24-12-22-27 2-15 15-24 30-21 6-16 30-16 37 0 14-2 24 9 22 24-2 14-13 22-27 21"/>
+    <circle cx="60" cy="132" r="9"/><circle cx="86" cy="132" r="9"/><path d="M69 132h8"/><path d="M95 130l7-3"/>
+    <path d="M62 148c6 6 16 6 22 0"/>
+    <!-- face, bun (top) -->
+    <path d="M150 92c-9-16 4-34 24-34s33 18 24 34c8 4 12 15 6 24-6 10-19 13-30 13s-24-3-30-13c-6-9-2-20 6-24Z"/>
+    <path d="M162 96c4 4 12 4 16 0"/><path d="M180 96c4 4 12 4 16 0"/><circle cx="170" cy="108" r="1.6" fill="currentColor" stroke="none"/><circle cx="192" cy="108" r="1.6" fill="currentColor" stroke="none"/>
+    <path d="M172 120c5 4 13 4 18 0"/>
+    <path d="M186 54c0-10 8-16 16-14 8 2 11 11 6 18"/>
+    <!-- face (lower) -->
+    <path d="M120 210c-9-16 4-34 24-34s33 18 24 34c8 4 12 15 6 24-6 10-19 13-30 13s-24-3-30-13c-6-9-2-20 6-24Z"/>
+    <circle cx="140" cy="214" r="1.6" fill="currentColor" stroke="none"/><circle cx="162" cy="214" r="1.6" fill="currentColor" stroke="none"/>
+    <path d="M142 226c5 4 13 4 18 0"/>
+    <!-- pointing hand (right) -->
+    <path d="M244 150c0-8 3-14 3-22 0-5 7-5 7 0v14c3-4 9-3 9 2 4-3 9-1 9 3 3-2 8 0 8 4 0 12-4 26-14 30-10 4-22 0-27-9-3-6-2-14 2-19Z"/>
+    <!-- sparkle -->
+    <path d="M268 96l3 10 10 3-10 3-3 10-3-10-10-3 10-3Z" class="auth-art-spark"/>
+  </svg>`;
+}
+
 function authScreenHtml() {
-  const iconMail = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>`;
-  const iconLock = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`;
-  const iconUser = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg>`;
+  const iconEye = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
 
   return `
   <section class="auth-screen">
     <div class="auth-grid" id="authCard">
 
+      <!-- ILLUSTRATION COLUMN -->
+      <aside class="auth-art-col" aria-hidden="true">
+        <div class="brand auth-brand">
+          <div class="mark">${brandMarkSvg()}</div>
+          <div class="word">Setu<span>.</span></div>
+        </div>
+        <div class="auth-art">${authArtSvg()}</div>
+      </aside>
+
       <!-- FORM COLUMN -->
       <div class="auth-form-col">
         <div class="auth-form-inner">
-          <div class="brand auth-brand">
-            <div class="mark">${brandMarkSvg()}</div>
-            <div class="word">Setu<span>.</span></div>
-          </div>
 
           <!-- SIGN IN -->
           <form class="auth-form sign-in-form" id="loginForm" novalidate>
-            <h1 class="auth-title">Welcome back</h1>
-            <p class="auth-sub">Log in once to reach every department connected to Setu.</p>
+            <h1 class="auth-title">Sign in</h1>
+            <p class="auth-sub">New to Setu? <button type="button" class="auth-link" id="toRegister">Create an account</button></p>
             <div id="loginError" class="auth-form-error hidden"></div>
 
-            <label class="field-box">
-              <span class="fb-icon">${iconMail}</span>
-              <input id="loginEmail" type="email" autocomplete="email" placeholder="Email" required>
+            <label class="af-field">
+              <span class="af-label">E-mail</span>
+              <input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
             </label>
-            <label class="field-box">
-              <span class="fb-icon">${iconLock}</span>
-              <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Password" required>
+            <label class="af-field">
+              <span class="af-label">Password</span>
+              <span class="af-input-wrap">
+                <input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" required>
+                <button type="button" class="af-reveal" data-reveal="loginPassword" aria-label="Show password">${iconEye}</button>
+              </span>
             </label>
 
-            <button type="submit" class="auth-submit" id="loginSubmit">Log in</button>
-            <p class="auth-switch">New to Setu? <button type="button" class="auth-link" id="toRegister">Create an account</button></p>
+            <button type="submit" class="auth-submit" id="loginSubmit">Sign in</button>
           </form>
 
           <!-- SIGN UP -->
           <form class="auth-form sign-up-form hidden" id="registerForm" novalidate>
-            <h1 class="auth-title">Create an account</h1>
-            <p class="auth-sub">One identity, verified once per department, reused everywhere.</p>
+            <h1 class="auth-title">Sign up</h1>
+            <p class="auth-sub">Already have an account? <button type="button" class="auth-link" id="toLogin">Sign in</button></p>
             <div id="registerError" class="auth-form-error hidden"></div>
 
-            <label class="field-box">
-              <span class="fb-icon">${iconUser}</span>
-              <input id="registerName" type="text" autocomplete="name" placeholder="Full name" required>
+            <label class="af-field">
+              <span class="af-label">Full name</span>
+              <input id="registerName" type="text" autocomplete="name" placeholder="Sam Lee" required>
             </label>
-            <label class="field-box">
-              <span class="fb-icon">${iconMail}</span>
-              <input id="registerEmail" type="email" autocomplete="email" placeholder="Email" required>
+            <label class="af-field">
+              <span class="af-label">E-mail</span>
+              <input id="registerEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
             </label>
-            <label class="field-box">
-              <span class="fb-icon">${iconLock}</span>
-              <input id="registerPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Password (min 8 characters)" required>
+            <label class="af-field">
+              <span class="af-label">Password</span>
+              <span class="af-input-wrap">
+                <input id="registerPassword" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters" required>
+                <button type="button" class="af-reveal" data-reveal="registerPassword" aria-label="Show password">${iconEye}</button>
+              </span>
             </label>
 
-            <button type="submit" class="auth-submit" id="registerSubmit">Create account</button>
-            <p class="auth-switch">Already with us? <button type="button" class="auth-link" id="toLogin">Sign in</button></p>
+            <label class="af-check">
+              <input type="checkbox" id="registerConsent" required>
+              <span>I agree that Setu may contact departments on my behalf, and that every call is logged. I acknowledge the consent-based data flow.</span>
+            </label>
+
+            <button type="submit" class="auth-submit" id="registerSubmit">Sign up</button>
           </form>
 
           <!-- Officials console pointer. Deliberately low-emphasis: this is a
@@ -92,15 +130,6 @@ function authScreenHtml() {
           </p>
         </div>
       </div>
-
-      <!-- BRAND PANEL -->
-      <aside class="auth-brand-panel" aria-hidden="true">
-        <div class="abp-glow"></div>
-        <div class="abp-content">
-          <h2 class="abp-headline">One login.<br>Every department.</h2>
-          <p class="abp-tagline">Verify a document once — then reuse it across Digital Tax Records, the National Identity Registry and the Driving Licence &amp; Jan Aadhaar Portal. No re-upload, every step logged.</p>
-        </div>
-      </aside>
 
     </div>
   </section>`;
@@ -114,7 +143,6 @@ function setButtonLoading(btn, loading, label) {
 function mountAuthScreen(root, onAuthenticated, { notice } = {}) {
   root.innerHTML = authScreenHtml();
 
-  const card = document.getElementById('authCard');
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
 
@@ -131,12 +159,24 @@ function mountAuthScreen(root, onAuthenticated, { notice } = {}) {
     const signUp = which === 'register';
     loginForm.classList.toggle('hidden', signUp);
     registerForm.classList.toggle('hidden', !signUp);
-    card.classList.toggle('sign-up-mode', signUp);
     const firstInput = (signUp ? registerForm : loginForm).querySelector('input');
     if (firstInput) firstInput.focus();
   }
   document.getElementById('toRegister').addEventListener('click', () => showForm('register'));
   document.getElementById('toLogin').addEventListener('click', () => showForm('login'));
+
+  // Password reveal toggles — flip the target input's type between
+  // password/text. Purely a UI convenience; no bearing on submit.
+  root.querySelectorAll('.af-reveal').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.reveal);
+      if (!input) return;
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.classList.toggle('is-on', show);
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    });
+  });
 
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
