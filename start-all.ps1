@@ -18,9 +18,9 @@ $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 
 # --- Resolved, verified paths -------------------------------------------------
-$PgBin   = 'C:\Users\Prince\scoop\apps\postgresql\current\bin'
-$PgData  = 'C:\Users\Prince\scoop\persist\postgresql\data'
-$PgLog   = 'C:\Users\Prince\scoop\persist\postgresql\pg.log'
+# PostgreSQL paths now live in scripts\ensure-postgres.ps1 (the single source
+# of truth this script delegates to). stop-all.ps1 keeps its own copy for the
+# shutdown call.
 
 $DtrDir  = Join-Path $root 'Mock_Sites\UIDAI_Backend_Digital_Tax_Records\UIDAI_Backend'
 $NirDir  = Join-Path $root 'Mock_Sites\Independent Identity Registration Portal\Independent Identity Registration Portal\SETU'
@@ -48,15 +48,15 @@ function Test-Port {
 Write-Host "`n=== Setu stack: starting ===`n" -ForegroundColor Cyan
 
 # --- 1. PostgreSQL ------------------------------------------------------------
+# Delegated to scripts\ensure-postgres.ps1 (single source of truth for the
+# Scoop paths + readiness-wait) - the same script the SetuPostgresAutostart
+# logon task runs. Idempotent: it no-ops if 5432 is already up (e.g. the
+# logon task already started it), so this stays safe to run anytime.
 Write-Host "[1/6] PostgreSQL (port 5432)..." -ForegroundColor Yellow
-if (Test-Port 5432) {
-    Write-Host "  -> already running" -ForegroundColor DarkGray
-} else {
-    & "$PgBin\pg_ctl.exe" -D $PgData -l $PgLog start | Out-Null
-    $tries = 0
-    while (-not (Test-Port 5432) -and $tries -lt 15) { Start-Sleep -Seconds 1; $tries++ }
-    if (Test-Port 5432) { Write-Host "  -> started" -ForegroundColor Green }
-    else { Write-Host "  -> FAILED to start; check $PgLog" -ForegroundColor Red; exit 1 }
+& (Join-Path $root 'scripts\ensure-postgres.ps1')
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  -> FAILED to start PostgreSQL; see scripts\ensure-postgres.ps1 output above." -ForegroundColor Red
+    exit 1
 }
 
 # --- 2. Department services ---------------------------------------------------
@@ -101,3 +101,5 @@ foreach ($c in $checks) {
 
 Write-Host "`nOpen the app:  http://localhost:3000" -ForegroundColor Cyan
 Write-Host "Stop everything:  .\stop-all.ps1`n" -ForegroundColor DarkGray
+
+

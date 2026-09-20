@@ -138,16 +138,51 @@ Once it reports all ports up, open the app:
 | Driving Licence & Jan Aadhaar | 3001 | Node/Express + PostgreSQL | `npm start` |
 | PostgreSQL | 5432 | Scoop install (no service) | `pg_ctl -D <data dir> start` |
 
+### PostgreSQL auto-start (one-time setup)
+PostgreSQL is a Scoop install with **no Windows service**, so on its own it
+does not come up on boot - which is what caused the gateway's ECONNREFUSED /
+"service unavailable" on signup. To make it reliable, run this **once**:
+
+```powershell
+pwsh -File .\scripts\install-postgres-autostart.ps1
+```
+
+That registers a per-user logon Scheduled Task (`SetuPostgresAutostart`)
+which runs `scripts\ensure-postgres.ps1` at every login, starting Postgres
+on port 5432 before you touch anything. No admin rights needed; idempotent
+(re-running just updates the task). After a reboot Postgres is already up -
+you do **not** start it by hand.
+
+- Trigger without rebooting: `Start-ScheduledTask -TaskName 'SetuPostgresAutostart'`
+- Remove it: `Unregister-ScheduledTask -TaskName 'SetuPostgresAutostart' -Confirm:$false`
+- `ensure-postgres.ps1` is the single source of truth for the Scoop paths
+  and the readiness-wait; both the logon task and `start-all.ps1` call it,
+  and it no-ops if 5432 is already listening.
+
+### After a reboot - start the gateway
+With the auto-start task in place, bringing the gateway up is just:
+
+```powershell
+cd gateway
+npm run migrate   # ONLY the first time, or after a schema change
+npm start         # gateway API on :4000
+```
+
+Postgres is already running (logon task), so `npm start` connects cleanly
+with no manual DB step. For the whole stack (departments + frontend too), use
+`.\start-all.ps1` from the repo root - it also calls `ensure-postgres.ps1`,
+so it works whether or not the logon task already started Postgres.
+
 ### First-time / environment notes
-- **PostgreSQL** is a Scoop install with no Windows service, so it does not
-  auto-start on boot — `start-all.ps1` starts it manually each time. The
-  gateway's own database (`setu_gateway_db`) is created and migrated with
-  `npm run migrate` from `gateway/`.
+- The gateway's own database (`setu_gateway_db`) is created and migrated
+  with `npm run migrate` from `gateway/`. Run it once (and again only
+  after a schema change).
 - **Dependencies** must be installed once per Node service (`npm install` in
   `gateway/`, `frontend/`, and each Node department folder) and the Python
   venv must exist for Digital Tax Records (`pip install -r requirements.txt`).
-- **Paths** for the Scoop Postgres install are hardcoded at the top of
-  `start-all.ps1`; update them there if Postgres moves or is reinstalled.
+- **Paths** for the Scoop Postgres install live in
+  `scripts\ensure-postgres.ps1` (and, for shutdown only, `stop-all.ps1`);
+  update them there if Postgres moves or is reinstalled.
 
 ### Demo references
 - Digital Tax Records: `SYNPAN-000123`
@@ -157,3 +192,5 @@ Once it reports all ports up, open the app:
 
 ## Team
 _(fill in)_
+
+
