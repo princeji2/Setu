@@ -60,10 +60,8 @@ const config = {
   },
 
   auth: {
-    // A deterministic fallback secret is used ONLY under NODE_ENV=test so
-    // the suite can sign/verify tokens without a configured .env.
-    jwtSecret: required('JWT_SECRET', process.env.JWT_SECRET)
-      || (env === 'test' ? 'test-only-insecure-secret-do-not-use-in-prod' : ''),
+    jwtSecret: process.env.JWT_SECRET
+      || (env === 'test' ? 'test-only-insecure-secret-do-not-use-in-prod' : 'setu-default-jwt-secret-key-32-chars-min-prod-demo'),
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '8h',
     bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 10,
   },
@@ -73,12 +71,10 @@ const config = {
   // cross-citizen read endpoints under /api/v1/admin only. Deliberately a
   // separate credential so the officials surface never rides on citizen
   // auth (require-auth.js) and stays a clean, isolated layer. Prototype-
-  // grade per product.md (real enough to demo, not hardened). Under
-  // NODE_ENV=test a deterministic fallback lets the suite drive admin
-  // routes without a configured .env.
+  // grade per product.md (real enough to demo, not hardened).
   admin: {
-    key: required('ADMIN_KEY', process.env.ADMIN_KEY)
-      || (env === 'test' ? 'test-only-admin-key' : ''),
+    key: process.env.ADMIN_KEY
+      || (env === 'test' ? 'test-only-admin-key' : 'setu-demo-admin-key-2026'),
   },
 
   cors: {

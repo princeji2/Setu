@@ -32,11 +32,12 @@ const pgCitizenRepository = {
   },
 
   async create({ fullName, email, passwordHash }) {
+    const id = crypto.randomUUID();
     const res = await query(
-      `INSERT INTO citizens (full_name, email, password_hash)
-       VALUES ($1, $2, $3)
+      `INSERT INTO citizens (id, full_name, email, password_hash)
+       VALUES ($1, $2, $3, $4)
        RETURNING id, full_name, email, password_hash, created_at`,
-      [fullName, normaliseEmail(email), passwordHash]
+      [id, fullName, normaliseEmail(email), passwordHash]
     );
     return res.rows[0];
   },

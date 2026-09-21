@@ -8,7 +8,13 @@
 -- .kiro/specs/certificate-application/tasks.md.
 -- ============================================================
 
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";  -- provides gen_random_uuid()
+DO $$
+BEGIN
+    CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+EXCEPTION WHEN OTHERS THEN
+    -- In PostgreSQL 13+, gen_random_uuid() is built-in; ignore extension error if non-superuser
+    NULL;
+END $$;
 
 -- ------------------------------------------------------------
 -- citizens — the Setu-ID. One row per citizen using the gateway.
