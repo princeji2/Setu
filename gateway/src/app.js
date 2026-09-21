@@ -82,7 +82,7 @@ function createApp({
       }
       return callback(new Error('Not allowed by CORS'));
     },
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
     // X-Admin-Key is the officials-console credential (Phase B). Browsers
     // preflight it as a non-simple header, so it must be allowed here or the
     // console's cross-origin fetch (3000 -> 4000) is blocked. Additive; does

@@ -30,6 +30,7 @@ function createAdminRouter(adminService) {
   router.get('/stats/trend', (req, res) => controller.trend(req, res));
   router.get('/applications', (req, res) => controller.listApplications(req, res));
   router.get('/audit-log', (req, res) => controller.listAuditLog(req, res));
+  router.delete('/citizens/test-records', (req, res) => controller.deleteTestCitizens(req, res));
 
   return router;
 }

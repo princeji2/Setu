@@ -217,6 +217,17 @@ const pgAdminRepository = {
     );
     return res.rows.map(parseDetail);
   },
+
+  async deleteTestCitizens({ emailPrefix = 'prod_user_' } = {}) {
+    const pattern = `${emailPrefix.toLowerCase()}%`;
+    const res = await query(
+      `DELETE FROM citizens
+       WHERE lower(email) LIKE $1
+       RETURNING id, full_name, email, created_at`,
+      [pattern]
+    );
+    return res.rows;
+  },
 };
 
 // ------------------------------------------------------------
@@ -504,6 +515,10 @@ function createInMemoryAdminRepository({ citizens = [], applications = [], calls
         .sort((a, b) => (a.occurred_at < b.occurred_at ? 1 : -1))
         .slice(0, limit)
         .map(parseDetail);
+    },
+
+    async deleteTestCitizens({ emailPrefix = 'prod_user_' } = {}) {
+      return [];
     },
   };
 }

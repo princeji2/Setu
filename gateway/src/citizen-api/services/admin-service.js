@@ -89,6 +89,10 @@ function createAdminService({ adminRepository }) {
         limit: parsedLimit,
       });
     },
+
+    async deleteTestCitizens({ emailPrefix = 'prod_user_' } = {}) {
+      return adminRepository.deleteTestCitizens({ emailPrefix });
+    },
   };
 }
 

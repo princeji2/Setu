@@ -70,6 +70,17 @@ function createAdminController(adminService) {
         return sendError(res, err);
       }
     },
+
+    async deleteTestCitizens(req, res) {
+      try {
+        const data = await adminService.deleteTestCitizens({
+          emailPrefix: req.query.email_prefix,
+        });
+        return res.status(200).json({ success: true, data: { deleted: data, count: data.length }, error: null });
+      } catch (err) {
+        return sendError(res, err);
+      }
+    },
   };
 }
 
