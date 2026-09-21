@@ -88,7 +88,9 @@ async function adminGet(path, params) {
       headers: { Accept: 'application/json', 'X-Admin-Key': key },
     });
   } catch (err) {
-    throw new AdminNetworkError('Could not reach the Setu gateway. Is it running on port 4000?');
+    const isLocal = API_BASE.includes('localhost') || API_BASE.includes('127.0.0.1');
+    const hint = isLocal ? ' Is it running on port 4000?' : ` (${API_BASE})`;
+    throw new AdminNetworkError(`Could not reach the Setu gateway.${hint}`);
   }
 
   let payload = null;

@@ -91,7 +91,9 @@ async function request(method, path, body, { auth = true } = {}) {
     // The gateway process isn't reachable at all — distinct from a
     // department being down, which the gateway itself reports as a normal
     // 200 { status: 'failed' } response (see api.md's relay convention).
-    throw new NetworkError('Could not reach the Setu gateway. Is it running on port 4000?');
+    const isLocal = API_BASE.includes('localhost') || API_BASE.includes('127.0.0.1');
+    const hint = isLocal ? ' Is it running on port 4000?' : ` (${API_BASE})`;
+    throw new NetworkError(`Could not reach the Setu gateway.${hint}`);
   }
 
   let payload = null;

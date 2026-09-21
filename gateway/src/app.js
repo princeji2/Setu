@@ -69,7 +69,17 @@ function createApp({
   app.use(cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true); // curl / server-to-server
-      if (config.cors.origins.includes(origin)) return callback(null, true);
+      if (config.cors.origins.includes('*') || config.cors.origins.includes(origin)) {
+        return callback(null, true);
+      }
+      // Allow any orgs.social domain/subdomain (e.g. app.orgs.social, www.orgs.social)
+      if (/^https?:\/\/([a-z0-9-]+\.)*orgs\.social(:\d+)?$/i.test(origin)) {
+        return callback(null, true);
+      }
+      // Allow any local dev port on localhost / 127.0.0.1
+      if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) {
+        return callback(null, true);
+      }
       return callback(new Error('Not allowed by CORS'));
     },
     methods: ['GET', 'POST', 'OPTIONS'],
@@ -129,6 +139,21 @@ function createApp({
     res.status(404).json({
       success: false,
       error: { code: 'NOT_FOUND', message: `No route for ${req.method} ${req.path}` },
+    });
+  });
+
+  // Central error handler (including CORS rejections so preflight returns clean JSON instead of 500 HTML)
+  app.use((err, req, res, next) => {
+    if (err && err.message === 'Not allowed by CORS') {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'CORS_NOT_ALLOWED', message: 'Origin not allowed by CORS' },
+      });
+    }
+    console.error('[gateway] Unhandled server error:', err);
+    return res.status(500).json({
+      success: false,
+      error: { code: 'INTERNAL', message: 'Something went wrong.' },
     });
   });
 

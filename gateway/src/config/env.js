@@ -21,6 +21,27 @@ function required(name, value) {
   return value;
 }
 
+function parseCorsOrigins(raw) {
+  const defaults = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:4000',
+    'http://127.0.0.1:4000',
+    'https://app.orgs.social',
+    'http://app.orgs.social',
+    'https://orgs.social',
+    'http://orgs.social',
+    'https://www.orgs.social',
+    'http://www.orgs.social',
+  ];
+  if (!raw) return defaults;
+  const parsed = raw
+    .split(',')
+    .map((o) => o.trim().replace(/^['"]|['"]$/g, '').replace(/\/+$/, ''))
+    .filter(Boolean);
+  return Array.from(new Set([...defaults, ...parsed]));
+}
+
 const env = process.env.NODE_ENV || 'development';
 
 const config = {
@@ -29,12 +50,13 @@ const config = {
   port: parseInt(process.env.PORT, 10) || 4000,
 
   db: {
+    connectionString: process.env.DATABASE_URL || '',
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT, 10) || 5432,
     name: process.env.DB_NAME || 'setu_gateway_db',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || '',
-    ssl: process.env.DB_SSL === 'true',
+    ssl: process.env.DB_SSL === 'true' || Boolean(process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost')),
   },
 
   auth: {
@@ -60,10 +82,7 @@ const config = {
   },
 
   cors: {
-    origins: (process.env.CORS_ORIGINS || 'http://localhost:3000')
-      .split(',')
-      .map((o) => o.trim())
-      .filter(Boolean),
+    origins: parseCorsOrigins(process.env.CORS_ORIGINS),
   },
 
   // Per-department integration config (Layer 2). One entry per department;

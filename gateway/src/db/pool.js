@@ -17,16 +17,23 @@ let pool = null;
 
 function getPool() {
   if (!pool) {
-    const poolConfig = {
-      host: config.db.host,
-      port: config.db.port,
-      database: config.db.name,
-      user: config.db.user,
-      password: config.db.password,
-      max: 10,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000,
-    };
+    const poolConfig = config.db.connectionString
+      ? {
+          connectionString: config.db.connectionString,
+          max: 10,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 5000,
+        }
+      : {
+          host: config.db.host,
+          port: config.db.port,
+          database: config.db.name,
+          user: config.db.user,
+          password: config.db.password,
+          max: 10,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 5000,
+        };
     if (config.db.ssl) {
       poolConfig.ssl = { rejectUnauthorized: false };
     }

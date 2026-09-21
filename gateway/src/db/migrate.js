@@ -16,10 +16,14 @@ async function migrate() {
   console.log('[migrate] Done.');
 }
 
-migrate()
-  .then(() => close())
-  .then(() => process.exit(0))
-  .catch((err) => {
-    console.error('[migrate] Failed:', err.message);
-    close().finally(() => process.exit(1));
-  });
+if (require.main === module) {
+  migrate()
+    .then(() => close())
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error('[migrate] Failed:', err.message);
+      close().finally(() => process.exit(1));
+    });
+}
+
+module.exports = { migrate };
