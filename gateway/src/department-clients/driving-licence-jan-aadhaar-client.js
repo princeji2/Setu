@@ -51,6 +51,21 @@ const NON_SENSITIVE_FIELD_NAMES = [
   'licence_expiry_date',
   'family_members_count',
   'verification_status',
+  // Vehicle RC fields
+  'owner_name',
+  'vehicle_number',
+  'vehicle_class',
+  'maker_model',
+  'registration_date',
+  'fuel_type',
+  // Passport fields
+  'holder_name',
+  'passport_number',
+  'dob',
+  'nationality',
+  'issue_date',
+  'expiry_date',
+  'place_of_issue',
 ];
 
 function translate(rawData) {
@@ -63,8 +78,8 @@ function translate(rawData) {
     verification_status: rawData.verification_status,
     field_names: presentFields,
     // Masked-but-real pairs. DLJA already masks licence_number/jan_aadhaar_id
-    // at source (they pass through mask() unchanged); licence_holder_name is
-    // masked here. Dates/counts/verification_status are non-identifying.
+    // at source (they pass through mask() unchanged); licence_holder_name/owner_name/holder_name
+    // are masked here. Dates/counts/verification_status are non-identifying.
     masked_fields: presentFields.map((k) => ({ name: k, value: maskValue(k, rawData[k]) })),
     // Structural data-quality flags (never blocks; logged for accountability).
     data_quality_flags: flagRegistration({
@@ -74,7 +89,7 @@ function translate(rawData) {
     }),
     // Demographic data for cross-registry identity matching
     demographics: {
-      fullName: rawData.licence_holder_name || null,
+      fullName: rawData.licence_holder_name || rawData.owner_name || rawData.holder_name || null,
       dob: rawData.dob || null,
     },
   };
@@ -91,12 +106,23 @@ function createDrivingLicenceJanAadhaarClient({
 
     /**
      * Fetch masked registration data for a registration reference.
-     * @param {string} reference e.g. 'REG-4C3978A0'
+     * @param {string} reference e.g. 'REG-4C3978A0', 'RC-7B010001', 'PASS-7B010001'
      */
     async fetchFields(reference) {
-      const endpoint = `GET /api/v1/gateway/registrations/${reference}`;
-      const url = `${baseUrl.replace(/\/$/, '')}/api/v1/gateway/registrations/${encodeURIComponent(reference)}`;
+      let endpoint = `GET /api/v1/gateway/registrations/${reference}`;
+      let path = `/api/v1/gateway/registrations/${encodeURIComponent(reference)}`;
+
+      if (reference.startsWith('RC-') || reference.startsWith('VEH-')) {
+        endpoint = `GET /api/v1/gateway/vehicle-rc/${reference}`;
+        path = `/api/v1/gateway/vehicle-rc/${encodeURIComponent(reference)}`;
+      } else if (reference.startsWith('PASS-') || reference.startsWith('PPT-')) {
+        endpoint = `GET /api/v1/gateway/passport/${reference}`;
+        path = `/api/v1/gateway/passport/${encodeURIComponent(reference)}`;
+      }
+
+      const url = `${baseUrl.replace(/\/$/, '')}${path}`;
       const start = Date.now();
+
 
       let res;
       try {

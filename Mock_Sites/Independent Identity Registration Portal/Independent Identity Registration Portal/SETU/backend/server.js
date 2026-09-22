@@ -112,6 +112,12 @@ app.get('/health', async (req, res) => {
 app.use('/api/registration', registrationRoutes);
 app.use('/api/admin', adminRoutes);
 
+const { getVoterIdFields, getBirthCertificateFields } = require('./controllers/registrationController');
+const gatewayAuthMiddleware = require('./middleware/gatewayAuthMiddleware');
+app.get('/api/voter-id/:voterReference/fields', gatewayAuthMiddleware, getVoterIdFields);
+app.get('/api/birth-certificate/:birthReference/fields', gatewayAuthMiddleware, getBirthCertificateFields);
+
+
 // Fallback HTML navigation routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));

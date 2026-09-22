@@ -203,8 +203,123 @@ async function getRegistrationFields(req, res, next) {
   }
 }
 
+/**
+ * Retrieves verified fields for a Voter ID reference.
+ * Route: GET /api/voter-id/:voterReference/fields
+ */
+async function getVoterIdFields(req, res, next) {
+  try {
+    const rawRef = req.params.voterReference || req.params.identityReference || req.params.reference;
+    const clientIp = req.ip || req.connection.remoteAddress || '127.0.0.1';
+    const gatewayClient = req.gateway?.client || req.headers['x-gateway-client'] || 'Setu-Gateway';
+
+    const validation = validateSyntheticIdentity(rawRef);
+    if (!validation.isValid) {
+      return res.status(400).json({
+        success: false,
+        data: null,
+        error: `Validation failed: ${validation.error}`,
+      });
+    }
+
+    const voterReference = validation.normalized;
+    const record = await RegistrationService.getFieldsByIdentityReference(voterReference);
+
+    if (!record) {
+      return res.status(404).json({
+        success: false,
+        data: null,
+        error: `Voter ID reference '${voterReference}' not found in registration database.`,
+      });
+    }
+
+    await AuditService.logEvent(
+      'FIELDS_ACCESSED',
+      {
+        identity_reference: voterReference,
+        document_type: 'voter_id',
+        service_client: gatewayClient,
+        field_count: record.fields.length,
+        department: DEPARTMENT_NAME,
+      },
+      clientIp
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        identityReference: record.identity_reference,
+        fields: record.fields,
+        sourceDepartment: DEPARTMENT_NAME,
+      },
+      error: null,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Retrieves verified fields for a Birth Certificate reference.
+ * Route: GET /api/birth-certificate/:birthReference/fields
+ */
+async function getBirthCertificateFields(req, res, next) {
+  try {
+    const rawRef = req.params.birthReference || req.params.identityReference || req.params.reference;
+    const clientIp = req.ip || req.connection.remoteAddress || '127.0.0.1';
+    const gatewayClient = req.gateway?.client || req.headers['x-gateway-client'] || 'Setu-Gateway';
+
+    const validation = validateSyntheticIdentity(rawRef);
+    if (!validation.isValid) {
+      return res.status(400).json({
+        success: false,
+        data: null,
+        error: `Validation failed: ${validation.error}`,
+      });
+    }
+
+    const birthReference = validation.normalized;
+    const record = await RegistrationService.getFieldsByIdentityReference(birthReference);
+
+    if (!record) {
+      return res.status(404).json({
+        success: false,
+        data: null,
+        error: `Birth Certificate reference '${birthReference}' not found in registration database.`,
+      });
+    }
+
+    await AuditService.logEvent(
+      'FIELDS_ACCESSED',
+      {
+        identity_reference: birthReference,
+        document_type: 'birth_certificate',
+        service_client: gatewayClient,
+        field_count: record.fields.length,
+        department: DEPARTMENT_NAME,
+      },
+      clientIp
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        identityReference: record.identity_reference,
+        fields: record.fields,
+        sourceDepartment: DEPARTMENT_NAME,
+      },
+      error: null,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getCaptcha,
   checkRegistration,
   getRegistrationFields,
+  getVoterIdFields,
+  getBirthCertificateFields,
 };
+

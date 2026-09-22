@@ -39,7 +39,7 @@ from app.auth import (
     create_access_token,
     get_current_user
 )
-from app.routes.pan import router as pan_router
+from app.routes.pan import router as pan_router, gateway_docs_router
 
 
 # =========================================================
@@ -172,6 +172,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 # =========================================================
 
 app.include_router(pan_router)
+app.include_router(gateway_docs_router)
 
 
 # =========================================================

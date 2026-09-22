@@ -70,9 +70,20 @@ function createNationalIdentityRegistryClient({
      * @param {string} reference e.g. 'TESTAADHAAR0001'
      */
     async fetchFields(reference) {
-      const endpoint = `GET /api/registration/${reference}/fields`;
-      const url = `${baseUrl.replace(/\/$/, '')}/api/registration/${encodeURIComponent(reference)}/fields`;
+      let endpoint = `GET /api/registration/${reference}/fields`;
+      let path = `/api/registration/${encodeURIComponent(reference)}/fields`;
+
+      if (reference.startsWith('VOTER-') || reference.startsWith('EPIC-')) {
+        endpoint = `GET /api/voter-id/${reference}/fields`;
+        path = `/api/voter-id/${encodeURIComponent(reference)}/fields`;
+      } else if (reference.startsWith('BIRTH-') || reference.startsWith('BC-')) {
+        endpoint = `GET /api/birth-certificate/${reference}/fields`;
+        path = `/api/birth-certificate/${encodeURIComponent(reference)}/fields`;
+      }
+
+      const url = `${baseUrl.replace(/\/$/, '')}${path}`;
       const start = Date.now();
+
 
       let res;
       try {

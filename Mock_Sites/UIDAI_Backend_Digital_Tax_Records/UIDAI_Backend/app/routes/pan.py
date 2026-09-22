@@ -15,11 +15,14 @@ from app.services.pan_service import (
     register_pan_record,
     get_user_pan_records,
     get_pan_record_by_id,
-    get_gateway_fields_by_reference
+    get_gateway_fields_by_reference,
+    get_gateway_pan_card_fields_by_reference,
+    get_gateway_income_certificate_fields_by_reference
 )
 from app.config.settings import GATEWAY_API_KEY, DEPARTMENT_NAME
 
 router = APIRouter(prefix="/pan", tags=["PAN Records"])
+gateway_docs_router = APIRouter(tags=["Gateway Document Verification"])
 
 
 def verify_gateway_key(x_gateway_key: Optional[str] = Header(None, alias="X-Gateway-Key")):
@@ -52,13 +55,20 @@ def get_pan_fields_for_gateway(
         )
 
     # Require synthetic format
-    if not re.fullmatch(r"(SYNPAN|DEMO)-\d{3,10}", pan_reference):
+    if not re.fullmatch(r"(SYNPAN|DEMO|PANCARD|INC|INCOME|TAX)-[A-Za-z0-9_-]{3,20}", pan_reference):
         raise HTTPException(
             status_code=400,
-            detail="Validation failed: Identifier must be a synthetic reference starting with 'SYNPAN-' or 'DEMO-' followed by digits."
+            detail="Validation failed: Identifier must be a synthetic reference starting with 'SYNPAN-', 'DEMO-', 'PANCARD-', or 'INC-'."
         )
 
     gateway_data = get_gateway_fields_by_reference(db, pan_reference)
+    if not gateway_data:
+        # Fallback to check pan-card or income-cert if query used this endpoint
+        if pan_reference.startswith("PANCARD-"):
+            gateway_data = get_gateway_pan_card_fields_by_reference(db, pan_reference)
+        elif pan_reference.startswith("INC-") or pan_reference.startswith("INCOME-"):
+            gateway_data = get_gateway_income_certificate_fields_by_reference(db, pan_reference)
+
     if not gateway_data:
         raise HTTPException(
             status_code=404,
@@ -70,6 +80,54 @@ def get_pan_fields_for_gateway(
         "data": gateway_data.model_dump(),
         "error": None
     }
+
+
+@router.get("/pan-card/{reference}/fields")
+@gateway_docs_router.get("/pan-card/{reference}/fields")
+def get_pan_card_fields_for_gateway(
+    reference: str,
+    gateway_key: str = Depends(verify_gateway_key),
+    db: Session = Depends(get_db)
+):
+    reference = reference.strip()
+    if re.fullmatch(r"[A-Za-z]{5}[0-9]{4}[A-Za-z]", reference):
+        raise HTTPException(
+            status_code=400,
+            detail="Validation failed: Real PAN numbers are strictly forbidden. Please use synthetic test identifiers."
+        )
+    gateway_data = get_gateway_pan_card_fields_by_reference(db, reference)
+    if not gateway_data:
+        raise HTTPException(
+            status_code=404,
+            detail=f"PAN card record '{reference}' not found in tax records database."
+        )
+    return {
+        "success": True,
+        "data": gateway_data.model_dump(),
+        "error": None
+    }
+
+
+@router.get("/income-certificate/{reference}/fields")
+@gateway_docs_router.get("/income-certificate/{reference}/fields")
+def get_income_certificate_fields_for_gateway(
+    reference: str,
+    gateway_key: str = Depends(verify_gateway_key),
+    db: Session = Depends(get_db)
+):
+    reference = reference.strip()
+    gateway_data = get_gateway_income_certificate_fields_by_reference(db, reference)
+    if not gateway_data:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Income Certificate record '{reference}' not found in tax records database."
+        )
+    return {
+        "success": True,
+        "data": gateway_data.model_dump(),
+        "error": None
+    }
+
 
 
 @router.post("/")

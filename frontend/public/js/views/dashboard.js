@@ -196,11 +196,10 @@ function credGridHtml(documents) {
    from real applications. The whole row opens the application detail. */
 function activityRowHtml(app) {
   const theme = (function () {
-    // Best-effort department tag from the application type.
     if (app.type === 'senior_citizen_transport_concession') return departmentTheme('composite_workflow');
-    if (app.type === 'pan_verification') return departmentTheme('digital_tax_records');
-    if (app.type === 'identity_verification') return departmentTheme('national_identity_registry');
-    if (app.type === 'driving_licence_registration') return departmentTheme('driving_licence_jan_aadhaar');
+    if (app.type === 'pan_verification' || app.type === 'pan_card_verification' || app.type === 'income_certificate_verification') return departmentTheme('digital_tax_records');
+    if (app.type === 'identity_verification' || app.type === 'voter_id_verification' || app.type === 'birth_certificate_verification') return departmentTheme('national_identity_registry');
+    if (app.type === 'driving_licence_registration' || app.type === 'vehicle_rc_verification' || app.type === 'passport_verification') return departmentTheme('driving_licence_jan_aadhaar');
     return departmentTheme('digital_tax_records');
   })();
   const label = APPLICATION_TYPE_LABELS[app.type] || app.type;

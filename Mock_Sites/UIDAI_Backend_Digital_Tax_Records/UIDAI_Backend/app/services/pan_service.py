@@ -130,3 +130,93 @@ def get_gateway_fields_by_reference(db: Session, pan_reference: str) -> Optional
         fields=fields,
         sourceDepartment=DEPARTMENT_NAME
     )
+
+
+def get_gateway_pan_card_fields_by_reference(db: Session, reference: str) -> Optional[GatewayFieldsData]:
+    record = db.query(PanRecord).filter(PanRecord.pan_reference == reference).first()
+    if not record and reference.startswith("PANCARD-"):
+        syn_ref = "SYNPAN-" + reference[len("PANCARD-"):]
+        record = db.query(PanRecord).filter(PanRecord.pan_reference == syn_ref).first()
+    if not record and reference.startswith("SYNPAN-"):
+        pan_ref = "PANCARD-" + reference[len("SYNPAN-"):]
+        record = db.query(PanRecord).filter(PanRecord.pan_reference == pan_ref).first()
+
+    if not record:
+        return None
+
+    last_updated = (
+        record.created_at.isoformat()
+        if record.created_at
+        else datetime.now(timezone.utc).isoformat()
+    )
+
+    import re
+    digits = re.sub(r"\D", "", reference) or "123456"
+    short_digits = digits[-4:].rjust(4, "0")
+    masked_pan = f"APRPK{short_digits}J"
+
+    fields = [
+        GatewayFieldItem(name="fullName", value=record.full_name, verified=True, lastUpdated=last_updated),
+        GatewayFieldItem(name="dob", value=record.date_of_birth, verified=True, lastUpdated=last_updated),
+        GatewayFieldItem(name="panNumber", value=masked_pan, verified=True, lastUpdated=last_updated),
+        GatewayFieldItem(name="category", value="Individual", verified=True, lastUpdated=last_updated),
+        GatewayFieldItem(name="status", value="ACTIVE", verified=True, lastUpdated=last_updated),
+        GatewayFieldItem(name="issueDate", value="2018-05-15", verified=True, lastUpdated=last_updated),
+    ]
+
+    return GatewayFieldsData(
+        reference=reference,
+        fields=fields,
+        sourceDepartment=DEPARTMENT_NAME
+    )
+
+
+def get_gateway_income_certificate_fields_by_reference(db: Session, reference: str) -> Optional[GatewayFieldsData]:
+    record = db.query(PanRecord).filter(PanRecord.pan_reference == reference).first()
+    if not record and reference.startswith("INC-2026-"):
+        suffix = reference[len("INC-2026-"):]
+        syn_ref = f"SYNPAN-2{suffix.rjust(5, '0')}"
+        record = db.query(PanRecord).filter(PanRecord.pan_reference == syn_ref).first()
+    if not record and reference.startswith("INC-"):
+        import re
+        digits = re.sub(r"\D", "", reference)
+        if digits:
+            record = db.query(PanRecord).filter(PanRecord.pan_reference.like(f"%{digits[-4:]}")).first()
+
+    if not record:
+        return None
+
+    last_updated = (
+        record.created_at.isoformat()
+        if record.created_at
+        else datetime.now(timezone.utc).isoformat()
+    )
+
+    bracket_to_income = {
+        "0-3L": "₹ 2,40,000",
+        "3-5L": "₹ 4,20,000",
+        "0-5L": "₹ 3,80,000",
+        "5-10L": "₹ 7,50,000",
+        "10-15L": "₹ 12,00,000",
+        "10L+": "₹ 14,50,000",
+        "15L+": "₹ 18,00,000",
+    }
+    income_val = bracket_to_income.get(record.income_bracket, "₹ 6,00,000")
+
+    fields = [
+        GatewayFieldItem(name="fullName", value=record.full_name, verified=True, lastUpdated=last_updated),
+        GatewayFieldItem(name="dob", value=record.date_of_birth, verified=True, lastUpdated=last_updated),
+        GatewayFieldItem(name="incomeBracket", value=record.income_bracket, verified=True, lastUpdated=last_updated),
+        GatewayFieldItem(name="annualIncome", value=income_val, verified=True, lastUpdated=last_updated),
+        GatewayFieldItem(name="certificateNumber", value=reference, verified=True, lastUpdated=last_updated),
+        GatewayFieldItem(name="financialYear", value=record.assessment_year, verified=True, lastUpdated=last_updated),
+        GatewayFieldItem(name="issuingAuthority", value="Revenue Department, Govt of NCT Delhi", verified=True, lastUpdated=last_updated),
+        GatewayFieldItem(name="validUntil", value="2027-03-31", verified=True, lastUpdated=last_updated),
+    ]
+
+    return GatewayFieldsData(
+        reference=reference,
+        fields=fields,
+        sourceDepartment=DEPARTMENT_NAME
+    )
+

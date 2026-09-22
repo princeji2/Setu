@@ -1,6 +1,12 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { getCaptcha, checkRegistration, getRegistrationFields } = require('../controllers/registrationController');
+const {
+  getCaptcha,
+  checkRegistration,
+  getRegistrationFields,
+  getVoterIdFields,
+  getBirthCertificateFields,
+} = require('../controllers/registrationController');
 const { validateRegistrationCheck } = require('../middleware/validationMiddleware');
 const gatewayAuthMiddleware = require('../middleware/gatewayAuthMiddleware');
 
@@ -53,4 +59,19 @@ router.post('/check', registrationLimiter, validateRegistrationCheck, checkRegis
  */
 router.get('/:identityReference/fields', gatewayAuthMiddleware, getRegistrationFields);
 
+/**
+ * @route   GET /api/registration/voter-id/:voterReference/fields
+ * @desc    Fetch verified Voter ID fields
+ * @access  Protected (Requires X-Gateway-Key header)
+ */
+router.get('/voter-id/:voterReference/fields', gatewayAuthMiddleware, getVoterIdFields);
+
+/**
+ * @route   GET /api/registration/birth-certificate/:birthReference/fields
+ * @desc    Fetch verified Birth Certificate fields
+ * @access  Protected (Requires X-Gateway-Key header)
+ */
+router.get('/birth-certificate/:birthReference/fields', gatewayAuthMiddleware, getBirthCertificateFields);
+
 module.exports = router;
+

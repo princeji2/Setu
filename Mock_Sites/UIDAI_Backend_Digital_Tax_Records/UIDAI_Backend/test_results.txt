@@ -53,14 +53,14 @@ tests/test_api.py::test_update_user_by_id PASSED                         [100%]
 
 ============================== warnings summary ===============================
 venv\Lib\site-packages\fastapi\testclient.py:1
-  C:\Users\Prince\OneDrive\Desktop\Setu\Mock_Sites\UIDAI_Backend (1)\UIDAI_Backend\venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  C:\Users\Prince\OneDrive\Desktop\Setu\Mock_Sites\UIDAI_Backend_Digital_Tax_Records\UIDAI_Backend\venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
     from starlette.testclient import TestClient as TestClient  # noqa
 
 venv\Lib\site-packages\starlette\testclient.py:53
-  C:\Users\Prince\OneDrive\Desktop\Setu\Mock_Sites\UIDAI_Backend (1)\UIDAI_Backend\venv\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+  C:\Users\Prince\OneDrive\Desktop\Setu\Mock_Sites\UIDAI_Backend_Digital_Tax_Records\UIDAI_Backend\venv\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
     _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-======================= 49 passed, 2 warnings in 8.29s ========================
+======================= 49 passed, 2 warnings in 8.18s ========================
 
 --- EXIT CODE: 0 ---

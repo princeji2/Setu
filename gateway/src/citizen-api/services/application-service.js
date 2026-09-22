@@ -23,8 +23,14 @@ const crypto = require('crypto');
 // permissive allow-list so adding a type is a one-line change.
 const KNOWN_TYPES = new Set([
   'pan_verification',
+  'pan_card_verification',
+  'income_certificate_verification',
   'identity_verification',
+  'voter_id_verification',
+  'birth_certificate_verification',
   'driving_licence_registration',
+  'vehicle_rc_verification',
+  'passport_verification',
   'senior_citizen_transport_concession',
 ]);
 

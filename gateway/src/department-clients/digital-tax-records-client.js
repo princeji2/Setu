@@ -79,9 +79,20 @@ function createDigitalTaxRecordsClient({
      * @param {string} reference e.g. 'SYNPAN-000123'
      */
     async fetchFields(reference) {
-      const endpoint = `GET /pan/${reference}/fields`;
-      const url = `${baseUrl.replace(/\/$/, '')}/pan/${encodeURIComponent(reference)}/fields`;
+      let endpoint = `GET /pan/${reference}/fields`;
+      let path = `/pan/${encodeURIComponent(reference)}/fields`;
+
+      if (reference.startsWith('PANCARD-')) {
+        endpoint = `GET /pan-card/${reference}/fields`;
+        path = `/pan-card/${encodeURIComponent(reference)}/fields`;
+      } else if (reference.startsWith('INC-') || reference.startsWith('INCOME-')) {
+        endpoint = `GET /income-certificate/${reference}/fields`;
+        path = `/income-certificate/${encodeURIComponent(reference)}/fields`;
+      }
+
+      const url = `${baseUrl.replace(/\/$/, '')}${path}`;
       const start = Date.now();
+
 
       let res;
       try {

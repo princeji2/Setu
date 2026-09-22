@@ -44,8 +44,14 @@ const DEPARTMENT_LABELS = {
 
 const APPLICATION_TYPE_LABELS = {
   pan_verification: 'PAN verification',
+  pan_card_verification: 'PAN Card verification',
+  income_certificate_verification: 'Income Certificate verification',
   identity_verification: 'Identity verification',
+  voter_id_verification: 'Voter ID (EPIC) verification',
+  birth_certificate_verification: 'Birth Certificate verification',
   driving_licence_registration: 'Driving licence registration',
+  vehicle_rc_verification: 'Vehicle RC verification',
+  passport_verification: 'Passport verification',
   senior_citizen_transport_concession: 'Senior Citizen Transport Concession',
 };
 

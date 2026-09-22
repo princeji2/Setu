@@ -21,6 +21,19 @@ const DEPT_SHORT = {
   driving_licence_jan_aadhaar: 'DLJA',
 };
 
+function getDocTypeLabel(ref, dept) {
+  if (ref && ref.startsWith('PANCARD-')) return 'PAN Card';
+  if (ref && ref.startsWith('INC-')) return 'Income Certificate';
+  if (ref && ref.startsWith('VOTER-')) return 'Voter ID (EPIC)';
+  if (ref && ref.startsWith('BIRTH-')) return 'Birth Certificate';
+  if (ref && ref.startsWith('RC-')) return 'Vehicle RC';
+  if (ref && ref.startsWith('PASS-')) return 'Passport';
+  if (dept === 'digital_tax_records') return 'Tax / PAN Record';
+  if (dept === 'national_identity_registry') return 'Identity Record';
+  if (dept === 'driving_licence_jan_aadhaar') return 'Driving Licence Record';
+  return 'Official Record';
+}
+
 function docCardHtml(doc) {
   const service = findServiceByDepartment(doc.department);
   const theme = departmentTheme(doc.department);
@@ -30,7 +43,10 @@ function docCardHtml(doc) {
   <div class="doc-card ${theme.themeClass}" data-department="${doc.department}">
     <div class="doc-card-head">
       ${departmentArtHtml(doc.department, 'md')}
-      <span class="status ${statusClass}">${statusLabel}</span>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span class="chip chip-wait" style="font-size:11px;">${escapeHtml(getDocTypeLabel(doc.department_reference, doc.department))}</span>
+        <span class="status ${statusClass}">${statusLabel}</span>
+      </div>
     </div>
     <h3>${escapeHtml(DEPARTMENT_LABELS[doc.department] || doc.department)}</h3>
     <p>Reference <span class="doc-ref">${escapeHtml(doc.department_reference)}</span> &middot; ${doc.verified ? 'updated' : 'linked'} ${timeAgo(doc.linked_at)}</p>

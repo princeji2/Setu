@@ -76,8 +76,14 @@ function appendFlags(summary, flags) {
 // reference from the citizen's consent/application input.
 const TYPE_TO_DEPARTMENT = {
   pan_verification: 'digital_tax_records',
+  pan_card_verification: 'digital_tax_records',
+  income_certificate_verification: 'digital_tax_records',
   identity_verification: 'national_identity_registry',
+  voter_id_verification: 'national_identity_registry',
+  birth_certificate_verification: 'national_identity_registry',
   driving_licence_registration: 'driving_licence_jan_aadhaar',
+  vehicle_rc_verification: 'driving_licence_jan_aadhaar',
+  passport_verification: 'driving_licence_jan_aadhaar',
 };
 
 const COMPOSITE_WORKFLOWS = {

@@ -167,4 +167,114 @@ async function getRegistration(req, res, next) {
   }
 }
 
-module.exports = { createRegistration, getRegistration };
+// ============================================================
+// GET /api/v1/gateway/vehicle-rc/:reference
+// ============================================================
+async function getVehicleRc(req, res, next) {
+  const { reference } = req.params;
+  const ip        = getRequestIp(req);
+  const userAgent = req.headers['user-agent'] || null;
+
+  try {
+    const result = await db.query(
+      `SELECT * FROM vehicle_rcs WHERE registration_reference = $1`,
+      [reference.toUpperCase()]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, data: null, error: 'Vehicle RC not found.' });
+    }
+
+    const rc = result.rows[0];
+
+    await logAuditEvent({
+      eventType:       AUDIT_EVENTS.REGISTRATION_FETCHED,
+      registrationRef: rc.registration_reference,
+      ipAddress:       ip,
+      userAgent,
+      details:         req.gateway ? { gateway_client: req.gateway.client, doc_type: 'vehicle_rc' } : undefined,
+    });
+
+    const regDate = rc.registration_date instanceof Date
+      ? rc.registration_date.toISOString().split('T')[0]
+      : String(rc.registration_date);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        registration_reference: rc.registration_reference,
+        owner_name:             rc.owner_name,
+        vehicle_number:         rc.vehicle_number,
+        vehicle_class:          rc.vehicle_class,
+        maker_model:            rc.maker_model,
+        registration_date:      regDate,
+        fuel_type:              rc.fuel_type,
+        verification_status:    rc.verification_status,
+      },
+      error: null,
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// ============================================================
+// GET /api/v1/gateway/passport/:reference
+// ============================================================
+async function getPassport(req, res, next) {
+  const { reference } = req.params;
+  const ip        = getRequestIp(req);
+  const userAgent = req.headers['user-agent'] || null;
+
+  try {
+    const result = await db.query(
+      `SELECT * FROM passports WHERE registration_reference = $1`,
+      [reference.toUpperCase()]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, data: null, error: 'Passport not found.' });
+    }
+
+    const pass = result.rows[0];
+
+    await logAuditEvent({
+      eventType:       AUDIT_EVENTS.REGISTRATION_FETCHED,
+      registrationRef: pass.registration_reference,
+      ipAddress:       ip,
+      userAgent,
+      details:         req.gateway ? { gateway_client: req.gateway.client, doc_type: 'passport' } : undefined,
+    });
+
+    const dobStr = pass.dob instanceof Date
+      ? pass.dob.toISOString().split('T')[0]
+      : String(pass.dob);
+    const issueDateStr = pass.issue_date instanceof Date
+      ? pass.issue_date.toISOString().split('T')[0]
+      : String(pass.issue_date);
+    const expiryDateStr = pass.expiry_date instanceof Date
+      ? pass.expiry_date.toISOString().split('T')[0]
+      : String(pass.expiry_date);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        registration_reference: pass.registration_reference,
+        holder_name:            pass.holder_name,
+        passport_number:        pass.passport_number,
+        dob:                    dobStr,
+        nationality:            pass.nationality,
+        issue_date:             issueDateStr,
+        expiry_date:            expiryDateStr,
+        place_of_issue:         pass.place_of_issue,
+        verification_status:    pass.verification_status,
+      },
+      error: null,
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { createRegistration, getRegistration, getVehicleRc, getPassport };
+
