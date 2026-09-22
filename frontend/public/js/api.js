@@ -130,7 +130,15 @@ const api = {
     list: () => request('GET', '/applications'),
     create: (type) => request('POST', '/applications', { type }),
     get: (id) => request('GET', `/applications/${id}`),
-    verify: (id, reference) => request('POST', `/applications/${id}/verify`, reference ? { reference } : {}),
+    verify: (id, referenceOrPayload) => {
+      let body = {};
+      if (typeof referenceOrPayload === 'string') {
+        body = { reference: referenceOrPayload };
+      } else if (referenceOrPayload && typeof referenceOrPayload === 'object') {
+        body = referenceOrPayload;
+      }
+      return request('POST', `/applications/${id}/verify`, body);
+    },
   },
   consent: {
     grant: (applicationId, department, fieldsRequested) =>

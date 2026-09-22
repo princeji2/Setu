@@ -27,11 +27,12 @@ function createRelayController(relayService) {
   return {
     async verify(req, res) {
       try {
-        const { reference } = req.body || {};
+        const { reference, references } = req.body || {};
         const data = await relayService.verify({
           citizenId: req.citizen.id,
           applicationId: req.params.id,
           reference,
+          references,
         });
         // 200 whether the department verified or honestly failed — a
         // business-level failure is a normal outcome, not an HTTP error.

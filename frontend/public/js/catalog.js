@@ -46,6 +46,38 @@ const CATALOG = [
     referenceLabel: 'Registration reference',
     referencePlaceholder: 'e.g. REG-A3F7C291',
   },
+  {
+    type: 'senior_citizen_transport_concession',
+    isComposite: true,
+    name: 'Senior Citizen Transport Concession',
+    description: 'Chained multi-department concession clearance: NIR identity verification followed by DLJA transport verification.',
+    departmentLabel: 'NIR + DLJA Chained Workflow',
+    departments: ['national_identity_registry', 'driving_licence_jan_aadhaar'],
+    steps: [
+      {
+        step: 1,
+        id: 'identity_verification',
+        name: 'Identity Verification',
+        department: 'national_identity_registry',
+        departmentLabel: 'National Identity Registry',
+        fieldsRequested: ['fullName', 'dob', 'gender', 'address'],
+        referenceKey: 'nir_reference',
+        referenceLabel: 'Identity reference (NIR)',
+        referencePlaceholder: 'e.g. TESTAADHAAR0001',
+      },
+      {
+        step: 2,
+        id: 'transport_verification',
+        name: 'Transport Verification',
+        department: 'driving_licence_jan_aadhaar',
+        departmentLabel: 'Driving Licence & Jan Aadhaar Portal',
+        fieldsRequested: ['licence_holder_name', 'licence_issue_date', 'licence_expiry_date'],
+        referenceKey: 'dlja_reference',
+        referenceLabel: 'Registration reference (DLJA)',
+        referencePlaceholder: 'e.g. REG-A3F7C291',
+      },
+    ],
+  },
 ];
 
 function findService(type) {

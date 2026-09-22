@@ -49,6 +49,8 @@ const AUDIT_ACTIONS = [
   'department_call',
   'department_call_refused',
   'application_status_change',
+  'composite_workflow_complete',
+  'DATA_QUALITY_DISCREPANCY',
 ];
 const AUDIT_ACTION_LABELS = {
   application_created: 'Application created',
@@ -56,6 +58,8 @@ const AUDIT_ACTION_LABELS = {
   department_call: 'Department call',
   department_call_refused: 'Department call refused',
   application_status_change: 'Status change',
+  composite_workflow_complete: 'Composite workflow completed',
+  DATA_QUALITY_DISCREPANCY: 'Data quality discrepancy',
 };
 
 // Which view is showing, and each view's own filter state. Activity (the
@@ -369,13 +373,20 @@ function appRowHtml(app) {
   const typeLabel = APPLICATION_TYPE_LABELS[app.type] || app.type;
   const statusLabel = STATUS_LABELS[app.status] || app.status;
   const created = app.created_at ? new Date(app.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
+  const isComposite = app.type === 'senior_citizen_transport_concession' || Boolean(app.composite_workflow_id);
+  const compositeTag = isComposite
+    ? `<div style="font-size:11px;color:var(--ink-muted);margin-top:2px">🚌 Chained NIR+DLJA ${app.composite_workflow_id ? `&middot; <code>${escapeHtml(app.composite_workflow_id.slice(0, 8))}…</code>` : ''}</div>`
+    : '';
   return `
     <tr>
       <td>
         <div class="admin-citizen-name">${escapeHtml(app.citizen_name || '—')}</div>
         <div class="admin-citizen-email">${escapeHtml(app.citizen_email || '')}</div>
       </td>
-      <td class="admin-cell-type">${escapeHtml(typeLabel)}</td>
+      <td class="admin-cell-type">
+        ${escapeHtml(typeLabel)}
+        ${compositeTag}
+      </td>
       <td><span class="chip ${statusChipClass(app.status)}">${escapeHtml(statusLabel)}</span></td>
       <td class="admin-cell-muted">${escapeHtml(created)}</td>
       <td class="admin-cell-muted">${escapeHtml(timeAgo(app.updated_at || app.created_at))}</td>
@@ -480,6 +491,10 @@ function formatDetail(row) {
 
   const dept = d.department ? (DEPARTMENT_LABELS[d.department] || d.department) : null;
 
+  if (d.composite_workflow_id) {
+    parts.push(`<span class="ad-kv"><span class="ad-k">Workflow</span> <code>${escapeHtml(d.composite_workflow_id.slice(0, 8))}…</code></span>`);
+  }
+
   switch (row.action) {
     case 'department_call': {
       if (dept) parts.push(`<span class="ad-kv"><span class="ad-k">Dept</span> ${escapeHtml(dept)}</span>`);
@@ -515,6 +530,19 @@ function formatDetail(row) {
     }
     case 'application_created': {
       if (d.type) parts.push(`<span class="ad-kv"><span class="ad-k">Type</span> ${escapeHtml(APPLICATION_TYPE_LABELS[d.type] || d.type)}</span>`);
+      break;
+    }
+    case 'composite_workflow_complete': {
+      parts.push(`<span class="ad-kv"><span class="ad-k">Clearance</span> <span class="chip chip-done">Granted (${escapeHtml(String(d.total_steps || 2))} steps)</span></span>`);
+      break;
+    }
+    case 'DATA_QUALITY_DISCREPANCY': {
+      if (d.match_confidence != null) {
+        parts.push(`<span class="ad-kv"><span class="ad-k">Match</span> <span class="ad-bad font-mono">${escapeHtml(String(d.match_confidence))}%</span></span>`);
+      }
+      if (d.department && d.compared_department) {
+        parts.push(`<span class="ad-kv"><span class="ad-k">Conflict</span> ⚠️ ${escapeHtml(DEPARTMENT_LABELS[d.department] || d.department)} vs ${escapeHtml(DEPARTMENT_LABELS[d.compared_department] || d.compared_department)}</span>`);
+      }
       break;
     }
     default: {

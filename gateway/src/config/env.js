@@ -51,7 +51,7 @@ const config = {
 
   db: {
     connectionString: process.env.DATABASE_URL || '',
-    host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST || '127.0.0.1',
     port: parseInt(process.env.DB_PORT, 10) || 5432,
     name: process.env.DB_NAME || 'setu_gateway_db',
     user: process.env.DB_USER || 'postgres',

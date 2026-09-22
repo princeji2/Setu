@@ -176,7 +176,7 @@ const pgAdminRepository = {
 
     const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
     const res = await query(
-      `SELECT a.id, a.type, a.status, a.created_at, a.updated_at,
+      `SELECT a.id, a.type, a.status, a.composite_workflow_id, a.created_at, a.updated_at,
               a.citizen_id, c.full_name AS citizen_name, c.email AS citizen_email
        FROM applications a
        JOIN citizens c ON c.id = a.citizen_id
@@ -499,6 +499,7 @@ function createInMemoryAdminRepository({ citizens = [], applications = [], calls
             id: a.id,
             type: a.type,
             status: a.status,
+            composite_workflow_id: a.composite_workflow_id || null,
             created_at: a.created_at,
             updated_at: a.updated_at,
             citizen_id: a.citizen_id,

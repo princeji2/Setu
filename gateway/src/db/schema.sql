@@ -56,6 +56,9 @@ CREATE TABLE IF NOT EXISTS linked_references (
     department_reference TEXT NOT NULL,
     linked_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
     verified             BOOLEAN NOT NULL DEFAULT false,
+    demographics         JSONB DEFAULT NULL,
+    match_confidence     NUMERIC(5,2) DEFAULT NULL,
+    discrepancy          JSONB DEFAULT NULL,
     -- One citizen has at most one row per department.
     CONSTRAINT linked_references_citizen_department_uniq
         UNIQUE (citizen_id, department)
@@ -79,11 +82,14 @@ CREATE TABLE IF NOT EXISTS applications (
                   'complete',
                   'failed')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    composite_workflow_id UUID DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS applications_citizen_idx
     ON applications (citizen_id);
+CREATE INDEX IF NOT EXISTS applications_composite_workflow_idx
+    ON applications (composite_workflow_id);
 
 -- ------------------------------------------------------------
 -- application_department_calls — one row per outbound department call.
@@ -103,11 +109,15 @@ CREATE TABLE IF NOT EXISTS application_department_calls (
     succeeded        BOOLEAN NOT NULL,
     response_summary TEXT,
     called_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-    duration_ms      INTEGER
+    duration_ms      INTEGER,
+    composite_workflow_id UUID DEFAULT NULL,
+    match_confidence NUMERIC(5,2) DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS application_department_calls_application_idx
     ON application_department_calls (application_id);
+CREATE INDEX IF NOT EXISTS application_department_calls_composite_workflow_idx
+    ON application_department_calls (composite_workflow_id);
 
 -- ------------------------------------------------------------
 -- consent_grants — the citizen approved a specific data share before it

@@ -15,6 +15,12 @@ import { isStale } from '../render-guard.js';
 import { revealStagger, playJustVerified } from '../anim.js';
 import { consumeJustVerified } from '../just-verified.js';
 
+const DEPT_SHORT = {
+  national_identity_registry: 'NIR',
+  digital_tax_records: 'DTR',
+  driving_licence_jan_aadhaar: 'DLJA',
+};
+
 function docCardHtml(doc) {
   const service = findServiceByDepartment(doc.department);
   const theme = departmentTheme(doc.department);
@@ -28,6 +34,18 @@ function docCardHtml(doc) {
     </div>
     <h3>${escapeHtml(DEPARTMENT_LABELS[doc.department] || doc.department)}</h3>
     <p>Reference <span class="doc-ref">${escapeHtml(doc.department_reference)}</span> &middot; ${doc.verified ? 'updated' : 'linked'} ${timeAgo(doc.linked_at)}</p>
+    ${doc.discrepancy ? `
+    <div class="discrepancy-advisory">
+      <div class="discrepancy-chip">
+        <span class="discrepancy-icon">⚠️</span>
+        <span class="discrepancy-title">Data Discrepancy Flagged (${doc.match_confidence ?? doc.discrepancy.confidence}%)</span>
+      </div>
+      <div class="discrepancy-comparison">
+        <span class="disc-val disc-curr"><strong>${DEPT_SHORT[doc.department] || doc.department}:</strong> "${escapeHtml(doc.discrepancy.current_value)}"</span>
+        <span class="disc-vs">vs</span>
+        <span class="disc-val disc-prev"><strong>${DEPT_SHORT[doc.discrepancy.conflicting_department] || doc.discrepancy.conflicting_department}:</strong> "${escapeHtml(doc.discrepancy.previous_value)}"</span>
+      </div>
+    </div>` : ''}
     ${service ? `<button class="btn btn-primary btn-sm btn-block" data-reuse-department="${doc.department}">${doc.verified ? 'Reuse this document' : 'Retry verification'}</button>` : ''}
   </div>`;
 }

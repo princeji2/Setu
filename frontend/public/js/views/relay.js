@@ -34,6 +34,48 @@ function setRelayCallback(fn) {
 }
 
 function consentModalHtml(service, reuseReference) {
+  if (service.isComposite) {
+    const reuseMap = (reuseReference && typeof reuseReference === 'object') ? reuseReference : {};
+    const stepsHtml = (service.steps || []).map((step, idx) => {
+      const fieldRows = step.fieldsRequested.map((f) =>
+        `<div class="consent-row"><div><div class="fld">${escapeHtml(f)}</div><div class="from">from ${escapeHtml(step.departmentLabel)}</div></div>Required</div>`
+      ).join('');
+
+      const hasReuse = reuseMap[step.referenceKey];
+      const refBlock = hasReuse
+        ? `<div class="field-hint" style="margin:6px 0 10px">&#10003; Reusing your verified reference (${escapeHtml(hasReuse)}) &mdash; no re-entry needed.</div>`
+        : `<div class="field reference-field" style="margin-top:8px">
+             <label for="consentRef_${step.referenceKey}">${escapeHtml(step.referenceLabel)}</label>
+             <input id="consentRef_${step.referenceKey}" type="text" placeholder="${escapeHtml(step.referencePlaceholder)}" required>
+           </div>`;
+
+      return `
+      <div class="composite-consent-step" style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:12px;background:#f8fafc">
+        <div style="font-weight:600;font-size:13px;color:#1e293b;margin-bottom:4px">
+          Step ${idx + 1}: ${escapeHtml(step.name)} <span style="font-size:11px;font-weight:normal;color:#64748b;margin-left:4px">(${escapeHtml(step.departmentLabel)})</span>
+        </div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:8px">Data fields requested from ${escapeHtml(step.departmentLabel)}:</div>
+        <div>${fieldRows}</div>
+        ${refBlock}
+      </div>`;
+    }).join('');
+
+    return `
+    <div class="modal-veil open" id="consentVeil">
+      <div class="modal" style="max-width:540px">
+        <div class="kicker">${escapeHtml(service.departmentLabel)}</div>
+        <h3>${escapeHtml(service.name)}</h3>
+        <p class="desc">Setu will orchestrate this application across both departments in a single chained workflow. Review and grant consent for both departments below.</p>
+        <div style="max-height:360px;overflow-y:auto;padding-right:4px">${stepsHtml}</div>
+        <div id="consentModalError" class="auth-form-error hidden" style="margin-top:14px"></div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="consentCancel">Cancel</button>
+          <button class="btn btn-primary" id="consentApprove">Approve &amp; continue</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
   const rows = service.fieldsRequested
     .map(
       (f) => `<div class="consent-row"><div><div class="fld">${escapeHtml(f)}</div><div class="from">from ${escapeHtml(service.departmentLabel)}</div></div>Required</div>`
@@ -70,7 +112,7 @@ function closeConsentModal() {
 
 /**
  * @param {object} service  a catalog entry (see catalog.js)
- * @param {string|null} reuseReference  a previously verified department_reference, if any
+ * @param {string|object|null} reuseReference  a previously verified reference or map of references
  */
 function openServiceFlow(service, reuseReference) {
   const host = document.getElementById('modalHost');
@@ -87,6 +129,54 @@ function openServiceFlow(service, reuseReference) {
 async function approveAndRelay(service, reuseReference) {
   const errorBox = document.getElementById('consentModalError');
   const approveBtn = document.getElementById('consentApprove');
+
+  if (service.isComposite) {
+    const reuseMap = (reuseReference && typeof reuseReference === 'object') ? reuseReference : {};
+    const references = {};
+
+    for (const step of service.steps) {
+      const inputEl = document.getElementById(`consentRef_${step.referenceKey}`);
+      const val = reuseMap[step.referenceKey] || inputEl?.value.trim();
+      if (!val) {
+        errorBox.textContent = `${step.referenceLabel} is required.`;
+        errorBox.classList.remove('hidden');
+        return;
+      }
+      if (!reuseMap[step.referenceKey]) {
+        references[step.referenceKey] = val;
+      }
+    }
+
+    errorBox.classList.add('hidden');
+    approveBtn.disabled = true;
+    approveBtn.innerHTML = '<span class="spinner"></span> Submitting…';
+
+    try {
+      // 1. Create composite application
+      const application = await api.applications.create(service.type);
+
+      // 2. Grant consent for both departments in this single flow
+      for (const step of service.steps) {
+        await api.consent.grant(application.id, step.department, step.fieldsRequested);
+      }
+
+      closeConsentModal();
+      toast('Consents approved — orchestrating multi-department verification.');
+
+      // 3. Trigger composite relay
+      await runRelay(application.id, { references }, service);
+    } catch (err) {
+      approveBtn.disabled = false;
+      approveBtn.textContent = 'Approve & continue';
+      const message = err instanceof ApiError ? err.message
+        : err instanceof NetworkError ? err.message
+        : 'Something went wrong. Please try again.';
+      errorBox.textContent = message;
+      errorBox.classList.remove('hidden');
+    }
+    return;
+  }
+
   const referenceInput = document.getElementById('consentReference');
   const reference = reuseReference || referenceInput?.value.trim();
 
@@ -140,6 +230,7 @@ function relayCardHtml(service) {
 }
 
 const TRACK_LABELS = ['Submitted', 'Gateway relay', 'Dept. verifying', 'Complete'];
+const COMPOSITE_TRACK_LABELS = ['Step 1: Identity Verified', 'Step 2: Transport Verified', 'Clearance Granted'];
 
 /**
  * Reduced-motion respect: the track/reveal are motion for its own sake
@@ -151,20 +242,20 @@ const prefersReducedMotion = () =>
   window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
- * Builds the four-node track once and returns a small controller that
+ * Builds the track once and returns a small controller that
  * animates transitions between states with GSAP — the ONLY place in the
  * frontend GSAP is used, per tech.md ("reserved for a live status/relay
  * reveal on the result screen... not used decoratively"). Kept restrained:
  * short, physically-plausible easings on real state changes the gateway
  * actually reported, never idle decoration.
  */
-function createTrackController(trackEl) {
+function createTrackController(trackEl, labels = TRACK_LABELS) {
   const nodeEls = [];
   const lineEls = [];
   let liveTween = null; // the pulsing "in progress" tween on the active node, if any
 
-  const html = TRACK_LABELS.map((label, i) => {
-    const isLast = i === TRACK_LABELS.length - 1;
+  const html = labels.map((label, i) => {
+    const isLast = i === labels.length - 1;
     return `<div class="tnode"><div class="tdot" data-i="${i}"></div><div class="tlabel">${label}</div></div>${isLast ? '' : `<div class="tline" data-i="${i}"></div>`}`;
   }).join('');
   trackEl.innerHTML = html;
@@ -179,9 +270,6 @@ function createTrackController(trackEl) {
       const target = liveTween.targets()[0];
       liveTween.kill();
       liveTween = null;
-      // Clear the inline opacity/scale GSAP left mid-pulse so the node
-      // returns cleanly to its CSS-driven state (done/failed/pending)
-      // instead of getting stuck half-faded.
       if (target && gsapReady) window.gsap.set(target, { clearProps: 'opacity,scale' });
     }
   }
@@ -196,10 +284,6 @@ function createTrackController(trackEl) {
         dot.classList.add('done');
         if (line) line.classList.add('done');
         if (gsapReady && !reduced) {
-          // Completed node "snaps" in with a small settle; the line then
-          // draws left-to-right. Slightly longer than the old dark-tuned
-          // values so the green reads deliberately against the light card
-          // rather than flickering by.
           window.gsap.fromTo(dot, { scale: 1.4 }, { scale: 1, duration: 0.38, ease: 'back.out(2)' });
           window.gsap.fromTo(line, { scaleX: 0 }, { scaleX: 1, duration: 0.44, ease: 'power2.out', transformOrigin: 'left center' });
         }
@@ -208,13 +292,6 @@ function createTrackController(trackEl) {
         dot.classList.add('now');
         if (gsapReady && !reduced) {
           window.gsap.fromTo(dot, { scale: 0.8 }, { scale: 1, duration: 0.3, ease: 'power2.out' });
-          // Breathing pulse to read as "in progress, not stalled". Tuned
-          // for the LIGHT card: the dot stays fully opaque (fading a blue
-          // dot toward transparent on white reads as "stalling", the old
-          // dark-palette behaviour) — instead it gently swells in scale
-          // only, so it reads as a live, solid, breathing node against the
-          // white surface. The .now CSS class supplies a static blue glow
-          // ring via box-shadow underneath this.
           liveTween = window.gsap.to(dot, {
             scale: 1.22,
             duration: 0.85,
@@ -230,7 +307,7 @@ function createTrackController(trackEl) {
     });
   }
 
-  /** Mark nodes [0, doneUpTo) as done, node `failedIndex` as failed. A firm settle, not a bounce — a failure should land with weight, not fizzle. */
+  /** Mark nodes [0, doneUpTo) as done, node `failedIndex` as failed. */
   function fail(doneUpTo, failedIndex) {
     stopPulse();
     nodeEls.forEach((dot, i) => {
@@ -241,9 +318,6 @@ function createTrackController(trackEl) {
       } else if (i === failedIndex) {
         dot.classList.add('failed');
         if (gsapReady && !reduced) {
-          // A failure lands with weight — a firm, slightly longer settle
-          // (no bounce) so the red reads as a deliberate stop against the
-          // light card, matching the success node's deliberateness.
           window.gsap.fromTo(dot, { scale: 1.35 }, { scale: 1, duration: 0.46, ease: 'power3.out' });
         }
       }
@@ -260,36 +334,66 @@ function createTrackController(trackEl) {
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
 /**
- * Drives the relay centerpiece. Shows the track advancing through the
- * SAME states the gateway actually reports (no fabricated intermediate
- * steps) — submitted and gateway_relay/department_verifying are shown as
- * a brief deliberate pacing before the single verify call resolves, since
- * the gateway's own relay-service.js already collapses those two status
- * writes into one HTTP round trip. We do not invent extra network calls
- * just to make the track "look" slower — the pacing is purely a visual
- * beat on the client using values the gateway already returned.
+ * Drives the relay centerpiece.
  */
 async function runRelay(applicationId, reference, service) {
   const host = document.getElementById('modalHost');
   host.insertAdjacentHTML('beforeend', relayCardHtml(service));
   const veil = document.getElementById('relayVeil');
   const card = document.getElementById('relayCard');
-  const track = createTrackController(document.getElementById('relayTrack'));
+  const labels = service.isComposite ? COMPOSITE_TRACK_LABELS : TRACK_LABELS;
+  const track = createTrackController(document.getElementById('relayTrack'), labels);
   const gsapReady = typeof window.gsap !== 'undefined';
   const reduced = prefersReducedMotion();
 
   veil.classList.add('open');
   if (gsapReady && !reduced) {
-    // Card rises + fades in a touch more deliberately than the old value,
-    // to settle cleanly onto the light backdrop (a faster pop read as
-    // abrupt against white in the light-palette pass).
     window.gsap.fromTo(card, { opacity: 0, y: 18, scale: 0.975 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: 'power3.out' });
   }
 
-  // Pacing between the submitted -> gateway_relay -> department_verifying
-  // beats. Slightly longer than before so each step is legible on the
-  // light card; reduced-motion keeps it near-instant.
-  const pace = reduced ? 60 : 320;
+  const pace = reduced ? 60 : 350;
+
+  if (service.isComposite) {
+    // Composite stepper: Step 1 (NIR) active -> Step 2 (DLJA) active -> Clearance Granted
+    track.advanceTo(0, 0); // Step 1 pulsing
+
+    let result;
+    try {
+      const verifyPromise = api.applications.verify(applicationId, reference);
+      await sleep(pace * 1.5);
+      track.advanceTo(1, 1); // Step 1 done, Step 2 pulsing
+      result = await verifyPromise;
+    } catch (err) {
+      track.fail(0, 0);
+      const message = err instanceof ApiError ? err.message
+        : err instanceof NetworkError ? err.message
+        : 'Something went wrong contacting the gateway.';
+      renderRelayFailure(message, null);
+      track.destroy();
+      if (typeof onSettled === 'function') onSettled();
+      return;
+    }
+
+    if (result.status === 'complete') {
+      track.advanceTo(3, -1); // All 3 nodes green!
+      await sleep(reduced ? 40 : 260);
+      renderRelaySuccess(result, applicationId);
+      (service.departments || []).forEach((d) => markJustVerified(d));
+    } else {
+      if (result.failed_step === 1) {
+        track.fail(0, 0);
+      } else {
+        track.fail(1, 1);
+      }
+      renderRelayFailure(result.message, result.outcome);
+    }
+
+    track.destroy();
+    if (typeof onSettled === 'function') onSettled();
+    return;
+  }
+
+  // Standalone single-department pacing
   track.advanceTo(0, 0);
   await sleep(pace);
   track.advanceTo(1, 1);
@@ -300,13 +404,6 @@ async function runRelay(applicationId, reference, service) {
   try {
     result = await api.applications.verify(applicationId, reference);
   } catch (err) {
-    // Gateway-side rejection (consent/ownership/validation) — a 4xx thrown
-    // by the API client, BEFORE any department call is attempted (see
-    // relay-service.js: the consent check runs before the status even
-    // moves off "submitted"). Mark the "Gateway relay" node itself as
-    // where things stopped. Distinct from a department-side failure,
-    // which the gateway reports as a normal 200 with status:"failed"
-    // (handled in the success branch below via result.status).
     track.fail(1, 1);
     const message = err instanceof ApiError ? err.message
       : err instanceof NetworkError ? err.message
@@ -319,18 +416,10 @@ async function runRelay(applicationId, reference, service) {
 
   if (result.status === 'complete') {
     track.advanceTo(4, -1);
-    // Let the completed (all-green) track register before the result
-    // panel reveals — a beat longer on the light card so the success
-    // reads. Reduced-motion keeps it near-instant.
     await sleep(reduced ? 40 : 260);
     renderRelaySuccess(result, applicationId);
-    // Hand off to the next view render (fired by onSettled below) so the
-    // one card whose department just flipped to Verified plays a single
-    // mount-time reveal instead of blinking green. Consumed once.
     markJustVerified(result.department);
   } else {
-    // Department-side failure: submitted + gateway_relay both happened;
-    // it failed while "department_verifying" (index 2) was in flight.
     track.fail(2, 2);
     renderRelayFailure(result.message, result.outcome);
   }
@@ -340,21 +429,43 @@ async function runRelay(applicationId, reference, service) {
 }
 
 /**
- * Reveals the result panel. Success and failure use the IDENTICAL
- * entrance (same duration, same easing, same distance) — a failure is a
- * normal, complete outcome of a real request (per api.md's relay
- * convention), not a broken animation, and it should land with the same
- * deliberateness as a success.
+ * Reveals the result panel.
  */
 function revealResult(el) {
-  // Reduced-motion (or no GSAP): the panel is simply already visible in
-  // its final state — instant and fully legible, not frozen mid-tween.
   if (typeof window.gsap === 'undefined' || prefersReducedMotion()) return;
   window.gsap.fromTo(el.firstElementChild, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.44, ease: 'power3.out' });
 }
 
 function renderRelaySuccess(result, applicationId) {
   const el = document.getElementById('relayResult');
+
+  if (result.composite) {
+    const stepSummaries = (result.steps || []).map((s) => {
+      const reuseTag = s.reused ? ' <span class="reuse-badge" style="display:inline-block;padding:2px 6px;font-size:11px;margin-left:6px">&#10003; Reused</span>' : '';
+      return `<li style="margin-bottom:8px"><strong>${escapeHtml(s.name)}</strong> (${escapeHtml(DEPARTMENT_LABELS[s.department] || s.department)}): Reference <code>${escapeHtml(s.reference)}</code> verified.${reuseTag}</li>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="relay-result">
+        <div class="headline ok">&#10003; Clearance Granted &mdash; Multi-Department Approved</div>
+        <div class="message">Identity and transport requirements verified across both departments. Senior Citizen Transport Concession clearance is active.</div>
+        <ul style="margin:12px 0 16px;padding-left:20px;font-size:13px;color:var(--ink)">
+          ${stepSummaries}
+        </ul>
+        <div class="relay-actions">
+          <button class="btn btn-ghost btn-sm" id="relayViewDetail">View application</button>
+          <button class="btn btn-primary btn-sm" id="relayDone">Done</button>
+        </div>
+      </div>`;
+    revealResult(el);
+    document.getElementById('relayDone').addEventListener('click', closeRelayCard);
+    document.getElementById('relayViewDetail').addEventListener('click', () => {
+      closeRelayCard();
+      window.dispatchEvent(new CustomEvent('setu:open-application', { detail: { id: applicationId } }));
+    });
+    return;
+  }
+
   const reuseNote = result.reused
     ? `<div class="reuse-tag">&#10003; Reused your verified reference — no re-entry needed</div>`
     : '';

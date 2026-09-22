@@ -57,6 +57,11 @@ function translate(rawData) {
     masked_fields: fields.map((f) => ({ name: f.name, value: maskValue(f.name, f.value) })),
     // Structural data-quality flags (never blocks; logged for accountability).
     data_quality_flags: flagFieldArray({ reference: rawData.reference, fields, fieldNames }),
+    // Demographic data for cross-registry identity matching
+    demographics: {
+      fullName: fields.find((f) => f.name === 'fullName' || f.name === 'name')?.value || null,
+      dob: fields.find((f) => f.name === 'dob' || f.name === 'dateOfBirth')?.value || null,
+    },
   };
 }
 

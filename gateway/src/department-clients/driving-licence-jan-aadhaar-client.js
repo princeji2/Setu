@@ -72,6 +72,11 @@ function translate(rawData) {
       verification_status: rawData.verification_status,
       field_names: presentFields,
     }),
+    // Demographic data for cross-registry identity matching
+    demographics: {
+      fullName: rawData.licence_holder_name || null,
+      dob: rawData.dob || null,
+    },
   };
 }
 

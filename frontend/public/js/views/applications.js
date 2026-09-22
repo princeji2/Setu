@@ -26,21 +26,67 @@ import { isStale } from '../render-guard.js';
 import { revealStagger } from '../anim.js';
 
 function tableRowHtml(app) {
-  const lastCall = app.department_calls[app.department_calls.length - 1];
-  const department = lastCall ? lastCall.department : null;
-  const deptCell = department
-    ? (() => {
+  const isComposite = app.type === 'senior_citizen_transport_concession' || Boolean(app.composite_workflow_id);
+  const deptCell = isComposite
+    ? `<span class="dept-tag theme-composite"><span class="dept-tag-glyph">🚌</span>NIR + DLJA (Chained)</span>`
+    : (() => {
+        const lastCall = app.department_calls && app.department_calls[app.department_calls.length - 1];
+        const department = lastCall ? lastCall.department : null;
+        if (!department) return '—';
         const theme = departmentTheme(department);
         return `<span class="dept-tag ${theme.themeClass}"><span class="dept-tag-glyph">${theme.icon}</span>${escapeHtml(DEPARTMENT_LABELS[department] || department)}</span>`;
-      })()
-    : '—';
+      })();
+
   return `
   <tr class="row-click" data-open-application="${app.id}" role="button" tabindex="0" aria-label="Open ${escapeHtml(APPLICATION_TYPE_LABELS[app.type] || app.type)} application">
-    <td><b>${escapeHtml(APPLICATION_TYPE_LABELS[app.type] || app.type)}</b></td>
+    <td>
+      <b>${escapeHtml(APPLICATION_TYPE_LABELS[app.type] || app.type)}</b>
+      ${isComposite ? `<span class="badge" style="display:inline-block;font-size:10px;margin-left:6px;background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:4px;font-weight:600">Composite</span>` : ''}
+    </td>
     <td>${deptCell}</td>
     <td><span class="chip ${statusChipClass(app.status)}">${escapeHtml(STATUS_LABELS[app.status] || app.status)}</span></td>
     <td>${timeAgo(app.updated_at || app.created_at)}</td>
   </tr>`;
+}
+
+function compositeStepperHtml(app) {
+  const nirCall = app.department_calls.find((c) => c.department === 'national_identity_registry');
+  const dljaCall = app.department_calls.find((c) => c.department === 'driving_licence_jan_aadhaar');
+
+  const step1State = nirCall ? (nirCall.succeeded ? 'done' : 'failed') : 'pending';
+  const step2State = dljaCall ? (dljaCall.succeeded ? 'done' : 'failed') : 'pending';
+  const step3State = app.status === 'complete' ? 'done' : (app.status === 'failed' ? 'failed' : 'pending');
+
+  const line1Done = step1State === 'done';
+  const line2Done = step2State === 'done';
+
+  return `
+  <div class="panel panel-pad" style="margin-bottom:16px;background:var(--card-bg, #fff)">
+    <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--ink-muted);margin-bottom:12px">
+      Multi-Step Stepper &middot; Automated Chained Clearance
+    </div>
+    <div class="relay-track" style="margin:8px 0 16px">
+      <div class="tnode">
+        <div class="tdot ${step1State}"></div>
+        <div class="tlabel">1. Identity Verified<br><small style="color:var(--ink-muted)">NIR</small></div>
+      </div>
+      <div class="tline ${line1Done ? 'done' : ''}"></div>
+      <div class="tnode">
+        <div class="tdot ${step2State}"></div>
+        <div class="tlabel">2. Transport Verified<br><small style="color:var(--ink-muted)">DLJA</small></div>
+      </div>
+      <div class="tline ${line2Done ? 'done' : ''}"></div>
+      <div class="tnode">
+        <div class="tdot ${step3State}"></div>
+        <div class="tlabel">3. Clearance Granted<br><small style="color:var(--ink-muted)">Concession Active</small></div>
+      </div>
+    </div>
+    ${app.composite_workflow_id ? `
+      <div style="font-size:11px;color:var(--ink-muted);border-top:1px solid #f1f5f9;padding-top:8px">
+        Linked Composite Workflow ID: <code>${escapeHtml(app.composite_workflow_id)}</code>
+      </div>
+    ` : ''}
+  </div>`;
 }
 
 async function renderApplicationsList(root, token) {
@@ -76,8 +122,6 @@ async function renderApplicationsList(root, token) {
     const open = () =>
       window.dispatchEvent(new CustomEvent('setu:open-application', { detail: { id: row.dataset.openApplication } }));
     row.addEventListener('click', open);
-    // Equivalent keyboard path (row is role="button" tabindex="0").
-    // Enter/Space trigger the SAME action as the click — no behaviour change.
     row.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); open(); }
     });
@@ -86,6 +130,9 @@ async function renderApplicationsList(root, token) {
 
 function callRowHtml(call) {
   const dotClass = call.succeeded ? 'ok' : 'fail';
+  const compositeTag = call.composite_workflow_id
+    ? ` &middot; <span style="font-size:10px;color:var(--ink-muted)">Workflow: ${escapeHtml(call.composite_workflow_id.slice(0, 8))}…</span>`
+    : '';
   return `
   <div class="call-row">
     <div class="call-dot ${dotClass}"></div>
@@ -94,7 +141,7 @@ function callRowHtml(call) {
       <div class="call-summary">${escapeHtml(call.response_summary || '—')}</div>
     </div>
     <div class="call-meta">
-      HTTP ${call.status_code ?? '—'}<br>${call.duration_ms != null ? `${call.duration_ms}ms` : ''}<br>${timeAgo(call.called_at)}
+      HTTP ${call.status_code ?? '—'}<br>${call.duration_ms != null ? `${call.duration_ms}ms` : ''}${compositeTag}<br>${timeAgo(call.called_at)}
     </div>
   </div>`;
 }
@@ -116,13 +163,14 @@ async function renderApplicationDetail(root, applicationId, token) {
     root.insertAdjacentHTML('beforeend', `<div class="empty-note">Couldn't load this application.</div>`);
     return;
   }
-  if (isStale(token)) return; // citizen navigated away while this fetch was in flight — root may
-  // already belong to a different view; touching it here would be exactly
-  // the bug this guard exists to prevent (see render-guard.js).
+  if (isStale(token)) return;
 
   const backBtn = document.getElementById('detailBack');
   root.innerHTML = '';
   root.appendChild(backBtn);
+
+  const isComposite = app.type === 'senior_citizen_transport_concession' || Boolean(app.composite_workflow_id);
+  const stepper = isComposite ? compositeStepperHtml(app) : '';
 
   root.insertAdjacentHTML('beforeend', `
     <div class="section-head" style="margin-top:20px">
@@ -130,8 +178,9 @@ async function renderApplicationDetail(root, applicationId, token) {
       <span class="chip ${statusChipClass(app.status)}">${escapeHtml(STATUS_LABELS[app.status] || app.status)}</span>
     </div>
     <p class="section-note">Created ${timeAgo(app.created_at)} &middot; Last updated ${timeAgo(app.updated_at)}</p>
+    ${stepper}
     <div class="panel panel-pad">
-      <div class="section-head"><h2 style="font-size:15px">Department call history</h2></div>
+      <div class="section-head"><h2 style="font-size:15px">Department call history (${app.department_calls.length})</h2></div>
       <div id="callList">${
         app.department_calls.length
           ? app.department_calls.map(callRowHtml).join('')

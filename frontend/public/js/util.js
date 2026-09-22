@@ -46,6 +46,7 @@ const APPLICATION_TYPE_LABELS = {
   pan_verification: 'PAN verification',
   identity_verification: 'Identity verification',
   driving_licence_registration: 'Driving licence registration',
+  senior_citizen_transport_concession: 'Senior Citizen Transport Concession',
 };
 
 const STATUS_LABELS = {
@@ -108,10 +109,18 @@ const DEPARTMENT_THEME = {
     art: '🚗', // driving licence
     artLabel: 'Driving licence',
   },
+  composite_workflow: {
+    themeClass: 'theme-composite',
+    accent: '#2B6CB0',
+    kind: 'Chained service',
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.59 8.59l6.82 6.82"/></svg>`,
+    art: '🚌',
+    artLabel: 'Transport concession',
+  },
 };
 
 function departmentTheme(department) {
-  return DEPARTMENT_THEME[department] || DEPARTMENT_THEME.digital_tax_records;
+  return DEPARTMENT_THEME[department] || DEPARTMENT_THEME.composite_workflow || DEPARTMENT_THEME.digital_tax_records;
 }
 
 /**

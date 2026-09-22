@@ -17,12 +17,19 @@ class ApplicationError extends Error {
   }
 }
 
+const crypto = require('crypto');
+
 // Known application types (from database-schema.md examples). Kept as a
 // permissive allow-list so adding a type is a one-line change.
 const KNOWN_TYPES = new Set([
   'pan_verification',
   'identity_verification',
   'driving_licence_registration',
+  'senior_citizen_transport_concession',
+]);
+
+const COMPOSITE_APPLICATION_TYPES = new Set([
+  'senior_citizen_transport_concession',
 ]);
 
 function toPublicApplication(row, calls = []) {
@@ -30,6 +37,7 @@ function toPublicApplication(row, calls = []) {
     id: row.id,
     type: row.type,
     status: row.status,
+    composite_workflow_id: row.composite_workflow_id || null,
     created_at: row.created_at,
     updated_at: row.updated_at,
     department_calls: calls.map((c) => ({
@@ -40,6 +48,7 @@ function toPublicApplication(row, calls = []) {
       response_summary: c.response_summary,
       called_at: c.called_at,
       duration_ms: c.duration_ms,
+      composite_workflow_id: c.composite_workflow_id || null,
     })),
   };
 }
@@ -57,11 +66,25 @@ function createApplicationService({ applicationRepository, auditRepository }) {
         );
       }
 
-      const row = await applicationRepository.create({ citizenId, type });
+      const compositeWorkflowId = COMPOSITE_APPLICATION_TYPES.has(type)
+        ? crypto.randomUUID()
+        : null;
+
+      const row = await applicationRepository.create({
+        citizenId,
+        type,
+        compositeWorkflowId,
+      });
+
+      const auditDetail = { application_id: row.id, type };
+      if (compositeWorkflowId) {
+        auditDetail.composite_workflow_id = compositeWorkflowId;
+      }
+
       await auditRepository.record({
         citizenId,
         action: 'application_created',
-        detail: { application_id: row.id, type },
+        detail: auditDetail,
       });
       return toPublicApplication(row);
     },

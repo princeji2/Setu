@@ -17,19 +17,19 @@ const { query } = require('../../db/pool');
 // PostgreSQL-backed
 // ------------------------------------------------------------
 const pgApplicationRepository = {
-  async create({ citizenId, type }) {
+  async create({ citizenId, type, compositeWorkflowId = null }) {
     const res = await query(
-      `INSERT INTO applications (citizen_id, type)
-       VALUES ($1, $2)
-       RETURNING id, citizen_id, type, status, created_at, updated_at`,
-      [citizenId, type]
+      `INSERT INTO applications (citizen_id, type, composite_workflow_id)
+       VALUES ($1, $2, $3)
+       RETURNING id, citizen_id, type, status, composite_workflow_id, created_at, updated_at`,
+      [citizenId, type, compositeWorkflowId]
     );
     return res.rows[0];
   },
 
   async listByCitizen(citizenId) {
     const res = await query(
-      `SELECT id, citizen_id, type, status, created_at, updated_at
+      `SELECT id, citizen_id, type, status, composite_workflow_id, created_at, updated_at
        FROM applications
        WHERE citizen_id = $1
        ORDER BY created_at DESC`,
@@ -40,7 +40,7 @@ const pgApplicationRepository = {
 
   async findByIdForCitizen(id, citizenId) {
     const res = await query(
-      `SELECT id, citizen_id, type, status, created_at, updated_at
+      `SELECT id, citizen_id, type, status, composite_workflow_id, created_at, updated_at
        FROM applications
        WHERE id = $1 AND citizen_id = $2`,
       [id, citizenId]
@@ -52,7 +52,7 @@ const pgApplicationRepository = {
     const res = await query(
       `UPDATE applications SET status = $2, updated_at = now()
        WHERE id = $1
-       RETURNING id, citizen_id, type, status, created_at, updated_at`,
+       RETURNING id, citizen_id, type, status, composite_workflow_id, created_at, updated_at`,
       [id, status]
     );
     return res.rows[0] || null;
@@ -60,16 +60,17 @@ const pgApplicationRepository = {
 
   async recordCall({
     applicationId, department, endpointCalled, statusCode,
-    succeeded, responseSummary, durationMs,
+    succeeded, responseSummary, durationMs, compositeWorkflowId = null,
+    matchConfidence = null,
   }) {
     const res = await query(
       `INSERT INTO application_department_calls
-         (application_id, department, endpoint_called, status_code, succeeded, response_summary, duration_ms)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+         (application_id, department, endpoint_called, status_code, succeeded, response_summary, duration_ms, composite_workflow_id, match_confidence)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id, application_id, department, endpoint_called, status_code,
-                 succeeded, response_summary, called_at, duration_ms`,
+                 succeeded, response_summary, called_at, duration_ms, composite_workflow_id, match_confidence`,
       [applicationId, department, endpointCalled, statusCode ?? null,
-       succeeded, responseSummary ?? null, durationMs ?? null]
+       succeeded, responseSummary ?? null, durationMs ?? null, compositeWorkflowId, matchConfidence]
     );
     return res.rows[0];
   },
@@ -77,7 +78,7 @@ const pgApplicationRepository = {
   async findCallsByApplication(applicationId) {
     const res = await query(
       `SELECT id, application_id, department, endpoint_called, status_code,
-              succeeded, response_summary, called_at, duration_ms
+              succeeded, response_summary, called_at, duration_ms, composite_workflow_id, match_confidence
        FROM application_department_calls
        WHERE application_id = $1
        ORDER BY called_at ASC`,
@@ -95,13 +96,14 @@ function createInMemoryApplicationRepository() {
   const calls = [];                        // department-call rows
 
   return {
-    async create({ citizenId, type }) {
+    async create({ citizenId, type, compositeWorkflowId = null }) {
       const now = new Date().toISOString();
       const row = {
         id: crypto.randomUUID(),
         citizen_id: citizenId,
         type,
         status: 'submitted',
+        composite_workflow_id: compositeWorkflowId,
         created_at: now,
         updated_at: now,
       };
@@ -130,7 +132,8 @@ function createInMemoryApplicationRepository() {
 
     async recordCall({
       applicationId, department, endpointCalled, statusCode,
-      succeeded, responseSummary, durationMs,
+      succeeded, responseSummary, durationMs, compositeWorkflowId = null,
+      matchConfidence = null,
     }) {
       const row = {
         id: crypto.randomUUID(),
@@ -142,6 +145,8 @@ function createInMemoryApplicationRepository() {
         response_summary: responseSummary ?? null,
         called_at: new Date().toISOString(),
         duration_ms: durationMs ?? null,
+        composite_workflow_id: compositeWorkflowId,
+        match_confidence: matchConfidence ?? null,
       };
       calls.push(row);
       return row;

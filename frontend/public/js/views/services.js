@@ -16,8 +16,30 @@ import { escapeHtml, departmentTheme, departmentArtHtml, dataErrorBannerHtml } f
 import { isStale, nextRenderToken } from '../render-guard.js';
 import { revealStagger } from '../anim.js';
 
-function serviceCardHtml(service, verifiedRef) {
+function serviceCardHtml(service, verifiedByDept) {
+  if (service.isComposite) {
+    const theme = departmentTheme('composite_workflow');
+    const verifiedCount = (service.departments || []).filter((d) => verifiedByDept.has(d)).length;
+    let badge = '';
+    if (verifiedCount === (service.departments || []).length) {
+      badge = `<div class="reuse-badge">&#10003; All steps verified &mdash; reuse instantly</div>`;
+    } else if (verifiedCount > 0) {
+      badge = `<div class="reuse-badge">&#10003; 1 of ${(service.departments || []).length} verified &mdash; partial reuse</div>`;
+    }
+    return `
+    <div class="service ${theme.themeClass}">
+      <div class="service-head">
+        <span class="src">${escapeHtml(service.departmentLabel)}</span>
+        ${departmentArtHtml('composite_workflow', 'md')}
+      </div>
+      <h3>${escapeHtml(service.name)}</h3>
+      <p>${escapeHtml(service.description)}</p>
+      ${badge}
+      <button class="btn btn-primary btn-sm btn-block" data-start-service="${service.type}">Start composite application</button>
+    </div>`;
+  }
   const theme = departmentTheme(service.department);
+  const verifiedRef = verifiedByDept.get(service.department);
   const badge = verifiedRef
     ? `<div class="reuse-badge">&#10003; Verified &mdash; reuse instantly</div>`
     : '';
@@ -76,12 +98,19 @@ async function renderServices(root, token) {
     );
     const resultsEl = document.getElementById('serviceResults');
     resultsEl.innerHTML = filtered.length
-      ? filtered.map((s) => serviceCardHtml(s, verifiedByDept.get(s.department))).join('')
+      ? filtered.map((s) => serviceCardHtml(s, verifiedByDept)).join('')
       : `<div class="empty-note">No matching service.</div>`;
     resultsEl.querySelectorAll('[data-start-service]').forEach((btn) =>
       btn.addEventListener('click', () => {
         const service = CATALOG.find((s) => s.type === btn.dataset.startService);
-        openServiceFlow(service, verifiedByDept.get(service.department) || null);
+        if (service.isComposite) {
+          openServiceFlow(service, {
+            nir_reference: verifiedByDept.get('national_identity_registry') || null,
+            dlja_reference: verifiedByDept.get('driving_licence_jan_aadhaar') || null,
+          });
+        } else {
+          openServiceFlow(service, verifiedByDept.get(service.department) || null);
+        }
       })
     );
     revealStagger(resultsEl.querySelectorAll('.service'));

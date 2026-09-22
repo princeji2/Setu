@@ -36,6 +36,7 @@
  */
 
 const { summarizeFields } = require('../../utils/mask');
+const { compareDemographics } = require('../../utils/identity-matcher');
 
 class RelayError extends Error {
   constructor(code, message) {
@@ -79,6 +80,28 @@ const TYPE_TO_DEPARTMENT = {
   driving_licence_registration: 'driving_licence_jan_aadhaar',
 };
 
+const COMPOSITE_WORKFLOWS = {
+  senior_citizen_transport_concession: {
+    name: 'Senior Citizen Transport Concession',
+    steps: [
+      {
+        step: 1,
+        id: 'identity_verification',
+        name: 'Identity Verification',
+        department: 'national_identity_registry',
+        referenceKey: 'nir_reference',
+      },
+      {
+        step: 2,
+        id: 'transport_verification',
+        name: 'Transport Verification',
+        department: 'driving_licence_jan_aadhaar',
+        referenceKey: 'dlja_reference',
+      },
+    ],
+  },
+};
+
 function createRelayService({
   clients,                 // { [department]: client }
   applicationRepository,
@@ -86,6 +109,247 @@ function createRelayService({
   linkedReferenceRepository,
   auditRepository,
 }) {
+  async function checkIdentityConsistency({ citizenId, applicationId, department, currentDemographics }) {
+    if (!currentDemographics || (!currentDemographics.fullName && !currentDemographics.full_name && !currentDemographics.licence_holder_name)) {
+      return { matchConfidence: null, discrepancy: null };
+    }
+
+    const docs = await linkedReferenceRepository.listByCitizen(citizenId);
+    const otherDocs = docs.filter(
+      (d) => d.verified && d.department !== department && d.demographics
+    );
+
+    if (otherDocs.length === 0) {
+      return { matchConfidence: null, discrepancy: null };
+    }
+
+    const otherDoc = otherDocs[0];
+    let prevDemographics = otherDoc.demographics;
+    if (typeof prevDemographics === 'string') {
+      try {
+        prevDemographics = JSON.parse(prevDemographics);
+      } catch {
+        prevDemographics = null;
+      }
+    }
+
+    if (!prevDemographics) {
+      return { matchConfidence: null, discrepancy: null };
+    }
+
+    const match = compareDemographics(
+      { ...currentDemographics, department },
+      { ...prevDemographics, department: otherDoc.department }
+    );
+
+    if (match.hasDiscrepancy) {
+      await auditRepository.record({
+        citizenId,
+        action: 'DATA_QUALITY_DISCREPANCY',
+        detail: {
+          application_id: applicationId,
+          department,
+          compared_department: otherDoc.department,
+          match_confidence: match.confidence,
+          conflicting_fields: match.discrepancy,
+        },
+      });
+    }
+
+    return {
+      matchConfidence: match.confidence,
+      discrepancy: match.discrepancy,
+    };
+  }
+
+  async function verifyCompositeWorkflow({ application, citizenId, applicationId, reference, references = {} }) {
+    const workflow = COMPOSITE_WORKFLOWS[application.type];
+    const compositeWorkflowId = application.composite_workflow_id || require('crypto').randomUUID();
+
+    await applicationRepository.updateStatus(applicationId, 'gateway_relay');
+    await applicationRepository.updateStatus(applicationId, 'department_verifying');
+
+    const executedSteps = [];
+
+    for (let i = 0; i < workflow.steps.length; i++) {
+      const stepDef = workflow.steps[i];
+      const dept = stepDef.department;
+      const client = clients[dept];
+      if (!client) {
+        throw new RelayError('NO_CLIENT', `No client wired for department "${dept}".`);
+      }
+
+      // Consent check per department
+      const consent = await consentRepository.findMatch({ applicationId, department: dept });
+      if (!consent) {
+        await auditRepository.record({
+          citizenId,
+          action: 'department_call_refused',
+          detail: {
+            application_id: applicationId,
+            composite_workflow_id: compositeWorkflowId,
+            department: dept,
+            step: stepDef.step,
+            reason: 'no_consent',
+          },
+        });
+        throw new RelayError('CONSENT_REQUIRED', `Consent is required for ${dept} before contacting this department.`);
+      }
+
+      // Reference resolution: explicit input -> reuse previously verified reference -> fail
+      let rawRef = (references && references[stepDef.referenceKey]) || (stepDef.step === 1 ? reference : null);
+      let resolvedReference = rawRef && String(rawRef).trim();
+      let reusedReference = false;
+
+      if (!resolvedReference) {
+        const existing = await linkedReferenceRepository.findVerified({ citizenId, department: dept });
+        if (existing) {
+          resolvedReference = existing.department_reference;
+          reusedReference = true;
+        }
+      }
+
+      if (!resolvedReference) {
+        throw new RelayError(
+          'VALIDATION',
+          `Reference is required for ${stepDef.name} (no previously verified reference to reuse for ${dept}).`
+        );
+      }
+
+      // Live HTTP fetch to department
+      const result = await client.fetchFields(resolvedReference);
+      const succeeded = result.outcome === 'success';
+      const dataQualityFlags = (succeeded && result.data && Array.isArray(result.data.data_quality_flags))
+        ? result.data.data_quality_flags
+        : [];
+
+      // Check identity consistency if this step succeeded
+      let matchConfidence = null;
+      let discrepancy = null;
+      if (succeeded && result.data) {
+        const consistency = await checkIdentityConsistency({
+          citizenId,
+          applicationId,
+          department: dept,
+          currentDemographics: result.data.demographics,
+        });
+        matchConfidence = consistency.matchConfidence;
+        discrepancy = consistency.discrepancy;
+      }
+
+      // Record call under this application & composite_workflow_id
+      await applicationRepository.recordCall({
+        applicationId,
+        department: dept,
+        endpointCalled: result.endpoint,
+        statusCode: result.statusCode,
+        succeeded,
+        responseSummary: succeeded
+          ? appendFlags(summarizeCall(result.data), dataQualityFlags)
+          : result.error,
+        durationMs: result.durationMs,
+        compositeWorkflowId,
+        matchConfidence,
+      });
+
+      await auditRepository.record({
+        citizenId,
+        action: 'department_call',
+        detail: {
+          application_id: applicationId,
+          composite_workflow_id: compositeWorkflowId,
+          composite_step: stepDef.step,
+          composite_step_name: stepDef.name,
+          department: dept,
+          endpoint: result.endpoint,
+          outcome: result.outcome,
+          status_code: result.statusCode,
+          duration_ms: result.durationMs,
+          reused_reference: reusedReference,
+          data_quality_flags: dataQualityFlags,
+          match_confidence: matchConfidence,
+        },
+      });
+
+      if (!succeeded) {
+        const updated = await applicationRepository.updateStatus(applicationId, 'failed');
+        await auditRepository.record({
+          citizenId,
+          action: 'application_status_change',
+          detail: {
+            application_id: applicationId,
+            composite_workflow_id: compositeWorkflowId,
+            status: 'failed',
+            failed_at_step: stepDef.step,
+            department: dept,
+            outcome: result.outcome,
+          },
+        });
+        return {
+          status: updated.status,
+          composite: true,
+          composite_workflow_id: compositeWorkflowId,
+          failed_step: stepDef.step,
+          department: dept,
+          outcome: result.outcome,
+          message: `Step ${stepDef.step} (${stepDef.name}) failed: ${result.error}`,
+          steps: executedSteps.concat([{
+            step: stepDef.step,
+            name: stepDef.name,
+            department: dept,
+            succeeded: false,
+            message: result.error,
+            reused: reusedReference,
+          }]),
+        };
+      }
+
+      // Mark verified
+      await linkedReferenceRepository.markVerified({
+        citizenId,
+        department: dept,
+        departmentReference: result.data.reference,
+        demographics: result.data.demographics,
+        matchConfidence,
+        discrepancy,
+      });
+
+      executedSteps.push({
+        step: stepDef.step,
+        name: stepDef.name,
+        department: dept,
+        reference: result.data.reference,
+        verified: result.data.verified,
+        field_names: result.data.field_names,
+        reused: reusedReference,
+        succeeded: true,
+        match_confidence: matchConfidence,
+        discrepancy,
+      });
+    }
+
+    const updated = await applicationRepository.updateStatus(applicationId, 'complete');
+    await auditRepository.record({
+      citizenId,
+      action: 'composite_workflow_complete',
+      detail: {
+        application_id: applicationId,
+        composite_workflow_id: compositeWorkflowId,
+        status: 'complete',
+        total_steps: workflow.steps.length,
+      },
+    });
+
+    return {
+      status: updated.status,
+      composite: true,
+      composite_workflow_id: compositeWorkflowId,
+      type: application.type,
+      name: workflow.name,
+      steps: executedSteps,
+    };
+  }
+
   /**
    * @param {object} p
    * @param {string} p.citizenId
@@ -93,11 +357,17 @@ function createRelayService({
    * @param {string} [p.reference]  the department reference to look up (e.g.
    *   SYNPAN-000123). OPTIONAL: if omitted, the gateway reuses a
    *   previously-verified reference for this department (Story 8).
+   * @param {object} [p.references] composite references map { nir_reference, dlja_reference }
    */
-  async function verify({ citizenId, applicationId, reference }) {
+  async function verify({ citizenId, applicationId, reference, references }) {
     const application = await applicationRepository.findByIdForCitizen(applicationId, citizenId);
     if (!application) {
       throw new RelayError('NOT_FOUND', 'Application not found for this citizen.');
+    }
+
+    // Composite chained workflow branch
+    if (COMPOSITE_WORKFLOWS[application.type]) {
+      return verifyCompositeWorkflow({ application, citizenId, applicationId, reference, references });
     }
 
     const department = TYPE_TO_DEPARTMENT[application.type];
@@ -161,6 +431,20 @@ function createRelayService({
       ? result.data.data_quality_flags
       : [];
 
+    // Check cross-registry identity consistency if this call succeeded
+    let matchConfidence = null;
+    let discrepancy = null;
+    if (succeeded && result.data) {
+      const consistency = await checkIdentityConsistency({
+        citizenId,
+        applicationId,
+        department,
+        currentDemographics: result.data.demographics,
+      });
+      matchConfidence = consistency.matchConfidence;
+      discrepancy = consistency.discrepancy;
+    }
+
     // --- Log the call (always) ---
     await applicationRepository.recordCall({
       applicationId,
@@ -177,6 +461,7 @@ function createRelayService({
         ? appendFlags(summarizeCall(result.data), dataQualityFlags)
         : result.error,
       durationMs: result.durationMs,
+      matchConfidence,
     });
 
     await auditRepository.record({
@@ -196,6 +481,7 @@ function createRelayService({
         // Structural data-quality flags (empty array when the response looked
         // clean). Proves the gateway actively checks quality; never blocks.
         data_quality_flags: dataQualityFlags,
+        match_confidence: matchConfidence,
       },
     });
 
@@ -205,6 +491,9 @@ function createRelayService({
         citizenId,
         department,
         departmentReference: result.data.reference,
+        demographics: result.data.demographics,
+        matchConfidence,
+        discrepancy,
       });
       const updated = await applicationRepository.updateStatus(applicationId, 'complete');
       await auditRepository.record({
@@ -219,6 +508,8 @@ function createRelayService({
         verified: result.data.verified,
         field_names: result.data.field_names,
         reused: reusedReference,
+        match_confidence: matchConfidence,
+        discrepancy,
       };
     }
 

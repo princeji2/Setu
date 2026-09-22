@@ -12,7 +12,7 @@ const { query } = require('../../db/pool');
 const pgLinkedReferenceRepository = {
   async listByCitizen(citizenId) {
     const res = await query(
-      `SELECT id, citizen_id, department, department_reference, linked_at, verified
+      `SELECT id, citizen_id, department, department_reference, linked_at, verified, demographics, match_confidence, discrepancy
        FROM linked_references
        WHERE citizen_id = $1
        ORDER BY linked_at DESC`,
@@ -30,7 +30,7 @@ const pgLinkedReferenceRepository = {
    */
   async findVerified({ citizenId, department }) {
     const res = await query(
-      `SELECT id, citizen_id, department, department_reference, linked_at, verified
+      `SELECT id, citizen_id, department, department_reference, linked_at, verified, demographics, match_confidence, discrepancy
        FROM linked_references
        WHERE citizen_id = $1 AND department = $2 AND verified = true
        LIMIT 1`,
@@ -44,15 +44,28 @@ const pgLinkedReferenceRepository = {
    * verified. One row per (citizen, department) — see the unique
    * constraint — so we upsert on conflict.
    */
-  async markVerified({ citizenId, department, departmentReference }) {
+  async markVerified({
+    citizenId,
+    department,
+    departmentReference,
+    demographics = null,
+    matchConfidence = null,
+    discrepancy = null,
+  }) {
+    const demographicsJson = demographics ? JSON.stringify(demographics) : null;
+    const discrepancyJson = discrepancy ? JSON.stringify(discrepancy) : null;
+
     const res = await query(
-      `INSERT INTO linked_references (citizen_id, department, department_reference, verified)
-       VALUES ($1, $2, $3, true)
+      `INSERT INTO linked_references (citizen_id, department, department_reference, verified, demographics, match_confidence, discrepancy)
+       VALUES ($1, $2, $3, true, $4, $5, $6)
        ON CONFLICT (citizen_id, department)
        DO UPDATE SET department_reference = EXCLUDED.department_reference,
-                     verified = true
-       RETURNING id, citizen_id, department, department_reference, linked_at, verified`,
-      [citizenId, department, departmentReference]
+                     verified = true,
+                     demographics = COALESCE(EXCLUDED.demographics, linked_references.demographics),
+                     match_confidence = EXCLUDED.match_confidence,
+                     discrepancy = EXCLUDED.discrepancy
+       RETURNING id, citizen_id, department, department_reference, linked_at, verified, demographics, match_confidence, discrepancy`,
+      [citizenId, department, departmentReference, demographicsJson, matchConfidence, discrepancyJson]
     );
     return res.rows[0];
   },
@@ -66,6 +79,9 @@ function createInMemoryLinkedReferenceRepository(seed = []) {
     department_reference: r.department_reference,
     linked_at: r.linked_at || new Date().toISOString(),
     verified: r.verified ?? false,
+    demographics: r.demographics || null,
+    match_confidence: r.match_confidence !== undefined ? r.match_confidence : null,
+    discrepancy: r.discrepancy || null,
   }));
 
   return {
@@ -81,11 +97,21 @@ function createInMemoryLinkedReferenceRepository(seed = []) {
       );
     },
 
-    async markVerified({ citizenId, department, departmentReference }) {
+    async markVerified({
+      citizenId,
+      department,
+      departmentReference,
+      demographics = null,
+      matchConfidence = null,
+      discrepancy = null,
+    }) {
       let row = rows.find((r) => r.citizen_id === citizenId && r.department === department);
       if (row) {
         row.department_reference = departmentReference;
         row.verified = true;
+        if (demographics) row.demographics = demographics;
+        row.match_confidence = matchConfidence;
+        row.discrepancy = discrepancy;
         return row;
       }
       row = {
@@ -95,6 +121,9 @@ function createInMemoryLinkedReferenceRepository(seed = []) {
         department_reference: departmentReference,
         linked_at: new Date().toISOString(),
         verified: true,
+        demographics,
+        match_confidence: matchConfidence,
+        discrepancy,
       };
       rows.push(row);
       return row;

@@ -197,6 +197,7 @@ function credGridHtml(documents) {
 function activityRowHtml(app) {
   const theme = (function () {
     // Best-effort department tag from the application type.
+    if (app.type === 'senior_citizen_transport_concession') return departmentTheme('composite_workflow');
     if (app.type === 'pan_verification') return departmentTheme('digital_tax_records');
     if (app.type === 'identity_verification') return departmentTheme('national_identity_registry');
     if (app.type === 'driving_licence_registration') return departmentTheme('driving_licence_jan_aadhaar');
