@@ -543,6 +543,13 @@ function formatDetail(row) {
       if (d.department && d.compared_department) {
         parts.push(`<span class="ad-kv"><span class="ad-k">Conflict</span> ⚠️ ${escapeHtml(DEPARTMENT_LABELS[d.department] || d.department)} vs ${escapeHtml(DEPARTMENT_LABELS[d.compared_department] || d.compared_department)}</span>`);
       }
+      if (d.conflicting_fields) {
+        const cVal = d.conflicting_fields.field === 'dob' ? (d.conflicting_fields.current_dob || d.conflicting_fields.current_value) : d.conflicting_fields.current_value;
+        const pVal = d.conflicting_fields.field === 'dob' ? (d.conflicting_fields.previous_dob || d.conflicting_fields.previous_value) : d.conflicting_fields.previous_value;
+        if (cVal && pVal) {
+          parts.push(`<span class="ad-kv"><span class="ad-k">Values</span> "${escapeHtml(String(cVal))}" vs "${escapeHtml(String(pVal))}"</span>`);
+        }
+      }
       break;
     }
     default: {
@@ -574,6 +581,7 @@ function isReuseRow(row) {
 
 function actionChipClass(row) {
   if (isFailureRow(row)) return 'chip-failed';
+  if (row.action === 'DATA_QUALITY_DISCREPANCY') return 'chip-warn';
   if (row.action === 'consent_granted') return 'chip-done';
   if (row.action === 'application_status_change' && row.detail && row.detail.status === 'complete') return 'chip-done';
   if (row.action === 'department_call' && row.detail && row.detail.outcome === 'success') return 'chip-done';

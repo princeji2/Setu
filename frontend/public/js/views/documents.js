@@ -41,9 +41,9 @@ function docCardHtml(doc) {
         <span class="discrepancy-title">Data Discrepancy Flagged (${doc.match_confidence ?? doc.discrepancy.confidence}%)</span>
       </div>
       <div class="discrepancy-comparison">
-        <span class="disc-val disc-curr"><strong>${DEPT_SHORT[doc.department] || doc.department}:</strong> "${escapeHtml(doc.discrepancy.current_value)}"</span>
+        <span class="disc-val disc-curr"><strong>${DEPT_SHORT[doc.department] || doc.department}:</strong> "${escapeHtml(doc.discrepancy.field === 'dob' ? (doc.discrepancy.current_dob || doc.discrepancy.current_value) : doc.discrepancy.current_value)}"</span>
         <span class="disc-vs">vs</span>
-        <span class="disc-val disc-prev"><strong>${DEPT_SHORT[doc.discrepancy.conflicting_department] || doc.discrepancy.conflicting_department}:</strong> "${escapeHtml(doc.discrepancy.previous_value)}"</span>
+        <span class="disc-val disc-prev"><strong>${DEPT_SHORT[doc.discrepancy.conflicting_department] || doc.discrepancy.conflicting_department}:</strong> "${escapeHtml(doc.discrepancy.field === 'dob' ? (doc.discrepancy.previous_dob || doc.discrepancy.previous_value) : doc.discrepancy.previous_value)}"</span>
       </div>
     </div>` : ''}
     ${service ? `<button class="btn btn-primary btn-sm btn-block" data-reuse-department="${doc.department}">${doc.verified ? 'Reuse this document' : 'Retry verification'}</button>` : ''}

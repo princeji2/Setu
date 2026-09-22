@@ -346,3 +346,110 @@ test('Cross-Registry Matching: matching demographics scores 100% and emits no di
   const discrepancyEvent = auditEntries.find((e) => e.action === 'DATA_QUALITY_DISCREPANCY');
   assert.equal(discrepancyEvent, undefined, 'No discrepancy event should be emitted on match');
 });
+
+test('Cross-Registry Matching: operates within composite workflow when demographic data conflicts between chained steps', async () => {
+  const repos = {
+    citizenRepository: createInMemoryCitizenRepository(),
+    applicationRepository: createInMemoryApplicationRepository(),
+    consentRepository: createInMemoryConsentRepository(),
+    linkedReferenceRepository: createInMemoryLinkedReferenceRepository(),
+    auditRepository: createInMemoryAuditRepository(),
+  };
+
+  const mockClients = {
+    national_identity_registry: {
+      department: 'national_identity_registry',
+      async fetchFields(reference) {
+        return {
+          outcome: 'success',
+          statusCode: 200,
+          endpoint: `GET /api/registration/${reference}/fields`,
+          durationMs: 5,
+          data: {
+            reference,
+            verified: true,
+            field_names: ['fullName', 'dob'],
+            demographics: { fullName: 'Vikram Singh', dob: '1960-01-01' },
+          },
+          error: null,
+        };
+      },
+    },
+    driving_licence_jan_aadhaar: {
+      department: 'driving_licence_jan_aadhaar',
+      async fetchFields(reference) {
+        return {
+          outcome: 'success',
+          statusCode: 200,
+          endpoint: `GET /api/v1/gateway/registrations/${reference}`,
+          durationMs: 6,
+          data: {
+            reference,
+            verified: true,
+            field_names: ['licence_holder_name', 'verification_status'],
+            demographics: { fullName: 'V. Singh', dob: '1975-01-01' }, // Conflicting name and DOB
+          },
+          error: null,
+        };
+      },
+    },
+  };
+
+  const app = createApp({ ...repos, departmentClients: mockClients });
+
+  // 1. Register citizen
+  const regRes = await request(app)
+    .post('/api/v1/auth/register')
+    .send({ full_name: 'Vikram Singh', email: 'vikram@example.com', password: 'Password123!' });
+  const token = regRes.body.data.token;
+  const citizenId = regRes.body.data.citizen.id;
+
+  // 2. Create composite application
+  const appRes = await request(app)
+    .post('/api/v1/applications')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ type: 'senior_citizen_transport_concession' });
+  const appId = appRes.body.data.id;
+
+  // 3. Grant consent for both chained departments
+  await request(app)
+    .post('/api/v1/consent')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ application_id: appId, department: 'national_identity_registry', fields_requested: ['fullName', 'dob'] });
+  await request(app)
+    .post('/api/v1/consent')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ application_id: appId, department: 'driving_licence_jan_aadhaar', fields_requested: ['licence_holder_name'] });
+
+  // 4. Verify composite workflow with references for both steps
+  const verifyRes = await request(app)
+    .post(`/api/v1/applications/${appId}/verify`)
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      references: {
+        nir_reference: 'TESTAADHAAR9999',
+        dlja_reference: 'REG-VSINGH-01',
+      },
+    });
+
+  assert.equal(verifyRes.status, 200);
+  assert.equal(verifyRes.body.data.status, 'complete');
+  assert.equal(verifyRes.body.data.composite, true);
+  assert.equal(verifyRes.body.data.steps.length, 2);
+
+  // Step 1 had no prior department on file
+  assert.equal(verifyRes.body.data.steps[0].match_confidence, null);
+
+  // Step 2 matched against Step 1, detecting "Vikram Singh" vs "V. Singh"
+  const step2 = verifyRes.body.data.steps[1];
+  assert.ok(step2.match_confidence !== null);
+  assert.ok(step2.match_confidence < 70, `Expected match_confidence < 70, got ${step2.match_confidence}`);
+  assert.ok(step2.discrepancy, 'Step 2 should flag discrepancy');
+
+  // Verify DATA_QUALITY_DISCREPANCY was audited
+  const auditEntries = repos.auditRepository._all();
+  const discrepancyEvent = auditEntries.find((e) => e.action === 'DATA_QUALITY_DISCREPANCY');
+  assert.ok(discrepancyEvent, 'DATA_QUALITY_DISCREPANCY event must be logged');
+  assert.equal(discrepancyEvent.citizen_id, citizenId);
+});
+

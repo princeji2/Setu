@@ -156,3 +156,13 @@ CREATE TABLE IF NOT EXISTS audit_log (
 
 CREATE INDEX IF NOT EXISTS audit_log_citizen_idx
     ON audit_log (citizen_id);
+
+-- ------------------------------------------------------------
+-- Backward-compatible migrations for existing databases
+-- ------------------------------------------------------------
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS composite_workflow_id UUID DEFAULT NULL;
+ALTER TABLE application_department_calls ADD COLUMN IF NOT EXISTS composite_workflow_id UUID DEFAULT NULL;
+ALTER TABLE application_department_calls ADD COLUMN IF NOT EXISTS match_confidence NUMERIC(5,2) DEFAULT NULL;
+ALTER TABLE linked_references ADD COLUMN IF NOT EXISTS demographics JSONB DEFAULT NULL;
+ALTER TABLE linked_references ADD COLUMN IF NOT EXISTS match_confidence NUMERIC(5,2) DEFAULT NULL;
+ALTER TABLE linked_references ADD COLUMN IF NOT EXISTS discrepancy JSONB DEFAULT NULL;

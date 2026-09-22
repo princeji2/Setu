@@ -467,6 +467,7 @@ input.field:focus { border-color: var(--accent); box-shadow: var(--shadow-focus)
 .chip-done { background: var(--success-soft); color: var(--success); }
 .chip-wait { background: var(--surface-sunken); color: var(--ink-soft); }
 .chip-failed { background: var(--danger-soft); color: var(--danger); }
+.chip-warn { background: var(--warning-soft); color: var(--warning); }
 
 .track { display: flex; align-items: center; gap: 0; }
 .tnode { display: flex; flex-direction: column; align-items: center; gap: 7px; position: relative; }
