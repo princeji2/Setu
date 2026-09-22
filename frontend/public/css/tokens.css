@@ -25,75 +25,64 @@
 :root {
   /* ============================================================
      SURFACES / BACKGROUND NEUTRALS
-     dashboard.png: canvas is a light cool grey (#F7F8FA), cards are
-     pure white. The separation is border-first, shadow-second.
+     Canvas is a warm parchment tint (#FAF9F5), cards are pure white.
      ============================================================ */
-  --paper: #F7F8FA;        /* app canvas behind cards (was warm #FAF6EE) */
-  --paper-deep: #EEF1F5;   /* recessed fills: inner stat boxes, hover rows, code blocks (was #F3EDDF) */
-  --card: #FFFFFF;         /* card / elevated surface (was #FFFFFE) */
-  --surface-raised: #FFFFFF; /* NEW: explicit alias for elevated surfaces (modals, popovers) */
-  --surface-sunken: #F2F4F7; /* NEW: sunken wells inside cards */
+  --paper: #FAF9F5;        /* app canvas behind cards */
+  --paper-deep: #EEEAD7;   /* recessed fills: inner stat boxes, hover rows, code blocks (#EEEAD7) */
+  --card: #FFFFFF;         /* card / elevated surface */
+  --surface-raised: #FFFFFF; /* explicit alias for elevated surfaces (modals, popovers) */
+  --surface-sunken: #E7E2CE; /* sunken wells inside cards */
 
   /* ============================================================
-     BORDERS — cool-grey hairlines, ~1px. Two weights only.
+     BORDERS — slate sage hairlines (#757D6F)
      ============================================================ */
-  --line: #EAECEF;         /* default hairline card/divider border (was #E2D9C6) */
-  --line-strong: #DDE1E6;  /* stronger border: inputs, active edges (was #CFC3A8) */
+  --line: #DCD8C8;         /* default hairline card/divider border */
+  --line-strong: #BAC0B5;  /* stronger border: inputs, active edges */
 
   /* ============================================================
      TEXT COLOUR HIERARCHY
-     Near-black headings → mid-grey body → muted labels/placeholder.
+     Deep near-black wine headings (#2D0000) → warm dark body → slate labels (#757D6F).
      ============================================================ */
-  --ink: #101317;          /* primary text / headings (was #211D18) */
-  --ink-soft: #5A6069;     /* secondary/body text (was #6B6357) */
-  --ink-muted: #9AA0A8;    /* NEW: tertiary — "coming soon", labels, placeholders */
+  --ink: #2D0000;          /* primary text / headings (#2D0000) */
+  --ink-soft: #523A3A;     /* secondary/body text */
+  --ink-muted: #757D6F;    /* tertiary — labels, placeholders (#757D6F) */
 
   /* ============================================================
-     PRIMARY ACTION COLOUR — the single dark. Near-black buttons.
-     `--indigo` / `--indigo-deep` names are KEPT (app.css + JS + netmap.js
-     reference them heavily); their VALUES are repointed from the old
-     indigo to the dashboard.png near-black action colour. Read these as
-     "the primary action colour" regardless of the legacy name.
+     PRIMARY ACTION COLOUR — Deep Maroon (#6D0808) from reference screenshot
      ============================================================ */
-  --indigo: #111317;       /* primary action base (was #1E3350) */
-  --indigo-deep: #000000;  /* primary action hover — goes fully black (was #122036) */
-  --primary: #111317;      /* NEW: name-correct alias for --indigo */
-  --primary-hover: #000000;/* NEW: hover */
-  --primary-active: #000000;/* NEW: active/pressed */
-  --primary-disabled: #C3C7CD; /* NEW: disabled fill */
-  --on-primary: #FFFFFF;   /* NEW: text/icon on the primary colour */
+  --indigo: #6D0808;       /* primary action base */
+  --indigo-deep: #540606;  /* primary action hover */
+  --primary: #6D0808;      /* Deep Maroon from reference */
+  --primary-hover: #540606;/* hover */
+  --primary-active: #3B0404;/* active/pressed */
+  --primary-disabled: #C49B9B; /* disabled fill */
+  --on-primary: #FFFFFF;   /* text/icon on the primary colour */
 
   /* ============================================================
-     ACCENT — one restrained blue (the avatar chip / subtle interactive
-     accents in dashboard.png). Used sparingly, never as a fill everywhere.
-     `--terracotta` / `--terracotta-soft` names are KEPT but repointed to
-     this blue accent so existing kicker/accent rules don't render orange
-     against the new neutrals.
+     ACCENT — Crimson Maroon (#6D0808) & Warm Linen (#EEEAD7) from reference screenshot
      ============================================================ */
-  --accent: #2E6BFF;         /* NEW: canonical accent */
-  --accent-soft: #E7EEFF;    /* NEW: accent tint background */
-  --terracotta: #2E6BFF;     /* KEPT NAME, repointed to accent (was #B85C2B) */
-  --terracotta-soft: #E7EEFF;/* KEPT NAME, repointed to accent-soft (was #F2E1D3) */
+  --accent: #6D0808;         /* canonical accent */
+  --accent-soft: #F5E8E8;    /* soft tint */
+  --terracotta: #6D0808;     /* KEPT NAME, repointed to accent */
+  --terracotta-soft: #F5E8E8;/* KEPT NAME, repointed to accent-soft */
 
   /* ============================================================
      SEMANTIC — success / warning / danger / info.
-     `--sage` (success) and `--danger` names KEPT; values modernised to
-     sit against a light-grey canvas rather than warm paper.
      ============================================================ */
-  --success: #1F9254;      /* NEW canonical */
-  --success-soft: #E3F5EA; /* NEW */
-  --sage: #1F9254;         /* KEPT NAME, repointed (was #3E7A5C) */
-  --sage-soft: #E3F5EA;    /* KEPT NAME, repointed (was #E1EDE4) */
+  --success: #546648;      /* slate green from #757D6F */
+  --success-soft: #E9EFE4; /* soft green tint */
+  --sage: #546648;         /* KEPT NAME, repointed */
+  --sage-soft: #E9EFE4;    /* KEPT NAME, repointed */
 
-  --warning: #B7791F;      /* NEW canonical */
-  --warning-soft: #FBF0DB; /* NEW */
-  --gold: #B7791F;         /* KEPT NAME, repointed (was #B4862F) */
+  --warning: #8C5920;      /* warm amber */
+  --warning-soft: #F6EEDA; /* soft beige tint from #EEEAD7 */
+  --gold: #8C5920;         /* KEPT NAME, repointed */
 
-  --danger: #D0342C;       /* KEPT NAME, repointed (was #A6402E) */
-  --danger-soft: #FBE3E1;  /* KEPT NAME, repointed (was #F4DCD5) */
+  --danger: #6D0808;       /* maroon from reference */
+  --danger-soft: #F7E4E4;  /* KEPT NAME, repointed */
 
-  --info: #2E6BFF;         /* NEW: shares the accent blue */
-  --info-soft: #E7EEFF;    /* NEW */
+  --info: #6D0808;         /* shares the maroon family */
+  --info-soft: #EEEAD7;
 
   /* ============================================================
      RADIUS SCALE — dashboard.png cards read ~12px; inner boxes ~10px;
@@ -109,17 +98,16 @@
      SHADOW SCALE — very soft, low-opacity. Separation is border-first;
      shadow is a whisper. Existing card/modal/float names KEPT.
      ============================================================ */
-  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.04);              /* NEW: resting card */
-  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04);            /* KEPT, softened */
-  --shadow-sm: 0 2px 6px rgba(16, 24, 40, 0.06);              /* NEW */
-  --shadow-float: 0 4px 16px rgba(16, 24, 40, 0.08);          /* KEPT, softened (was heavy indigo) */
-  --shadow-modal: 0 20px 48px rgba(16, 24, 40, 0.16);         /* KEPT, cooled + softened */
-  --shadow-focus: 0 0 0 3px rgba(46, 107, 255, 0.28);         /* NEW: accessible focus ring (accent blue) */
+  --shadow-xs: 0 1px 2px rgba(45, 0, 0, 0.04);              /* NEW: resting card */
+  --shadow-card: 0 1px 2px rgba(45, 0, 0, 0.04);            /* KEPT, softened */
+  --shadow-sm: 0 2px 6px rgba(45, 0, 0, 0.06);              /* NEW */
+  --shadow-float: 0 4px 16px rgba(45, 0, 0, 0.08);          /* KEPT, softened */
+  --shadow-modal: 0 20px 48px rgba(45, 0, 0, 0.16);
+  --shadow-focus: 0 0 0 3px rgba(109, 8, 8, 0.45);          /* Maroon focus ring (#6D0808) */
 
-  /* Overlay / on-color — NEW. Fills the Phase-2 gap: modal/relay scrims
-     had no scrim token, and white-on-a-colored-fill had no token. */
-  --overlay: rgba(16, 24, 40, 0.35);  /* NEW: modal/relay scrim */
-  --on-color: #FFFFFF;                /* NEW: text/icon on any colored (accent/success/ink) fill */
+  /* Overlay / on-color */
+  --overlay: rgba(45, 0, 0, 0.40);
+  --on-color: #FFFFFF;
 
   /* ============================================================
      SPACING SCALE — 4px base rhythm matching dashboard.png's card
@@ -237,52 +225,58 @@
 */
 :root {
   /* ============================================================
-     EARTHY / EDITORIAL THEME (from the design-system reference).
-     Palette: Background #F4F1E8, Text/Primary #2D3A1F (dark olive),
-     Accent #B8A678 (muted gold), Surface #E8E2D0 (beige), Border #CDD2C9
-     (sage grey). Fonts: Fraunces (serif) display, Sora (sans) body. A
-     warm, grounded, editorial scheme. Only token NAMES already consumed
-     by app.css/JS are repointed — no new API.
+     VINTAGE WARM PALETTE (from reference screenshot)
+     Palette:
+       - Maroon / Crimson: #6D0808 (rgb: 109, 8, 8)
+       - Near-Black Wine: #2D0000 (rgb: 45, 0, 0)
+       - Slate Sage: #757D6F (rgb: 117, 125, 111)
+       - Warm Linen Beige: #EEEAD7 (rgb: 238, 234, 215)
+     Tags: Maroon, Sage, Grey, Beige, Vintage, Christmas, Food, Warm.
      ============================================================ */
-  /* Surfaces — cream background, beige surface for cards/wells. */
-  --paper: #F4F1E8;          /* app canvas (reference Background) */
-  --paper-deep: #E8E2D0;     /* recessed wells / inner boxes (reference Surface) */
-  --card: #FBFAF4;           /* cards: a touch lighter than the canvas so they lift */
-  --surface-raised: #FBFAF4; /* modals / popovers */
-  --surface-sunken: #E8E2D0; /* sunken wells (reference Surface) */
+  --palette-maroon: #6D0808;
+  --palette-wine: #2D0000;
+  --palette-sage: #757D6F;
+  --palette-linen: #EEEAD7;
 
-  /* Borders — sage-grey hairlines (reference Border). */
-  --line: #CDD2C9;
-  --line-strong: #B9C0B3;
+  /* Surfaces — warm parchment canvas with pure white elevated cards */
+  --paper: #FAF9F5;          /* app canvas */
+  --paper-deep: #EEEAD7;     /* recessed wells / inner boxes (#EEEAD7) */
+  --card: #FFFFFF;           /* cards: crisp white */
+  --surface-raised: #FFFFFF; /* modals / popovers */
+  --surface-sunken: #E7E2CE; /* sunken wells */
 
-  /* Text hierarchy — dark olive ink (reference Text), stepped for hierarchy. */
-  --ink: #2D3A1F;            /* headings / primary (dark olive, very high contrast) */
-  --ink-soft: #4A553A;       /* body / secondary (olive, AA on cream) */
-  --ink-muted: #6E7862;      /* tertiary / labels (muted olive-grey, ~4.5:1) */
+  /* Borders — soft slate sage hairlines (#757D6F) */
+  --line: #DCD8C8;
+  --line-strong: #BAC0B5;
 
-  /* Primary action — the dark olive (reference Primary). White text AA. */
-  --primary: #2D3A1F;
-  --primary-hover: #3A4A2A;
-  --primary-active: #222E17;
-  --primary-disabled: #B9C0B3;
-  --on-primary: #F4F1E8;
+  /* Text hierarchy — deep near-black wine ink (#2D0000) for rich contrast */
+  --ink: #2D0000;            /* headings / primary (#2D0000) */
+  --ink-soft: #523A3A;       /* body / secondary */
+  --ink-muted: #757D6F;      /* tertiary / labels (#757D6F) */
 
-  /* Accent — muted gold (reference Accent). For links/tints; darkened for
-     text use so it passes AA on cream. */
-  --accent: #8A7847;         /* darkened gold for text/links (AA on cream) */
-  --accent-soft: #EDE6D2;    /* pale gold tint for chips/tiles */
-  --terracotta: #8A7847;     /* KEPT NAME, repointed to accent */
-  --terracotta-soft: #EDE6D2;
-  --info: #8A7847;
-  --info-soft: #EDE6D2;
+  /* Primary action — Deep Crimson Maroon (#6D0808) from reference screenshot */
+  --primary: #6D0808;
+  --primary-hover: #540606;
+  --primary-active: #3B0404;
+  --primary-disabled: #C49B9B;
+  --on-primary: #FFFFFF;
+  --indigo: #6D0808;
+  --indigo-deep: #540606;
 
-  /* Semantic — olive success, warm-gold warning, brick danger to sit in
-     the earthy family. */
-  --success: #4A6B32;  --success-soft: #E2EAD6;   /* deep olive-green */
-  --sage: #4A6B32;     --sage-soft: #E2EAD6;
-  --warning: #9A6B2F;  --warning-soft: #F0E6CF;   /* amber-brown */
-  --gold: #B8A678;                                 /* the accent gold, for badges */
-  --danger: #A23B2B;   --danger-soft: #F0DCD4;    /* brick red */
+  /* Accent — Maroon (#6D0808) & Warm Linen (#EEEAD7) from reference screenshot */
+  --accent: #6D0808;
+  --accent-soft: #F5E8E8;    /* soft rose/crimson tint */
+  --terracotta: #6D0808;     /* KEPT NAME, repointed to accent */
+  --terracotta-soft: #F5E8E8;/* KEPT NAME, repointed to accent-soft */
+  --info: #6D0808;
+  --info-soft: #EEEAD7;
+
+  /* Semantic */
+  --success: #546648;  --success-soft: #E9EFE4;   /* slate green from #757D6F */
+  --sage: #546648;     --sage-soft: #E9EFE4;
+  --warning: #8C5920;  --warning-soft: #F6EEDA;   /* warm amber from #EEEAD7 */
+  --gold: #8C5920;                                 /* accent gold */
+  --danger: #6D0808;   --danger-soft: #F7E4E4;    /* maroon (#6D0808) */
 
   /* Radius — one calm, consistent scale (design-taste §4.4 shape lock). */
   --radius-xs: 6px;
@@ -291,18 +285,17 @@
   --radius-lg: 16px;
   --radius-pill: 999px;
 
-  /* Shadows — soft, olive-tinted (never pure black on the warm canvas).
-     Separation is border-first; shadow is a gentle lift. */
-  --shadow-xs:    0 1px 2px rgba(45, 58, 31, 0.05);
-  --shadow-card:  0 1px 2px rgba(45, 58, 31, 0.05);
-  --shadow-sm:    0 2px 10px rgba(45, 58, 31, 0.08);
-  --shadow-float: 0 10px 28px rgba(45, 58, 31, 0.12);
-  --shadow-modal: 0 26px 64px rgba(45, 58, 31, 0.20);
-  /* Real, visible focus ring for keyboard users (a11y guardrail) — gold. */
-  --shadow-focus: 0 0 0 3px rgba(184, 166, 120, 0.55);
+  /* Shadows — soft wine-tinted */
+  --shadow-xs:    0 1px 2px rgba(45, 0, 0, 0.04);
+  --shadow-card:  0 1px 2px rgba(45, 0, 0, 0.04);
+  --shadow-sm:    0 2px 10px rgba(45, 0, 0, 0.07);
+  --shadow-float: 0 10px 28px rgba(45, 0, 0, 0.12);
+  --shadow-modal: 0 26px 64px rgba(45, 0, 0, 0.20);
+  /* Real, visible focus ring — Maroon #6D0808 */
+  --shadow-focus: 0 0 0 3px rgba(109, 8, 8, 0.45);
 
-  --on-color: #F4F1E8;
-  --overlay: rgba(45, 58, 31, 0.42);
+  --on-color: #FFFFFF;
+  --overlay: rgba(45, 0, 0, 0.42);
 
   /* Type — reference pairing: Fraunces (serif) display, Sora (sans) body. */
   --font-sans: 'Sora', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

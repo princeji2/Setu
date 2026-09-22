@@ -170,10 +170,10 @@
 /* A thin coloured left-edge per department, using the theme classes the
    citizen app already defines (theme-tax / theme-identity / theme-licence).
    Falls back to the accent if a theme var isn't present. */
-.admin-dept-card.theme-tax { border-left: 3px solid #4A6B32; }
-.admin-dept-card.theme-identity { border-left: 3px solid #8A7847; }
-.admin-dept-card.theme-licence { border-left: 3px solid #9A6B2F; }
-.admin-dept-card.theme-composite { border-left: 3px solid #2563EB; }
+.admin-dept-card.theme-tax { border-left: 3px solid #546648; }
+.admin-dept-card.theme-identity { border-left: 3px solid #6D0808; }
+.admin-dept-card.theme-licence { border-left: 3px solid #8C7756; }
+.admin-dept-card.theme-composite { border-left: 3px solid #2D0000; }
 
 /* ============================================================
    FILTER BAR

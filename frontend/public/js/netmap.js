@@ -31,13 +31,13 @@ function token(name, fallback) {
 /** Resolve the palette the diagram needs from tokens (fallbacks = current token values). */
 function palette() {
   return {
-    primary: token('--primary', '#111317'),   // near-black (center hub)
-    accent: token('--accent', '#2E6BFF'),      // blue (accent node stroke + link)
+    primary: token('--primary', '#6D0808'),
+    accent: token('--accent', '#757D6F'),
     card: token('--card', '#FFFFFF'),
-    line: token('--line-strong', '#DDE1E6'),
-    ink: token('--ink', '#101317'),
-    inkSoft: token('--ink-soft', '#5A6069'),
-    success: token('--success', '#1F9254'),    // verified/identity node stroke
+    line: token('--line-strong', '#BAC0B5'),
+    ink: token('--ink', '#2D0000'),
+    inkSoft: token('--ink-soft', '#523A3A'),
+    success: token('--success', '#546648'),
     onColor: token('--on-color', '#FFFFFF'),
   };
 }

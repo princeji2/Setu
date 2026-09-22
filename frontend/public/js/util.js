@@ -88,7 +88,7 @@ function trackStepIndex(status) {
 const DEPARTMENT_THEME = {
   digital_tax_records: {
     themeClass: 'theme-tax',
-    accent: '#4A6B32',
+    accent: '#546648',
     kind: 'Tax record',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>`,
     // Large glossy 3D illustration for the department, in the vein of the
@@ -101,7 +101,7 @@ const DEPARTMENT_THEME = {
   },
   national_identity_registry: {
     themeClass: 'theme-identity',
-    accent: '#8A7847',
+    accent: '#6D0808',
     kind: 'Identity',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>`,
     art: '🪪', // identity card
@@ -109,7 +109,7 @@ const DEPARTMENT_THEME = {
   },
   driving_licence_jan_aadhaar: {
     themeClass: 'theme-licence',
-    accent: '#9A6B2F',
+    accent: '#8C7756',
     kind: 'Driving licence',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="8" cy="12" r="2.2"/><path d="M13 10h6M13 14h4"/></svg>`,
     art: '🚗', // driving licence
@@ -117,7 +117,7 @@ const DEPARTMENT_THEME = {
   },
   composite_workflow: {
     themeClass: 'theme-composite',
-    accent: '#2B6CB0',
+    accent: '#2D0000',
     kind: 'Chained service',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.59 8.59l6.82 6.82"/></svg>`,
     art: '🚌',

@@ -524,10 +524,10 @@ input.field:focus { border-color: var(--accent); box-shadow: var(--shadow-focus)
 
 /* per-department accent (solid) — drives glyph tiles, rails and top bars
    across cred / service / doc cards. Government-appropriate, desaturated. */
-.theme-tax         { --dept-accent: #4A6B32; --dept-accent-soft: #E2EAD6; } /* olive green */
-.theme-identity    { --dept-accent: #8A7847; --dept-accent-soft: #EDE6D2; } /* gold */
-.theme-licence     { --dept-accent: #9A6B2F; --dept-accent-soft: #F0E6CF; } /* amber-brown */
-.theme-composite   { --dept-accent: #2563EB; --dept-accent-soft: #E0F2FE; } /* blue */
+.theme-tax         { --dept-accent: #546648; --dept-accent-soft: #E9EFE4; } /* slate sage (#757D6F) */
+.theme-identity    { --dept-accent: #6D0808; --dept-accent-soft: #F7E4E4; } /* maroon (#6D0808) */
+.theme-licence     { --dept-accent: #8C7756; --dept-accent-soft: #EEEAD7; } /* warm linen beige (#EEEAD7) */
+.theme-composite   { --dept-accent: #2D0000; --dept-accent-soft: #EDE8DE; } /* deep wine (#2D0000) */
 
 /* ============================================================
    DEPARTMENT 3D ART — big glossy per-service illustration, à la

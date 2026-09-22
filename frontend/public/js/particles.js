@@ -35,11 +35,11 @@ const REDUCED_MOTION = () =>
 // Palette is local to this module — this is the one dark surface, and it
 // intentionally does NOT pull the light app tokens (those are for the
 // shell). Kept in sync with the auth CSS backdrop colour.
-const GROUND = '#0B1220';       // deep near-navy ground
-const GROUND_2 = '#111A2B';     // subtle radial lift toward center
-const DOT = '230, 236, 248';    // cool white (rgb tuple for alpha use)
-const LINK = '120, 150, 210';   // muted periwinkle links
-const ACCENT = '46, 107, 255';  // the app accent blue, for excited nodes
+const GROUND = '#1A0202';       // deep near-black wine ground (#2D0000)
+const GROUND_2 = '#2B0606';     // subtle radial lift toward center
+const DOT = '238, 234, 215';    // warm linen (#EEEAD7) dots
+const LINK = '117, 125, 111';   // slate sage (#757D6F) links
+const ACCENT = '109, 8, 8';     // crimson maroon (#6D0808) for excited nodes
 
 function createParticleField(container) {
   const canvas = document.createElement('canvas');

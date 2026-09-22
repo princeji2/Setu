@@ -23,13 +23,12 @@ const REDUCED_MOTION = () =>
   window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // Palette pulled from the theme tokens so it tracks the design system.
-// Pastel LIGHT theme: canvas is warm cream, so the mesh is drawn in soft
-// warm-taupe lines with the palette blue for excited nodes.
+// Vintage LIGHT theme: canvas is warm parchment (#FAF9F5), mesh is drawn in slate
+// sage lines (#757D6F) with crimson maroon (#6D0808) for excited nodes.
 function themeColors() {
   const css = getComputedStyle(document.documentElement);
-  const bg = (css.getPropertyValue('--paper').trim() || '#F4F1E8');
-  // Olive-tinted lines on cream, with the gold accent for excited nodes.
-  return { bg, stroke: '110, 120, 98', accent: '184, 166, 120' };
+  const bg = (css.getPropertyValue('--paper').trim() || '#FAF9F5');
+  return { bg, stroke: '117, 125, 111', accent: '109, 8, 8' };
 }
 
 function createFabric(canvas) {
