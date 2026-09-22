@@ -21,7 +21,9 @@
        window.SETU_API_BASE = 'https://setu-gateway.onrender.com/api/v1';
      Keep the trailing '/api/v1' and no trailing slash. -->
 <script>
-  window.SETU_API_BASE = 'https://setu-gateway.onrender.com/api/v1';
+  window.SETU_API_BASE = (['localhost', '127.0.0.1'].includes(window.location.hostname))
+    ? 'http://localhost:4000/api/v1'
+    : 'https://setu-gateway.onrender.com/api/v1';
 </script>
 </head>
 <body>

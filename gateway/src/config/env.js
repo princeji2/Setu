@@ -74,7 +74,7 @@ const config = {
   // grade per product.md (real enough to demo, not hardened).
   admin: {
     key: process.env.ADMIN_KEY
-      || (env === 'test' ? 'test-only-admin-key' : 'setu-demo-admin-key-2026'),
+      || (env === 'test' ? 'test-only-admin-key' : ''),
   },
 
   cors: {
