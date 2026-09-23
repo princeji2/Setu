@@ -212,16 +212,46 @@ export function mountChatbot() {
         addBubble(payload.data.reply, 'bot');
         history.push({ role: 'model', text: payload.data.reply });
       } else {
-        const friendly =
-          (payload && payload.error && payload.error.message)
-          || 'I had trouble answering that just now. Please try again in a moment — or tap one of the quick questions.';
+        // Roll back the user turn from history so context remains clean for retries
+        history.pop();
+
+        const errCode = payload && payload.error && payload.error.code;
+        const errMsg = payload && payload.error && payload.error.message;
+        const errDetails = payload && payload.error && payload.error.details;
+
+        console.error('[chatbot] Chat request failed:', {
+          status: res.status,
+          code: errCode,
+          message: errMsg,
+          details: errDetails,
+          rawPayload: payload,
+        });
+
+        let friendly;
+        if (res.status === 429 || errCode === 'RATE_LIMITED') {
+          friendly = 'Rate limited: The assistant is currently busy handling requests. Please wait a moment and try again.';
+        } else if (res.status === 503 || errCode === 'UNAVAILABLE') {
+          friendly = 'Not configured: The assistant AI service is not configured on this gateway (missing GEMINI_API_KEY). Try one of the quick questions instead.';
+        } else if (res.status === 400 || errCode === 'VALIDATION') {
+          friendly = `Invalid message: ${errMsg || 'Please enter a valid question (up to 1000 characters).'}`;
+        } else if (res.status === 504 || errCode === 'TIMEOUT') {
+          friendly = 'Request timeout: The assistant took too long to respond. Please try asking again.';
+        } else if (errCode === 'UPSTREAM_AUTH') {
+          friendly = 'Authentication / Quota error: The AI service rejected the credentials or quota was exceeded. Check gateway logs.';
+        } else if (res.status === 502 || errCode === 'UPSTREAM') {
+          friendly = `AI service error: ${errMsg || 'The assistant had trouble answering. Please try again shortly.'}`;
+        } else {
+          friendly = errMsg || 'I had trouble answering that just now. Please try again in a moment — or tap one of the quick questions.';
+        }
         addBubble(friendly, 'error');
-        // Don't push errors into history — keep context clean for retries.
       }
-    } catch {
+    } catch (networkErr) {
+      // Roll back the user turn from history
+      history.pop();
       hideTyping();
+      console.error('[chatbot] Network failure reaching gateway at', API_BASE, networkErr);
       addBubble(
-        "I couldn't reach the assistant — the Setu gateway may be offline. You can still use the quick questions above, which work without a connection.",
+        "Network failure: Could not reach the Setu gateway at " + API_BASE + ". Please check if the gateway server is running.",
         'error',
       );
     } finally {

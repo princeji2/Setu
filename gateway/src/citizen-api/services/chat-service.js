@@ -25,11 +25,12 @@ const config = require('../../config/env');
 
 /** Typed error so the controller can pick an HTTP status + safe message. */
 class ChatError extends Error {
-  constructor(code, message, status) {
+  constructor(code, message, status, details = null) {
     super(message);
     this.name = 'ChatError';
-    this.code = code; // UNAVAILABLE | VALIDATION | RATE_LIMITED | UPSTREAM | TIMEOUT
+    this.code = code; // UNAVAILABLE | VALIDATION | RATE_LIMITED | UPSTREAM | UPSTREAM_AUTH | TIMEOUT
     this.status = status;
+    this.details = details;
   }
 }
 
@@ -83,6 +84,10 @@ function buildRequestBody(message, history) {
 function createChatService({ fetchImpl = fetch, geminiConfig = config.gemini } = {}) {
   const { apiKey, model, timeoutMs } = geminiConfig;
 
+  if (!apiKey && process.env.NODE_ENV !== 'test') {
+    console.warn('[chat] GEMINI_API_KEY is not set. Outbound "Ask about Setu" chat requests will return 503 UNAVAILABLE.');
+  }
+
   async function ask({ message, history } = {}) {
     if (typeof message !== 'string' || !message.trim()) {
       throw new ChatError('VALIDATION', 'A non-empty message is required.', 400);
@@ -91,6 +96,7 @@ function createChatService({ fetchImpl = fetch, geminiConfig = config.gemini } =
       throw new ChatError('VALIDATION', 'Message is too long (max 1000 characters).', 400);
     }
     if (!apiKey) {
+      console.warn('[chat] Request rejected: GEMINI_API_KEY is not configured on this gateway.');
       // No key configured — be honest, don't pretend to answer.
       throw new ChatError(
         'UNAVAILABLE',
@@ -123,19 +129,60 @@ function createChatService({ fetchImpl = fetch, geminiConfig = config.gemini } =
       if (err && err.name === 'AbortError') {
         throw new ChatError('TIMEOUT', 'The assistant took too long to respond. Please try again.', 504);
       }
-      throw new ChatError('UPSTREAM', 'Could not reach the assistant right now. Please try again shortly.', 502);
+      console.error('[chat] Network failure reaching Gemini API:', err ? err.message : err);
+      throw new ChatError('UPSTREAM', 'Could not reach the assistant AI service. Please try again shortly.', 502, {
+        originalError: err ? err.message : String(err),
+      });
     }
     clearTimeout(timer);
 
-    if (res.status === 429) {
-      throw new ChatError('RATE_LIMITED', 'The assistant is busy right now. Please try again in a moment.', 429);
-    }
     if (!res.ok) {
-      // Log server-side for debugging; return a safe generic message.
-      let detail = '';
-      try { detail = JSON.stringify(await res.json()); } catch { /* ignore */ }
-      console.error(`[chat] Gemini upstream error ${res.status}: ${detail}`);
-      throw new ChatError('UPSTREAM', 'The assistant had a problem answering. Please try again shortly.', 502);
+      let detail = null;
+      let rawText = '';
+      try {
+        detail = await res.json();
+      } catch {
+        try { rawText = await res.text(); } catch { /* ignore */ }
+      }
+      const errStr = detail ? JSON.stringify(detail) : rawText;
+      console.error(`[chat] Gemini upstream error ${res.status}: ${errStr}`);
+
+      const reason = detail && detail.error && detail.error.status;
+      const apiMsg = (detail && detail.error && detail.error.message) || rawText;
+
+      if (res.status === 429 || reason === 'RESOURCE_EXHAUSTED') {
+        throw new ChatError(
+          'RATE_LIMITED',
+          'The assistant is currently busy or rate-limited. Please wait a moment and try again.',
+          429,
+          { upstreamStatus: res.status, reason, message: apiMsg },
+        );
+      }
+
+      if (res.status === 401 || res.status === 403 || reason === 'PERMISSION_DENIED') {
+        throw new ChatError(
+          'UPSTREAM_AUTH',
+          'The assistant AI service authentication or quota check failed. Check gateway logs or try a quick question.',
+          502,
+          { upstreamStatus: res.status, reason, message: apiMsg },
+        );
+      }
+
+      if (res.status === 400) {
+        throw new ChatError(
+          'UPSTREAM',
+          apiMsg ? `AI service rejected prompt: ${apiMsg}` : 'The assistant could not process that request. Please try rephrasing.',
+          400,
+          { upstreamStatus: res.status, reason, message: apiMsg },
+        );
+      }
+
+      throw new ChatError(
+        'UPSTREAM',
+        'The assistant had a problem answering. Please try again shortly.',
+        502,
+        { upstreamStatus: res.status, reason, message: apiMsg },
+      );
     }
 
     let payload;
@@ -147,7 +194,9 @@ function createChatService({ fetchImpl = fetch, geminiConfig = config.gemini } =
 
     const reply = extractText(payload);
     if (!reply) {
-      throw new ChatError('UPSTREAM', 'The assistant did not return an answer. Please try rephrasing.', 502);
+      throw new ChatError('UPSTREAM', 'The assistant did not return an answer. Please try rephrasing.', 502, {
+        promptFeedback: payload && payload.promptFeedback,
+      });
     }
     return { reply };
   }

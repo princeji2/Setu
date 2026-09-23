@@ -10,17 +10,23 @@ const STATUS_BY_CODE = {
   UNAVAILABLE: 503,
   TIMEOUT: 504,
   UPSTREAM: 502,
+  UPSTREAM_AUTH: 502,
 };
 
 function sendError(res, err) {
   if (err instanceof ChatError) {
     const status = err.status || STATUS_BY_CODE[err.code] || 502;
+    console.warn(`[chat] Handled error: [${err.code}] (${status}) - ${err.message}`, err.details || '');
     return res.status(status).json({
       success: false,
-      error: { code: err.code, message: err.message },
+      error: {
+        code: err.code,
+        message: err.message,
+        ...(err.details ? { details: err.details } : {}),
+      },
     });
   }
-  console.error('[chat] Unexpected error:', err.message);
+  console.error('[chat] Unexpected error:', err.message, err.stack);
   return res.status(500).json({
     success: false,
     error: { code: 'INTERNAL', message: 'Something went wrong.' },

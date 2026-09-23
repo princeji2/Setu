@@ -8,8 +8,22 @@
  *
  * See ../../.env.example (repo root) for the full variable list.
  */
+const path = require('path');
+const fs = require('fs');
 
-require('dotenv').config();
+// Load .env reliably whether the process is started from gateway/, repo root, or elsewhere
+const candidateEnvPaths = [
+  path.resolve(__dirname, '../../.env'),
+  path.resolve(__dirname, '../../../.env'),
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), 'gateway/.env'),
+];
+
+for (const envFile of candidateEnvPaths) {
+  if (fs.existsSync(envFile)) {
+    require('dotenv').config({ path: envFile });
+  }
+}
 
 function required(name, value) {
   // In production we fail fast on missing critical secrets. In test we
