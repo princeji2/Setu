@@ -101,6 +101,14 @@ function createDigitalTaxRecordsClient({
           headers: { 'X-Gateway-Key': gatewayKey, Accept: 'application/json' },
           signal: AbortSignal.timeout(timeoutMs),
         });
+        if (res.status === 502 || res.status === 503 || res.status === 504) {
+          await new Promise((resolve) => setTimeout(resolve, 2500));
+          res = await fetchImpl(url, {
+            method: 'GET',
+            headers: { 'X-Gateway-Key': gatewayKey, Accept: 'application/json' },
+            signal: AbortSignal.timeout(timeoutMs),
+          });
+        }
       } catch (err) {
         const durationMs = Date.now() - start;
         // AbortSignal.timeout aborts with a TimeoutError; other network

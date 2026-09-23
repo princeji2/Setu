@@ -440,6 +440,7 @@ for (const p of CITIZEN_PROFILES) {
     fields: [
       { name: 'fullName', value: p.name, verified: true, lastUpdated: now },
       { name: 'dob', value: p.dob, verified: true, lastUpdated: now },
+      { name: 'dateOfBirth', value: p.dob, verified: true, lastUpdated: now },
       { name: 'gender', value: p.gender, verified: true, lastUpdated: now },
       { name: 'address', value: p.address, verified: true, lastUpdated: now },
     ],
@@ -455,6 +456,7 @@ for (const p of CITIZEN_PROFILES) {
       { name: 'epicNumber', value: p.epic, verified: true, lastUpdated: now },
       { name: 'constituency', value: p.constituency, verified: true, lastUpdated: now },
       { name: 'state', value: p.state, verified: true, lastUpdated: now },
+      { name: 'pollingStation', value: p.polling, verified: true, lastUpdated: now },
       { name: 'assemblyPollingStation', value: p.polling, verified: true, lastUpdated: now },
     ],
   });
@@ -465,6 +467,7 @@ for (const p of CITIZEN_PROFILES) {
     fields: [
       { name: 'fullName', value: p.name, verified: true, lastUpdated: now },
       { name: 'dob', value: p.dob, verified: true, lastUpdated: now },
+      { name: 'dateOfBirth', value: p.dob, verified: true, lastUpdated: now },
       { name: 'gender', value: p.gender, verified: true, lastUpdated: now },
       { name: 'placeOfBirth', value: p.pob, verified: true, lastUpdated: now },
       { name: 'fatherName', value: p.father, verified: true, lastUpdated: now },
@@ -473,6 +476,36 @@ for (const p of CITIZEN_PROFILES) {
     ],
   });
 }
+
+// Explicit standard demo reference aliases (matches catalog placeholders e.g. VOTER-DL-000101, BIRTH-DEL-000101)
+SEED_DATA.push(
+  {
+    identityReference: 'VOTER-DL-000101',
+    fields: [
+      { name: 'fullName', value: 'Aarav Sharma', verified: true, lastUpdated: now },
+      { name: 'dob', value: '1988-04-12', verified: true, lastUpdated: now },
+      { name: 'gender', value: 'Male', verified: true, lastUpdated: now },
+      { name: 'epicNumber', value: 'DL-01-88101', verified: true, lastUpdated: now },
+      { name: 'constituency', value: 'New Delhi (AC-40)', verified: true, lastUpdated: now },
+      { name: 'state', value: 'Delhi', verified: true, lastUpdated: now },
+      { name: 'pollingStation', value: 'PS 4, Barakhamba Road', verified: true, lastUpdated: now },
+      { name: 'assemblyPollingStation', value: 'PS 4, Barakhamba Road', verified: true, lastUpdated: now },
+    ],
+  },
+  {
+    identityReference: 'BIRTH-DEL-000101',
+    fields: [
+      { name: 'fullName', value: 'Aarav Sharma', verified: true, lastUpdated: now },
+      { name: 'dob', value: '1988-04-12', verified: true, lastUpdated: now },
+      { name: 'dateOfBirth', value: '1988-04-12', verified: true, lastUpdated: now },
+      { name: 'gender', value: 'Male', verified: true, lastUpdated: now },
+      { name: 'placeOfBirth', value: 'Safdarjung Hospital, New Delhi', verified: true, lastUpdated: now },
+      { name: 'fatherName', value: 'Suresh Sharma', verified: true, lastUpdated: now },
+      { name: 'motherName', value: 'Kamla Sharma', verified: true, lastUpdated: now },
+      { name: 'registrationNumber', value: 'NDMC/B/1988/00101', verified: true, lastUpdated: now },
+    ],
+  }
+);
 
 
 async function seedRegistrations() {

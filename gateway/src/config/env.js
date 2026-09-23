@@ -99,7 +99,7 @@ const config = {
     },
   },
 
-  departmentCallTimeoutMs: parseInt(process.env.DEPARTMENT_CALL_TIMEOUT_MS, 10) || 5000,
+  departmentCallTimeoutMs: parseInt(process.env.DEPARTMENT_CALL_TIMEOUT_MS, 10) || 45000,
 
   // Chatbot proxy (Gemini). The key lives ONLY here, server-side — it is
   // never sent to the browser. The frontend chat widget calls the gateway's

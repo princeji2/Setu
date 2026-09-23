@@ -67,6 +67,31 @@ DEMO_RECORDS = [
         "filing_status": "FILED",
         "assessment_year": "2024-25",
     },
+    # Catalog placeholder reference aliases for Aarav Sharma
+    {
+        "pan_reference": "SYNPAN-000101",
+        "full_name": "Aarav Sharma",
+        "date_of_birth": "1988-04-12",
+        "income_bracket": "5-10L",
+        "filing_status": "FILED",
+        "assessment_year": "2024-25",
+    },
+    {
+        "pan_reference": "PANCARD-000101",
+        "full_name": "Aarav Sharma",
+        "date_of_birth": "1988-04-12",
+        "income_bracket": "5-10L",
+        "filing_status": "FILED",
+        "assessment_year": "2024-25",
+    },
+    {
+        "pan_reference": "INC-2026-000101",
+        "full_name": "Aarav Sharma",
+        "date_of_birth": "1988-04-12",
+        "income_bracket": "5-10L",
+        "filing_status": "FILED",
+        "assessment_year": "2024-25",
+    },
     {
         "pan_reference": "SYNPAN-000456",
         "full_name": "Priya Nair",

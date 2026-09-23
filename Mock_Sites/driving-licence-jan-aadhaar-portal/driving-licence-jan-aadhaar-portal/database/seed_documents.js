@@ -34,6 +34,27 @@ const CITIZEN_DATA = [
     passportNumber: 'K2089123',
     placeOfIssue: 'Delhi',
   },
+  // 0b. Standard demo reference aliases (matches catalog placeholders e.g. REG-000101, RC-000101, PASS-000101)
+  {
+    holderName: 'Aarav Sharma',
+    dob: '1988-04-12',
+    regRef: 'REG-000101',
+    licenceNumber: 'DL-01198800101',
+    licenceIssueDate: '2016-05-10',
+    licenceValidFrom: '2016-05-10',
+    licenceExpiryDate: '2036-05-09',
+    janAadhaarId: '1000000101',
+    familyCount: 4,
+    rcRef: 'RC-000101',
+    vehicleNumber: 'DL-01-AB-0101',
+    vehicleClass: 'Motor Car (LMV)',
+    makerModel: 'Hyundai Creta SX',
+    regDate: '2021-06-15',
+    fuelType: 'PETROL',
+    passRef: 'PASS-000101',
+    passportNumber: 'K2089101',
+    placeOfIssue: 'Delhi',
+  },
   // 1. Aditi Rao (Clean match)
   {
     holderName: 'Aditi Rao',
