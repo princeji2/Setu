@@ -17,6 +17,7 @@ const CITIZEN_DATA = [
   {
     holderName: 'Aarav Sharma',
     dob: '1988-04-12',
+    regRef: 'REG-A3F7C291',
     licenceNumber: 'DL-01198800123',
     licenceIssueDate: '2016-05-10',
     licenceValidFrom: '2016-05-10',
