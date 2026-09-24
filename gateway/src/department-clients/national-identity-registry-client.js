@@ -92,13 +92,21 @@ function createNationalIdentityRegistryClient({
           headers: { 'X-Gateway-Key': gatewayKey, Accept: 'application/json' },
           signal: AbortSignal.timeout(timeoutMs),
         });
-        if (res.status === 502 || res.status === 503 || res.status === 504) {
-          await new Promise((resolve) => setTimeout(resolve, 2500));
-          res = await fetchImpl(url, {
-            method: 'GET',
-            headers: { 'X-Gateway-Key': gatewayKey, Accept: 'application/json' },
-            signal: AbortSignal.timeout(timeoutMs),
-          });
+        const retryCodes = new Set([502, 503, 504]);
+        const retryStart = Date.now();
+        const maxRetryMs = Math.min(timeoutMs - 5000, 35000);
+        while (retryCodes.has(res.status) && (Date.now() - retryStart < maxRetryMs)) {
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+          try {
+            res = await fetchImpl(url, {
+              method: 'GET',
+              headers: { 'X-Gateway-Key': gatewayKey, Accept: 'application/json' },
+              signal: AbortSignal.timeout(Math.max(5000, timeoutMs - (Date.now() - start))),
+            });
+          } catch {
+            // Keep retrying if cold-start connection reset or timeout occurred
+            if (Date.now() - retryStart >= maxRetryMs) break;
+          }
         }
       } catch (err) {
         const durationMs = Date.now() - start;
