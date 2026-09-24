@@ -41,12 +41,12 @@ function consentModalHtml(service, reuseReference) {
         `<div class="consent-row"><div><div class="fld">${escapeHtml(f)}</div><div class="from">from ${escapeHtml(step.departmentLabel)}</div></div>Required</div>`
       ).join('');
 
-      const hasReuse = reuseMap[step.referenceKey];
+      const stepDemoRef = (step.referencePlaceholder || '').replace(/^e\.g\.\s*/i, '').trim();
       const refBlock = hasReuse
         ? `<div class="field-hint" style="margin:6px 0 10px">&#10003; Reusing your verified reference (${escapeHtml(hasReuse)}) &mdash; no re-entry needed.</div>`
         : `<div class="field reference-field" style="margin-top:8px">
              <label for="consentRef_${step.referenceKey}">${escapeHtml(step.referenceLabel)}</label>
-             <input id="consentRef_${step.referenceKey}" type="text" placeholder="${escapeHtml(step.referencePlaceholder)}" required>
+             <input id="consentRef_${step.referenceKey}" type="text" placeholder="${escapeHtml(step.referencePlaceholder)}" value="${escapeHtml(stepDemoRef)}" required>
            </div>`;
 
       return `
@@ -82,11 +82,16 @@ function consentModalHtml(service, reuseReference) {
     )
     .join('');
 
+  const demoRef = (service.referencePlaceholder || '').replace(/^e\.g\.\s*/i, '').trim();
   const referenceBlock = reuseReference
     ? `<div class="field-hint" style="margin:-4px 0 16px">Reusing your verified reference from ${escapeHtml(service.departmentLabel)} — no re-entry needed.</div>`
     : `<div class="field reference-field">
-         <label for="consentReference">${escapeHtml(service.referenceLabel)}</label>
-         <input id="consentReference" type="text" placeholder="${escapeHtml(service.referencePlaceholder)}" required>
+         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+           <label for="consentReference" style="margin-bottom:0">${escapeHtml(service.referenceLabel)}</label>
+           ${demoRef ? `<button type="button" style="font-size:11px;font-weight:600;color:var(--color-primary,#991b1b);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline" onclick="document.getElementById('consentReference').value='${escapeHtml(demoRef)}'">Use demo reference</button>` : ''}
+         </div>
+         <input id="consentReference" type="text" placeholder="${escapeHtml(service.referencePlaceholder)}" value="${escapeHtml(demoRef)}" required>
+         <div class="field-hint" style="font-size:11px;margin-top:4px">Pre-filled with synthetic demo reference. Real government IDs are strictly forbidden.</div>
        </div>`;
 
   return `

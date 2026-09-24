@@ -24,7 +24,36 @@ if (require.main === module) {
     } catch (err) {
       console.warn('[server] Notice: Auto-migration did not run on boot:', err.message);
     }
+
+    // Keep-alive heartbeat: ping department services every 7 minutes so Render
+    // free-tier instances never spin down / sleep due to inactivity.
+    startKeepAlive();
   });
+}
+
+function startKeepAlive() {
+  const targets = [
+    config.departments.digital_tax_records?.baseUrl,
+    config.departments.national_identity_registry?.baseUrl ? `${config.departments.national_identity_registry.baseUrl.replace(/\/+$/, '')}/health` : null,
+    config.departments.driving_licence_jan_aadhaar?.baseUrl,
+    'https://setu-gateway.onrender.com/api/v1/health',
+  ].filter(Boolean);
+
+  async function ping() {
+    for (const url of targets) {
+      if (url.includes('localhost') || url.includes('127.0.0.1')) continue;
+      try {
+        await fetch(url, { signal: AbortSignal.timeout(8000) });
+      } catch {
+        // silent keepalive catch
+      }
+    }
+  }
+
+  // Ping immediately after boot, then every 7 minutes
+  setTimeout(ping, 5000);
+  const timer = setInterval(ping, 7 * 60 * 1000);
+  if (timer.unref) timer.unref();
 }
 
 module.exports = app;

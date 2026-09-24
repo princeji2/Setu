@@ -124,32 +124,38 @@ function createDrivingLicenceJanAadhaarClient({
       const start = Date.now();
 
 
-      let res;
-      try {
-        res = await fetchImpl(url, {
-          method: 'GET',
-          headers: { 'X-Gateway-Key': gatewayKey, Accept: 'application/json' },
-          signal: AbortSignal.timeout(timeoutMs),
-        });
-        const retryCodes = new Set([502, 503, 504]);
-        const retryStart = Date.now();
-        const maxRetryMs = Math.min(timeoutMs - 5000, 35000);
-        while (retryCodes.has(res.status) && (Date.now() - retryStart < maxRetryMs)) {
-          await new Promise((resolve) => setTimeout(resolve, 3000));
-          try {
-            res = await fetchImpl(url, {
-              method: 'GET',
-              headers: { 'X-Gateway-Key': gatewayKey, Accept: 'application/json' },
-              signal: AbortSignal.timeout(Math.max(5000, timeoutMs - (Date.now() - start))),
-            });
-          } catch {
-            // Keep retrying if cold-start connection reset or timeout occurred
-            if (Date.now() - retryStart >= maxRetryMs) break;
+      let res = null;
+      let lastErr = null;
+      const retryCodes = new Set([502, 503, 504]);
+      const retryStart = Date.now();
+      const maxRetryMs = Math.min(timeoutMs - 5000, 35000);
+
+      while (Date.now() - retryStart < maxRetryMs) {
+        try {
+          res = await fetchImpl(url, {
+            method: 'GET',
+            headers: { 'X-Gateway-Key': gatewayKey, Accept: 'application/json' },
+            signal: AbortSignal.timeout(Math.min(15000, Math.max(5000, timeoutMs - (Date.now() - start)))),
+          });
+          lastErr = null;
+          if (!retryCodes.has(res?.status)) {
+            break;
           }
+        } catch (fetchErr) {
+          lastErr = fetchErr;
+          res = null;
         }
-      } catch (err) {
+
+        if (Date.now() - retryStart + 3000 < maxRetryMs) {
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+        } else {
+          break;
+        }
+      }
+
+      if (!res && lastErr) {
         const durationMs = Date.now() - start;
-        const isTimeout = err && (err.name === 'TimeoutError' || err.name === 'AbortError');
+        const isTimeout = lastErr && (lastErr.name === 'TimeoutError' || lastErr.name === 'AbortError');
         return {
           outcome: isTimeout ? 'timeout' : 'unreachable',
           statusCode: null,
