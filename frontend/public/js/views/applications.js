@@ -78,7 +78,9 @@ function tableRowHtml(app) {
     ? `<span class="dept-tag theme-composite"><span class="dept-tag-glyph">🚌</span>NIR + DLJA (Chained)</span>`
     : (() => {
         const department = resolveDepartment(app);
-        if (!department) return '—';
+        if (!department) {
+          return `<span class="dept-tag"><span class="dept-tag-glyph">🏛️</span>Other department</span>`;
+        }
         const theme = departmentTheme(department);
         return `<span class="dept-tag ${theme.themeClass}"><span class="dept-tag-glyph">${theme.icon}</span>${escapeHtml(DEPARTMENT_LABELS[department] || department)}</span>`;
       })();
