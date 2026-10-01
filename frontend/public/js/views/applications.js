@@ -61,7 +61,7 @@ function statusBadgeHtml(status) {
         <span class="status-badge-text">Failed — needs retry</span>
       </span>`;
   }
-  const label = STATUS_LABELS[status] || status;
+  const label = STATUS_LABELS[status] || status || 'Pending';
   return `
     <span class="status-badge status-badge-inflight" title="${escapeHtml(label)}">
       <svg class="status-badge-icon badge-spin" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
