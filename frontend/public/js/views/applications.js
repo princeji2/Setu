@@ -22,17 +22,65 @@ import {
   escapeHtml, timeAgo, DEPARTMENT_LABELS, APPLICATION_TYPE_LABELS,
   STATUS_LABELS, statusChipClass, departmentTheme,
 } from '../util.js';
+import { findService } from '../catalog.js';
 import { isStale } from '../render-guard.js';
 import { revealStagger } from '../anim.js';
+
+function resolveDepartment(app) {
+  const service = findService(app.type);
+  if (service && service.department) return service.department;
+  const lastCall = app.department_calls && app.department_calls[app.department_calls.length - 1];
+  if (lastCall && lastCall.department) return lastCall.department;
+  if (app.type === 'pan_verification' || app.type === 'pan_card_verification' || app.type === 'income_certificate_verification') return 'digital_tax_records';
+  if (app.type === 'identity_verification' || app.type === 'voter_id_verification' || app.type === 'birth_certificate_verification') return 'national_identity_registry';
+  if (app.type === 'driving_licence_registration' || app.type === 'vehicle_rc_verification' || app.type === 'passport_verification') return 'driving_licence_jan_aadhaar';
+  return null;
+}
+
+function statusBadgeHtml(status) {
+  if (status === 'complete') {
+    return `
+      <span class="status-badge status-badge-verified" title="Officially verified via connected department">
+        <svg class="status-badge-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 2l6 2.5v5.5c0 4.5-3 7.5-6 9-3-1.5-6-4.5-6-9V4.5L10 2z" fill="currentColor" fill-opacity="0.14"/>
+          <path d="M10 2l6 2.5v5.5c0 4.5-3 7.5-6 9-3-1.5-6-4.5-6-9V4.5L10 2z"/>
+          <polyline points="7 10 9 12 13 8"/>
+        </svg>
+        <span class="status-badge-text">Verified</span>
+      </span>`;
+  }
+  if (status === 'failed') {
+    return `
+      <span class="status-badge status-badge-failed" title="Verification failed — needs retry">
+        <svg class="status-badge-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M2.5 10a7.5 7.5 0 0 1 12.8-5.3L17.5 7"/>
+          <path d="M17.5 3v4h-4"/>
+          <path d="M17.5 10a7.5 7.5 0 0 1-12.8 5.3L2.5 13"/>
+          <path d="M2.5 17v-4h4"/>
+        </svg>
+        <span class="status-badge-text">Failed — needs retry</span>
+      </span>`;
+  }
+  const label = STATUS_LABELS[status] || status || 'Pending';
+  return `
+    <span class="status-badge status-badge-inflight" title="${escapeHtml(label)}">
+      <svg class="status-badge-icon badge-spin" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="10" cy="10" r="7" stroke-opacity="0.25"/>
+        <path d="M10 3a7 7 0 0 1 7 7"/>
+      </svg>
+      <span class="status-badge-text">${escapeHtml(label)}</span>
+    </span>`;
+}
 
 function tableRowHtml(app) {
   const isComposite = app.type === 'senior_citizen_transport_concession' || Boolean(app.composite_workflow_id);
   const deptCell = isComposite
     ? `<span class="dept-tag theme-composite"><span class="dept-tag-glyph">🚌</span>NIR + DLJA (Chained)</span>`
     : (() => {
-        const lastCall = app.department_calls && app.department_calls[app.department_calls.length - 1];
-        const department = lastCall ? lastCall.department : null;
-        if (!department) return '—';
+        const department = resolveDepartment(app);
+        if (!department) {
+          return `<span class="dept-tag"><span class="dept-tag-glyph">🏛️</span>Other department</span>`;
+        }
         const theme = departmentTheme(department);
         return `<span class="dept-tag ${theme.themeClass}"><span class="dept-tag-glyph">${theme.icon}</span>${escapeHtml(DEPARTMENT_LABELS[department] || department)}</span>`;
       })();
@@ -44,7 +92,7 @@ function tableRowHtml(app) {
       ${isComposite ? `<span class="badge" style="display:inline-block;font-size:10px;margin-left:6px;background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:4px;font-weight:600">Composite</span>` : ''}
     </td>
     <td>${deptCell}</td>
-    <td><span class="chip ${statusChipClass(app.status)}">${escapeHtml(STATUS_LABELS[app.status] || app.status)}</span></td>
+    <td>${statusBadgeHtml(app.status)}</td>
     <td>${timeAgo(app.updated_at || app.created_at)}</td>
   </tr>`;
 }
@@ -92,6 +140,7 @@ function compositeStepperHtml(app) {
 async function renderApplicationsList(root, token) {
   root.innerHTML = `
     <div class="section-head"><h2>My applications</h2></div>
+    <p class="section-note">Every verification you've completed across connected departments, tracked in one place.</p>
     <div class="panel panel-pad" id="appsPanel"><div class="loading-note"><span class="spinner dark"></span> Loading…</div></div>`;
 
   let applications = [];
@@ -111,10 +160,12 @@ async function renderApplicationsList(root, token) {
   }
 
   panel.innerHTML = `
-    <table>
-      <thead><tr><th>Application</th><th>Department</th><th>Status</th><th>Last update</th></tr></thead>
-      <tbody>${applications.map(tableRowHtml).join('')}</tbody>
-    </table>`;
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Application</th><th>Department</th><th>Status</th><th>Last update</th></tr></thead>
+        <tbody>${applications.map(tableRowHtml).join('')}</tbody>
+      </table>
+    </div>`;
 
   revealStagger(panel.querySelectorAll('tbody tr'), { scale: 1, y: 10 });
 
@@ -175,7 +226,7 @@ async function renderApplicationDetail(root, applicationId, token) {
   root.insertAdjacentHTML('beforeend', `
     <div class="section-head" style="margin-top:20px">
       <h2>${escapeHtml(APPLICATION_TYPE_LABELS[app.type] || app.type)}</h2>
-      <span class="chip ${statusChipClass(app.status)}">${escapeHtml(STATUS_LABELS[app.status] || app.status)}</span>
+      ${statusBadgeHtml(app.status)}
     </div>
     <p class="section-note">Created ${timeAgo(app.created_at)} &middot; Last updated ${timeAgo(app.updated_at)}</p>
     ${stepper}
