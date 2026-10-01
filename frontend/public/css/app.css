@@ -852,6 +852,18 @@ tr.row-click:hover td { background: var(--surface-sunken); }
   color: #b91c1c;
   border: 1px solid rgba(185, 28, 28, 0.22);
 }
+.val-id {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  background: var(--surface-sunken, #f8fafc);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--line);
+  display: inline-block;
+}
 
 /* Collapsible technical details */
 .tech-details {

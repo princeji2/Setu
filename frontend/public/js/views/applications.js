@@ -239,6 +239,114 @@ function parseResponseSummary(summary) {
   };
 }
 
+const FIELD_MAPS = {
+  pan_verification: {
+    panNumber: { label: 'PAN number', order: 5, formatter: 'identifier' },
+    pan_reference: { label: 'PAN reference', order: 6, formatter: 'identifier' },
+    reference: { label: 'Reference', order: 6, formatter: 'identifier' },
+    fullName: { label: 'Full name', order: 10, formatter: 'text' },
+    name: { label: 'Full name', order: 10, formatter: 'text' },
+    filingStatus: { label: 'Filing status', order: 20, formatter: 'enum' },
+    incomeBracket: { label: 'Income bracket', order: 30, formatter: 'text' },
+    assessmentYear: { label: 'Assessment year', order: 40, formatter: 'text' },
+  },
+
+  pan_card_verification: {
+    panNumber: { label: 'PAN number', order: 10, formatter: 'identifier' },
+    reference: { label: 'PAN reference', order: 15, formatter: 'identifier' },
+    fullName: { label: 'Full name', order: 20, formatter: 'text' },
+    name: { label: 'Full name', order: 20, formatter: 'text' },
+    dob: { label: 'Date of birth', order: 30, formatter: 'date' },
+    dateOfBirth: { label: 'Date of birth', order: 30, formatter: 'date' },
+    category: { label: 'Category', order: 40, formatter: 'enum' },
+    status: { label: 'Status', order: 50, formatter: 'enum' },
+    issueDate: { label: 'Issue date', order: 60, formatter: 'date' },
+  },
+
+  income_certificate_verification: {
+    certificateNumber: { label: 'Certificate number', order: 10, formatter: 'identifier' },
+    reference: { label: 'Certificate number', order: 10, formatter: 'identifier' },
+    fullName: { label: 'Applicant name', order: 20, formatter: 'text' },
+    applicantName: { label: 'Applicant name', order: 20, formatter: 'text' },
+    name: { label: 'Applicant name', order: 20, formatter: 'text' },
+    annualIncome: { label: 'Annual income', order: 30, formatter: 'text' },
+    incomeBracket: { label: 'Income bracket', order: 40, formatter: 'text' },
+    financialYear: { label: 'Financial year', order: 50, formatter: 'text' },
+    assessmentYear: { label: 'Financial year', order: 50, formatter: 'text' },
+    dob: { label: 'Date of birth', order: 60, formatter: 'date' },
+    dateOfBirth: { label: 'Date of birth', order: 60, formatter: 'date' },
+    issuingAuthority: { label: 'Issuing authority', order: 70, formatter: 'text' },
+    issueDate: { label: 'Issue date', order: 80, formatter: 'date' },
+    validUntil: { label: 'Valid until', order: 90, formatter: 'date' },
+  },
+
+  identity_verification: {
+    identityReference: { label: 'Identity reference', order: 10, formatter: 'identifier' },
+    reference: { label: 'Identity reference', order: 10, formatter: 'identifier' },
+    fullName: { label: 'Full name', order: 20, formatter: 'text' },
+    name: { label: 'Full name', order: 20, formatter: 'text' },
+    dob: { label: 'Date of birth', order: 30, formatter: 'date' },
+    dateOfBirth: { label: 'Date of birth', order: 30, formatter: 'date' },
+    gender: { label: 'Gender', order: 40, formatter: 'enum' },
+    address: { label: 'Address', order: 50, formatter: 'text' },
+    pincode: { label: 'PIN code', order: 60, formatter: 'identifier' },
+  },
+
+  voter_id_verification: {
+    epicNumber: { label: 'EPIC number', order: 10, formatter: 'identifier' },
+    reference: { label: 'Reference', order: 15, formatter: 'identifier' },
+    identityReference: { label: 'Reference', order: 15, formatter: 'identifier' },
+    fullName: { label: 'Full name', order: 20, formatter: 'text' },
+    name: { label: 'Full name', order: 20, formatter: 'text' },
+    relativeName: { label: 'Relative name', order: 25, formatter: 'text' },
+    dob: { label: 'Date of birth', order: 30, formatter: 'date' },
+    dateOfBirth: { label: 'Date of birth', order: 30, formatter: 'date' },
+    gender: { label: 'Gender', order: 40, formatter: 'enum' },
+    constituency: { label: 'Constituency', order: 50, formatter: 'text' },
+    assemblyConstituency: { label: 'Assembly constituency', order: 50, formatter: 'text' },
+    parliamentaryConstituency: { label: 'Parliamentary constituency', order: 55, formatter: 'text' },
+    state: { label: 'State', order: 60, formatter: 'text' },
+    pollingStation: { label: 'Polling station', order: 70, formatter: 'text' },
+    assemblyPollingStation: { label: 'Polling station', order: 70, formatter: 'text' },
+  },
+
+  birth_certificate_verification: {
+    registrationNumber: { label: 'Registration number', order: 10, formatter: 'identifier' },
+    reference: { label: 'Reference', order: 15, formatter: 'identifier' },
+    identityReference: { label: 'Reference', order: 15, formatter: 'identifier' },
+    fullName: { label: 'Child name', order: 20, formatter: 'text' },
+    childName: { label: 'Child name', order: 20, formatter: 'text' },
+    name: { label: 'Child name', order: 20, formatter: 'text' },
+    dob: { label: 'Date of birth', order: 30, formatter: 'date' },
+    dateOfBirth: { label: 'Date of birth', order: 30, formatter: 'date' },
+    gender: { label: 'Gender', order: 40, formatter: 'enum' },
+    fatherName: { label: "Father's name", order: 50, formatter: 'text' },
+    motherName: { label: "Mother's name", order: 60, formatter: 'text' },
+    placeOfBirth: { label: 'Place of birth', order: 70, formatter: 'text' },
+    registrationDate: { label: 'Registration date', order: 80, formatter: 'date' },
+    issueDate: { label: 'Issue date', order: 85, formatter: 'date' },
+    issuingAuthority: { label: 'Issuing authority', order: 90, formatter: 'text' },
+  },
+};
+
+function resolveDocumentType(call, appType) {
+  if (appType && appType !== 'senior_citizen_transport_concession' && FIELD_MAPS[appType]) {
+    return appType;
+  }
+  const ep = call?.endpoint_called || '';
+  if (ep.includes('/pan-card/')) return 'pan_card_verification';
+  if (ep.includes('/income-certificate/')) return 'income_certificate_verification';
+  if (ep.includes('/pan/')) return 'pan_verification';
+  if (ep.includes('/voter-id/')) return 'voter_id_verification';
+  if (ep.includes('/birth-certificate/')) return 'birth_certificate_verification';
+  if (ep.includes('/registration/')) return 'identity_verification';
+  if (ep.includes('/vehicle-rc/')) return 'vehicle_rc_verification';
+  if (ep.includes('/passport/')) return 'passport_verification';
+  if (ep.includes('/registrations/')) return 'driving_licence_registration';
+  if (appType && FIELD_MAPS[appType]) return appType;
+  return null;
+}
+
 function humanizeKey(key) {
   if (!key) return '';
   const s = String(key)
@@ -248,45 +356,50 @@ function humanizeKey(key) {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
-function formatResultValue(key, value) {
+function formatFieldValue(value, formatter) {
   if (value == null || value === '') return '—';
   const str = String(value).trim();
 
-  // Keep masked values (containing asterisks) exactly as-is!
+  // Masked values (containing asterisks) bypass all formatters
   if (str.includes('*')) {
     return escapeHtml(str);
   }
 
-  // Boolean strings
-  if (str.toLowerCase() === 'true') {
-    return `<span class="val-pill val-pill-ok">Verified</span>`;
-  }
-  if (str.toLowerCase() === 'false') {
-    return `<span class="val-pill val-pill-fail">Not verified</span>`;
+  // Identifier fields: always shown verbatim, never case-changed
+  if (formatter === 'identifier') {
+    return `<code class="val-id">${escapeHtml(str)}</code>`;
   }
 
-  // Complete dates: YYYY-MM-DD or full ISO 8601 timestamps
-  if (/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)?$/.test(str)) {
-    const d = new Date(str);
-    if (!isNaN(d.getTime())) {
-      const day = d.getUTCDate();
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const month = months[d.getUTCMonth()];
-      const year = d.getUTCFullYear();
-      return `${day} ${month} ${year}`;
+  // Enum formatter: applied ONLY to fields explicitly marked enum
+  if (formatter === 'enum') {
+    if (str.toLowerCase() === 'true') {
+      return `<span class="val-pill val-pill-ok">Verified</span>`;
     }
+    if (str.toLowerCase() === 'false') {
+      return `<span class="val-pill val-pill-fail">Not verified</span>`;
+    }
+    const cleaned = str.replace(/[_-]+/g, ' ').trim().toLowerCase();
+    return escapeHtml(cleaned.charAt(0).toUpperCase() + cleaned.slice(1));
   }
 
-  // Enum values in SCREAMING_SNAKE_CASE (e.g. FORMAT_VALID, FILED, ACTIVE)
-  if (/^[A-Z][A-Z0-9_]{2,}$/.test(str)) {
-    const formatted = str.replace(/_/g, ' ').toLowerCase();
-    return escapeHtml(formatted.charAt(0).toUpperCase() + formatted.slice(1));
+  // Date formatter (and fallback for text if full complete date)
+  if (formatter === 'date' || formatter === 'text') {
+    if (/^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)?$/.test(str)) {
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) {
+        const day = d.getUTCDate();
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const month = months[d.getUTCMonth()];
+        const year = d.getUTCFullYear();
+        return `${day} ${month} ${year}`;
+      }
+    }
   }
 
   return escapeHtml(str);
 }
 
-function resultCardHtml(call) {
+function resultCardHtml(call, appType) {
   const parsed = parseResponseSummary(call.response_summary);
   const deptName = call.department ? (DEPARTMENT_LABELS[call.department] || call.department) : 'Connected Department';
   const theme = departmentTheme(call.department);
@@ -297,7 +410,7 @@ function resultCardHtml(call) {
     : `<span class="status-badge status-badge-failed"><svg class="status-badge-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 10a7.5 7.5 0 0 1 12.8-5.3L17.5 7"/><path d="M17.5 3v4h-4"/><path d="M17.5 10a7.5 7.5 0 0 1-12.8 5.3L2.5 13"/><path d="M2.5 17v-4h4"/></svg><span class="status-badge-text">Failed — needs retry</span></span>`;
 
   let contentHtml = '';
-  if (!call.succeeded) {
+  if (!call.succeeded || (!parsed.isStructured && parsed.verified === false)) {
     const errMsg = parsed.rawText || 'Department call failed. Please retry.';
     contentHtml = `
       <div class="result-card-error">
@@ -305,12 +418,37 @@ function resultCardHtml(call) {
         <div class="result-error-desc">${escapeHtml(errMsg)}</div>
       </div>`;
   } else if (parsed.isStructured) {
+    const docType = resolveDocumentType(call, appType);
+    const typeDef = docType ? FIELD_MAPS[docType] : null;
+
+    const formattedItems = [];
+    const seenLabels = new Set();
+
+    parsed.pairs.forEach((p, idx) => {
+      const fieldDef = typeDef ? typeDef[p.key] : null;
+      const label = fieldDef ? fieldDef.label : humanizeKey(p.key);
+      const order = fieldDef ? fieldDef.order : (1000 + idx);
+      const formatter = fieldDef ? fieldDef.formatter : 'text';
+
+      // Deduplicate identical labels if present (e.g. dob and dateOfBirth)
+      if (seenLabels.has(label)) return;
+      seenLabels.add(label);
+
+      formattedItems.push({
+        label,
+        valueHtml: formatFieldValue(p.value, formatter),
+        order,
+      });
+    });
+
+    formattedItems.sort((a, b) => a.order - b.order);
+
     contentHtml = `
       <div class="result-grid">
-        ${parsed.pairs.map((p) => `
+        ${formattedItems.map((item) => `
           <div class="result-cell">
-            <span class="result-label">${escapeHtml(humanizeKey(p.key))}</span>
-            <span class="result-value">${formatResultValue(p.key, p.value)}</span>
+            <span class="result-label">${escapeHtml(item.label)}</span>
+            <span class="result-value">${item.valueHtml}</span>
           </div>
         `).join('')}
       </div>`;
@@ -393,7 +531,7 @@ async function renderApplicationDetail(root, applicationId, token) {
       <div class="section-head"><h2 style="font-size:15px">Verification results (${app.department_calls.length})</h2></div>
       <div id="callList">${
         app.department_calls.length
-          ? app.department_calls.map(resultCardHtml).join('')
+          ? app.department_calls.map((call) => resultCardHtml(call, app.type)).join('')
           : '<div class="empty-note">No department calls have been made for this application yet.</div>'
       }</div>
     </div>`);
