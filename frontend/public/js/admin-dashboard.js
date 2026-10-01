@@ -66,7 +66,7 @@ const AUDIT_ACTION_LABELS = {
 // recent-actions feed) is the default landing view — it's the natural
 // "what's happening now" entry point into the console.
 let currentView = 'activity';
-const appFilters = { status: '', department: '' };
+const appFilters = { status: '', department: '', search: '' };
 const auditFilters = { action: '', citizen: '' }; // citizen = client-side text search
 
 // A citizen_id -> { name, email } map, built from the applications endpoint
@@ -365,6 +365,10 @@ function appFilterBarHtml(count) {
         <label for="filterDepartment">Department</label>
         <select id="filterDepartment">${deptOpts}</select>
       </div>
+      <div class="admin-filter">
+        <label for="filterAppSearch">Search</label>
+        <input type="text" id="filterAppSearch" class="admin-search" placeholder="Search by citizen, email, type…" value="${escapeHtml(appFilters.search)}" />
+      </div>
       <span class="admin-filter-note" id="appCount" aria-live="polite">Showing ${count} application${count === 1 ? '' : 's'}</span>
     </div>`;
 }
@@ -415,7 +419,11 @@ async function reloadApplications() {
   const countEl = document.getElementById('appCount');
   if (tableSlot) tableSlot.innerHTML = `<div class="panel"><div class="admin-loading">Loading…</div></div>`;
   try {
-    const apps = await adminApi.applications({ status: appFilters.status, department: appFilters.department });
+    const apps = await adminApi.applications({
+      status: appFilters.status,
+      department: appFilters.department,
+      search: appFilters.search,
+    });
     indexCitizens(apps);
     if (tableSlot) tableSlot.innerHTML = appTableHtml(apps);
     if (countEl) countEl.textContent = `Showing ${apps.length} application${apps.length === 1 ? '' : 's'}`;
@@ -425,11 +433,43 @@ async function reloadApplications() {
   }
 }
 
+let appSearchTimer = null;
+
 function wireAppFilters() {
   const statusSel = document.getElementById('filterStatus');
   const deptSel = document.getElementById('filterDepartment');
-  if (statusSel) statusSel.addEventListener('change', (e) => { appFilters.status = e.target.value; reloadApplications(); });
-  if (deptSel) deptSel.addEventListener('change', (e) => { appFilters.department = e.target.value; reloadApplications(); });
+  const searchInput = document.getElementById('filterAppSearch');
+
+  if (statusSel) {
+    statusSel.addEventListener('change', (e) => {
+      appFilters.status = e.target.value;
+      reloadApplications();
+    });
+  }
+  if (deptSel) {
+    deptSel.addEventListener('change', (e) => {
+      appFilters.department = e.target.value;
+      reloadApplications();
+    });
+  }
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const val = e.target.value;
+      clearTimeout(appSearchTimer);
+      appSearchTimer = setTimeout(() => {
+        appFilters.search = val.trim();
+        reloadApplications();
+      }, 300);
+    });
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        clearTimeout(appSearchTimer);
+        appFilters.search = e.target.value.trim();
+        reloadApplications();
+      }
+    });
+  }
 }
 
 /** Record any citizen id->name/email pairs seen in an applications payload. */
@@ -449,7 +489,11 @@ async function renderApplicationsView() {
   try {
     [stats, apps, trend] = await Promise.all([
       adminApi.stats(),
-      adminApi.applications({ status: appFilters.status, department: appFilters.department }),
+      adminApi.applications({
+        status: appFilters.status,
+        department: appFilters.department,
+        search: appFilters.search,
+      }),
       // Trend is additive; if it ever fails we still render the rest of the
       // console rather than blanking it. Caught below to a null trend.
       adminApi.trend().catch((err) => {
@@ -934,7 +978,7 @@ navEl.addEventListener('click', (e) => {
 document.getElementById('adminRefresh').addEventListener('click', () => renderCurrentView());
 document.getElementById('adminSignOut').addEventListener('click', () => {
   clearAdminKey();
-  appFilters.status = ''; appFilters.department = '';
+  appFilters.status = ''; appFilters.department = ''; appFilters.search = '';
   auditFilters.action = ''; auditFilters.citizen = '';
   auditCache = [];
   citizenMap = new Map();

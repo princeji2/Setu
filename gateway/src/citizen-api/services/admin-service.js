@@ -55,14 +55,14 @@ function createAdminService({ adminRepository }) {
       return adminRepository.trend({ hours: parsedHours });
     },
 
-    async listApplications({ status, department } = {}) {
-      if (status != null && !STATUS_SET.has(status)) {
+    async listApplications({ status, department, search } = {}) {
+      if (status && !STATUS_SET.has(status)) {
         throw new AdminError(
           'VALIDATION',
           `status must be one of: ${APPLICATION_STATUSES.join(', ')}.`
         );
       }
-      if (department != null && !DEPARTMENT_SET.has(department)) {
+      if (department && !DEPARTMENT_SET.has(department)) {
         throw new AdminError(
           'VALIDATION',
           `department must be one of: ${DEPARTMENTS.join(', ')}.`
@@ -71,6 +71,7 @@ function createAdminService({ adminRepository }) {
       return adminRepository.listApplications({
         status: status || null,
         department: department || null,
+        search: (typeof search === 'string' && search.trim()) ? search.trim() : null,
       });
     },
 

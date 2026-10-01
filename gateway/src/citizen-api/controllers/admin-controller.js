@@ -51,6 +51,7 @@ function createAdminController(adminService) {
         const data = await adminService.listApplications({
           status: req.query.status,
           department: req.query.department,
+          search: req.query.search || req.query.q,
         });
         return res.status(200).json({ success: true, data, error: null });
       } catch (err) {

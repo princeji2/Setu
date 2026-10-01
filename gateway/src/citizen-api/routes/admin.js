@@ -9,7 +9,7 @@
  *   GET /stats/trend   -> hourly time-series of calls/failures/success_rate (200)
  *                         filter: ?hours= (default 24, capped 168)
  *   GET /applications  -> all applications across all citizens (200)
- *                         filters: ?status=, ?department=
+ *                         filters: ?status=, ?department=, ?search=
  *   GET /audit-log     -> the audit trail, newest first (200)
  *                         filters: ?action=, ?citizen_id=, ?limit=
  *

@@ -32,6 +32,19 @@ const APPLICATION_STATUSES = [
   'failed',
 ];
 
+const APPLICATION_TYPE_LABELS = {
+  pan_verification: 'PAN verification',
+  pan_card_verification: 'PAN Card verification',
+  income_certificate_verification: 'Income Certificate verification',
+  identity_verification: 'Identity verification',
+  voter_id_verification: 'Voter ID (EPIC) verification',
+  birth_certificate_verification: 'Birth Certificate verification',
+  driving_licence_registration: 'Driving licence registration',
+  vehicle_rc_verification: 'Vehicle RC verification',
+  passport_verification: 'Passport verification',
+  senior_citizen_transport_concession: 'Senior Citizen Transport Concession',
+};
+
 // A department is flagged `degraded` when its success rate over the rolling
 // 24h window drops below this percentage. Windowed (not all-time) on purpose:
 // an all-time rate is slow to trip and slow to clear, so it wouldn't reflect
@@ -153,12 +166,14 @@ const pgAdminRepository = {
 
   /**
    * All applications across all citizens, joined to the owning citizen's
-   * display name + email, newest first. Optional status/department filters.
+   * display name + email, newest first. Optional status/department/search filters.
    * `department` filters to applications that made at least one call to that
    * department (applications themselves have no department column — the
    * department lives on the calls).
+   * `search` matches against citizen name, email, application type (code or label),
+   * application/workflow IDs, or linked department references.
    */
-  async listApplications({ status = null, department = null } = {}) {
+  async listApplications({ status = null, department = null, search = null } = {}) {
     const clauses = [];
     const params = [];
 
@@ -172,6 +187,35 @@ const pgAdminRepository = {
         `EXISTS (SELECT 1 FROM application_department_calls c
                  WHERE c.application_id = a.id AND c.department = $${params.length})`
       );
+    }
+    if (search && search.trim()) {
+      params.push(`%${search.trim()}%`);
+      const p = `$${params.length}`;
+      clauses.push(`(
+        c.full_name ILIKE ${p}
+        OR c.email ILIKE ${p}
+        OR a.type ILIKE ${p}
+        OR REPLACE(a.type, '_', ' ') ILIKE ${p}
+        OR (CASE a.type
+              WHEN 'pan_verification' THEN 'PAN verification'
+              WHEN 'pan_card_verification' THEN 'PAN Card verification'
+              WHEN 'income_certificate_verification' THEN 'Income Certificate verification'
+              WHEN 'identity_verification' THEN 'Identity verification'
+              WHEN 'voter_id_verification' THEN 'Voter ID (EPIC) verification'
+              WHEN 'birth_certificate_verification' THEN 'Birth Certificate verification'
+              WHEN 'driving_licence_registration' THEN 'Driving licence registration'
+              WHEN 'vehicle_rc_verification' THEN 'Vehicle RC verification'
+              WHEN 'passport_verification' THEN 'Passport verification'
+              WHEN 'senior_citizen_transport_concession' THEN 'Senior Citizen Transport Concession'
+              ELSE a.type
+            END) ILIKE ${p}
+        OR CAST(a.id AS TEXT) ILIKE ${p}
+        OR CAST(a.composite_workflow_id AS TEXT) ILIKE ${p}
+        OR EXISTS (
+          SELECT 1 FROM linked_references lr
+          WHERE lr.citizen_id = a.citizen_id AND lr.department_reference ILIKE ${p}
+        )
+      )`);
     }
 
     const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
@@ -482,9 +526,10 @@ function createInMemoryAdminRepository({ citizens = [], applications = [], calls
       return shapeTrend({ hours: n, rows });
     },
 
-    async listApplications({ status = null, department = null } = {}) {
+    async listApplications({ status = null, department = null, search = null } = {}) {
       const citizenById = new Map(get.citizens().map((c) => [c.id, c]));
       const callRows = get.calls();
+      const q = (typeof search === 'string' && search.trim()) ? search.trim().toLowerCase() : null;
       return get.applications()
         .filter((a) => (status ? a.status === status : true))
         .filter((a) =>
@@ -492,7 +537,6 @@ function createInMemoryAdminRepository({ citizens = [], applications = [], calls
             ? callRows.some((c) => c.application_id === a.id && c.department === department)
             : true
         )
-        .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
         .map((a) => {
           const c = citizenById.get(a.citizen_id) || {};
           return {
@@ -506,7 +550,27 @@ function createInMemoryAdminRepository({ citizens = [], applications = [], calls
             citizen_name: c.full_name || null,
             citizen_email: c.email || null,
           };
-        });
+        })
+        .filter((app) => {
+          if (!q) return true;
+          const name = (app.citizen_name || '').toLowerCase();
+          const email = (app.citizen_email || '').toLowerCase();
+          const type = (app.type || '').toLowerCase();
+          const typeClean = type.replace(/_/g, ' ');
+          const typeLabel = (APPLICATION_TYPE_LABELS[app.type] || '').toLowerCase();
+          const id = (app.id || '').toLowerCase();
+          const workflowId = (app.composite_workflow_id || '').toLowerCase();
+          return (
+            name.includes(q) ||
+            email.includes(q) ||
+            type.includes(q) ||
+            typeClean.includes(q) ||
+            typeLabel.includes(q) ||
+            id.includes(q) ||
+            workflowId.includes(q)
+          );
+        })
+        .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
     },
 
     async listAuditLog({ action = null, citizenId = null, limit = 100 } = {}) {
