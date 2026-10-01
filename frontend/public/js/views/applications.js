@@ -160,10 +160,12 @@ async function renderApplicationsList(root, token) {
   }
 
   panel.innerHTML = `
-    <table>
-      <thead><tr><th>Application</th><th>Department</th><th>Status</th><th>Last update</th></tr></thead>
-      <tbody>${applications.map(tableRowHtml).join('')}</tbody>
-    </table>`;
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Application</th><th>Department</th><th>Status</th><th>Last update</th></tr></thead>
+        <tbody>${applications.map(tableRowHtml).join('')}</tbody>
+      </table>
+    </div>`;
 
   revealStagger(panel.querySelectorAll('tbody tr'), { scale: 1, y: 10 });
 

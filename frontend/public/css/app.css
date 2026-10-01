@@ -674,6 +674,7 @@ input.field:focus { border-color: var(--accent); box-shadow: var(--shadow-focus)
 /* ============================================================
    APPLICATIONS TABLE
    ============================================================ */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
 th, td { text-align: left; padding: var(--space-3) 6px; border-bottom: 1px solid var(--line); }
 th { font-size: var(--text-xs); color: var(--ink-muted); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
