@@ -327,13 +327,78 @@ const FIELD_MAPS = {
     issueDate: { label: 'Issue date', order: 85, formatter: 'date' },
     issuingAuthority: { label: 'Issuing authority', order: 90, formatter: 'text' },
   },
+
+  driving_licence_registration: {
+    registration_reference: { label: 'Registration reference', order: 10, formatter: 'identifier' },
+    registration_number: { label: 'Registration reference', order: 10, formatter: 'identifier' },
+    licence_holder_name: { label: 'Licence holder', order: 20, formatter: 'text' },
+    holder_name: { label: 'Licence holder', order: 20, formatter: 'text' },
+    licence_issue_date: { label: 'Issued on', order: 30, formatter: 'date' },
+    licence_valid_from: { label: 'Valid from', order: 40, formatter: 'date' },
+    licence_expiry_date: { label: 'Valid until', order: 50, formatter: 'date' },
+    family_members_count: { label: 'Family members', order: 60, formatter: 'text' },
+    verification_status: { label: 'Status', order: 70, formatter: 'enum' },
+    rc_status: { label: 'Status', order: 70, formatter: 'enum' },
+  },
+
+  vehicle_rc_verification: {
+    registration_reference: { label: 'Registration reference', order: 10, formatter: 'identifier' },
+    registration_number: { label: 'Registration reference', order: 10, formatter: 'identifier' },
+    vehicle_number: { label: 'Vehicle number', order: 15, formatter: 'identifier' },
+    owner_name: { label: 'Owner name', order: 20, formatter: 'text' },
+    holder_name: { label: 'Owner name', order: 20, formatter: 'text' },
+    vehicle_class: { label: 'Vehicle class', order: 30, formatter: 'enum' },
+    maker_model: { label: 'Maker / model', order: 40, formatter: 'text' },
+    fuel_type: { label: 'Fuel type', order: 50, formatter: 'enum' },
+    registration_date: { label: 'Registration date', order: 60, formatter: 'date' },
+    verification_status: { label: 'Status', order: 70, formatter: 'enum' },
+    rc_status: { label: 'Status', order: 70, formatter: 'enum' },
+  },
+
+  passport_verification: {
+    passport_number: { label: 'Passport number', order: 10, formatter: 'identifier' },
+    registration_reference: { label: 'Registration reference', order: 12, formatter: 'identifier' },
+    registration_number: { label: 'Registration reference', order: 12, formatter: 'identifier' },
+    holder_name: { label: 'Passport holder', order: 20, formatter: 'text' },
+    owner_name: { label: 'Passport holder', order: 20, formatter: 'text' },
+    dob: { label: 'Date of birth', order: 30, formatter: 'date' },
+    dateOfBirth: { label: 'Date of birth', order: 30, formatter: 'date' },
+    nationality: { label: 'Nationality', order: 40, formatter: 'text' },
+    issue_date: { label: 'Issued on', order: 50, formatter: 'date' },
+    expiry_date: { label: 'Valid until', order: 60, formatter: 'date' },
+    place_of_issue: { label: 'Place of issue', order: 70, formatter: 'text' },
+    verification_status: { label: 'Status', order: 80, formatter: 'enum' },
+    rc_status: { label: 'Status', order: 80, formatter: 'enum' },
+  },
 };
 
 function resolveDocumentType(call, appType) {
+  // For composite applications, always resolve based on the specific call's department & endpoint
   if (appType && appType !== 'senior_citizen_transport_concession' && FIELD_MAPS[appType]) {
     return appType;
   }
+  const dept = call?.department || '';
   const ep = call?.endpoint_called || '';
+
+  if (dept === 'digital_tax_records') {
+    if (ep.includes('/pan-card/')) return 'pan_card_verification';
+    if (ep.includes('/income-certificate/')) return 'income_certificate_verification';
+    return 'pan_verification';
+  }
+
+  if (dept === 'national_identity_registry') {
+    if (ep.includes('/voter-id/')) return 'voter_id_verification';
+    if (ep.includes('/birth-certificate/')) return 'birth_certificate_verification';
+    return 'identity_verification';
+  }
+
+  if (dept === 'driving_licence_jan_aadhaar') {
+    if (ep.includes('/vehicle-rc/')) return 'vehicle_rc_verification';
+    if (ep.includes('/passport/')) return 'passport_verification';
+    return 'driving_licence_registration';
+  }
+
+  // Fallback to endpoint pattern matching
   if (ep.includes('/pan-card/')) return 'pan_card_verification';
   if (ep.includes('/income-certificate/')) return 'income_certificate_verification';
   if (ep.includes('/pan/')) return 'pan_verification';
@@ -343,8 +408,42 @@ function resolveDocumentType(call, appType) {
   if (ep.includes('/vehicle-rc/')) return 'vehicle_rc_verification';
   if (ep.includes('/passport/')) return 'passport_verification';
   if (ep.includes('/registrations/')) return 'driving_licence_registration';
+
   if (appType && FIELD_MAPS[appType]) return appType;
   return null;
+}
+
+function filterAliasPairs(pairs, docType) {
+  const presentKeys = new Set(pairs.map((p) => p.key));
+
+  return pairs.filter((p) => {
+    // 1. registration_reference vs registration_number
+    if (p.key === 'registration_number' && presentKeys.has('registration_reference')) {
+      return false;
+    }
+    // 2. verification_status vs rc_status
+    if (p.key === 'rc_status' && presentKeys.has('verification_status')) {
+      return false;
+    }
+    // 3. owner_name vs holder_name
+    if (docType === 'vehicle_rc_verification') {
+      if (p.key === 'holder_name' && presentKeys.has('owner_name')) return false;
+    } else if (docType === 'passport_verification') {
+      if (p.key === 'owner_name' && presentKeys.has('holder_name')) return false;
+    } else if (docType === 'driving_licence_registration') {
+      if (p.key === 'holder_name' && presentKeys.has('licence_holder_name')) return false;
+      if (p.key === 'owner_name' && (presentKeys.has('licence_holder_name') || presentKeys.has('holder_name'))) return false;
+    }
+    // 4. dob vs dateOfBirth
+    if (p.key === 'dateOfBirth' && presentKeys.has('dob')) {
+      return false;
+    }
+    // 5. fullName vs name
+    if (p.key === 'name' && presentKeys.has('fullName')) {
+      return false;
+    }
+    return true;
+  });
 }
 
 function humanizeKey(key) {
@@ -399,7 +498,7 @@ function formatFieldValue(value, formatter) {
   return escapeHtml(str);
 }
 
-function resultCardHtml(call, appType) {
+function resultCardHtml(call, appType, callIdx = null, totalCalls = 1) {
   const parsed = parseResponseSummary(call.response_summary);
   const deptName = call.department ? (DEPARTMENT_LABELS[call.department] || call.department) : 'Connected Department';
   const theme = departmentTheme(call.department);
@@ -421,16 +520,19 @@ function resultCardHtml(call, appType) {
     const docType = resolveDocumentType(call, appType);
     const typeDef = docType ? FIELD_MAPS[docType] : null;
 
+    // Filter alias fields so only one row shows, and only skip when the other is actually present
+    const activePairs = filterAliasPairs(parsed.pairs, docType);
+
     const formattedItems = [];
     const seenLabels = new Set();
 
-    parsed.pairs.forEach((p, idx) => {
+    activePairs.forEach((p, idx) => {
       const fieldDef = typeDef ? typeDef[p.key] : null;
       const label = fieldDef ? fieldDef.label : humanizeKey(p.key);
       const order = fieldDef ? fieldDef.order : (1000 + idx);
       const formatter = fieldDef ? fieldDef.formatter : 'text';
 
-      // Deduplicate identical labels if present (e.g. dob and dateOfBirth)
+      // Deduplicate identical labels if present
       if (seenLabels.has(label)) return;
       seenLabels.add(label);
 
@@ -471,6 +573,7 @@ function resultCardHtml(call, appType) {
     <div class="result-card">
       <div class="result-card-header">
         <div class="result-card-dept">
+          ${callIdx != null && totalCalls > 1 ? `<span class="result-step-pill">Step ${callIdx + 1}</span>` : ''}
           <span class="dept-tag ${theme.themeClass}">
             <span class="dept-tag-glyph">${theme.icon}</span>
             <span style="font-weight:600">${escapeHtml(deptName)}</span>
@@ -531,7 +634,7 @@ async function renderApplicationDetail(root, applicationId, token) {
       <div class="section-head"><h2 style="font-size:15px">Verification results (${app.department_calls.length})</h2></div>
       <div id="callList">${
         app.department_calls.length
-          ? app.department_calls.map((call) => resultCardHtml(call, app.type)).join('')
+          ? app.department_calls.map((call, idx) => resultCardHtml(call, app.type, idx, app.department_calls.length)).join('')
           : '<div class="empty-note">No department calls have been made for this application yet.</div>'
       }</div>
     </div>`);
