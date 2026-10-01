@@ -22,16 +22,27 @@ import {
   escapeHtml, timeAgo, DEPARTMENT_LABELS, APPLICATION_TYPE_LABELS,
   STATUS_LABELS, statusChipClass, departmentTheme,
 } from '../util.js';
+import { findService } from '../catalog.js';
 import { isStale } from '../render-guard.js';
 import { revealStagger } from '../anim.js';
+
+function resolveDepartment(app) {
+  const service = findService(app.type);
+  if (service && service.department) return service.department;
+  const lastCall = app.department_calls && app.department_calls[app.department_calls.length - 1];
+  if (lastCall && lastCall.department) return lastCall.department;
+  if (app.type === 'pan_verification' || app.type === 'pan_card_verification' || app.type === 'income_certificate_verification') return 'digital_tax_records';
+  if (app.type === 'identity_verification' || app.type === 'voter_id_verification' || app.type === 'birth_certificate_verification') return 'national_identity_registry';
+  if (app.type === 'driving_licence_registration' || app.type === 'vehicle_rc_verification' || app.type === 'passport_verification') return 'driving_licence_jan_aadhaar';
+  return null;
+}
 
 function tableRowHtml(app) {
   const isComposite = app.type === 'senior_citizen_transport_concession' || Boolean(app.composite_workflow_id);
   const deptCell = isComposite
     ? `<span class="dept-tag theme-composite"><span class="dept-tag-glyph">🚌</span>NIR + DLJA (Chained)</span>`
     : (() => {
-        const lastCall = app.department_calls && app.department_calls[app.department_calls.length - 1];
-        const department = lastCall ? lastCall.department : null;
+        const department = resolveDepartment(app);
         if (!department) return '—';
         const theme = departmentTheme(department);
         return `<span class="dept-tag ${theme.themeClass}"><span class="dept-tag-glyph">${theme.icon}</span>${escapeHtml(DEPARTMENT_LABELS[department] || department)}</span>`;
