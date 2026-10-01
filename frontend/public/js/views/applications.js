@@ -179,22 +179,181 @@ async function renderApplicationsList(root, token) {
   });
 }
 
-function callRowHtml(call) {
-  const dotClass = call.succeeded ? 'ok' : 'fail';
-  const compositeTag = call.composite_workflow_id
-    ? ` &middot; <span style="font-size:10px;color:var(--ink-muted)">Workflow: ${escapeHtml(call.composite_workflow_id.slice(0, 8))}…</span>`
+function parseResponseSummary(summary) {
+  if (!summary || typeof summary !== 'string') {
+    return { isStructured: false, pairs: [], verified: null, flags: null, rawText: '' };
+  }
+
+  const rawText = summary.trim();
+
+  // If there's no "=" at all, it's a plain-text message (e.g. error)
+  if (!rawText.includes('=')) {
+    return { isStructured: false, pairs: [], verified: null, flags: null, rawText };
+  }
+
+  let text = rawText;
+  let verified = null;
+  let flags = null;
+
+  // Extract data_quality_flags if present
+  const flagsMatch = text.match(/;\s*data_quality_flags=([^;]+)/);
+  if (flagsMatch) {
+    flags = flagsMatch[1].trim();
+    text = text.replace(/;\s*data_quality_flags=[^;]+/, '');
+  }
+
+  // Extract verified=(true|false)
+  const verifiedMatch = text.match(/(?:^|;\s*|\s+)verified=(true|false)(?:;\s*|,\s*|$)/i);
+  if (verifiedMatch) {
+    verified = verifiedMatch[1].toLowerCase() === 'true';
+    text = text.replace(/(?:^|;\s*|\s+)verified=(true|false)(?:;\s*|,\s*|$)/i, '');
+  }
+
+  // Clean any leading/trailing delimiters or whitespace
+  text = text.replace(/^[\s;,]+|[\s;,]+$/g, '').trim();
+
+  // Split pairs only on a comma or semicolon followed by a key and "="
+  const rawPairs = text
+    ? text.split(/[,;]\s*(?=[A-Za-z_][A-Za-z0-9_]*=)/)
+    : [];
+
+  const pairs = [];
+  for (const item of rawPairs) {
+    const trimmed = item.trim();
+    if (!trimmed) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    const value = trimmed.slice(eqIdx + 1).trim();
+    if (key) {
+      pairs.push({ key, value });
+    }
+  }
+
+  return {
+    isStructured: pairs.length > 0,
+    pairs,
+    verified,
+    flags,
+    rawText,
+  };
+}
+
+function humanizeKey(key) {
+  if (!key) return '';
+  const s = String(key)
+    .replace(/[-_]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .trim();
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+function formatResultValue(key, value) {
+  if (value == null || value === '') return '—';
+  const str = String(value).trim();
+
+  // Keep masked values (containing asterisks) exactly as-is!
+  if (str.includes('*')) {
+    return escapeHtml(str);
+  }
+
+  // Boolean strings
+  if (str.toLowerCase() === 'true') {
+    return `<span class="val-pill val-pill-ok">Verified</span>`;
+  }
+  if (str.toLowerCase() === 'false') {
+    return `<span class="val-pill val-pill-fail">Not verified</span>`;
+  }
+
+  // Complete dates: YYYY-MM-DD or full ISO 8601 timestamps
+  if (/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)?$/.test(str)) {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      const day = d.getUTCDate();
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const month = months[d.getUTCMonth()];
+      const year = d.getUTCFullYear();
+      return `${day} ${month} ${year}`;
+    }
+  }
+
+  // Enum values in SCREAMING_SNAKE_CASE (e.g. FORMAT_VALID, FILED, ACTIVE)
+  if (/^[A-Z][A-Z0-9_]{2,}$/.test(str)) {
+    const formatted = str.replace(/_/g, ' ').toLowerCase();
+    return escapeHtml(formatted.charAt(0).toUpperCase() + formatted.slice(1));
+  }
+
+  return escapeHtml(str);
+}
+
+function resultCardHtml(call) {
+  const parsed = parseResponseSummary(call.response_summary);
+  const deptName = call.department ? (DEPARTMENT_LABELS[call.department] || call.department) : 'Connected Department';
+  const theme = departmentTheme(call.department);
+  const isOk = call.succeeded && (parsed.verified !== false);
+
+  const headerBadge = isOk
+    ? `<span class="status-badge status-badge-verified"><svg class="status-badge-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2l6 2.5v5.5c0 4.5-3 7.5-6 9-3-1.5-6-4.5-6-9V4.5L10 2z" fill="currentColor" fill-opacity="0.14"/><path d="M10 2l6 2.5v5.5c0 4.5-3 7.5-6 9-3-1.5-6-4.5-6-9V4.5L10 2z"/><polyline points="7 10 9 12 13 8"/></svg><span class="status-badge-text">Verified</span></span>`
+    : `<span class="status-badge status-badge-failed"><svg class="status-badge-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 10a7.5 7.5 0 0 1 12.8-5.3L17.5 7"/><path d="M17.5 3v4h-4"/><path d="M17.5 10a7.5 7.5 0 0 1-12.8 5.3L2.5 13"/><path d="M2.5 17v-4h4"/></svg><span class="status-badge-text">Failed — needs retry</span></span>`;
+
+  let contentHtml = '';
+  if (!call.succeeded) {
+    const errMsg = parsed.rawText || 'Department call failed. Please retry.';
+    contentHtml = `
+      <div class="result-card-error">
+        <div class="result-error-title">Verification could not be completed</div>
+        <div class="result-error-desc">${escapeHtml(errMsg)}</div>
+      </div>`;
+  } else if (parsed.isStructured) {
+    contentHtml = `
+      <div class="result-grid">
+        ${parsed.pairs.map((p) => `
+          <div class="result-cell">
+            <span class="result-label">${escapeHtml(humanizeKey(p.key))}</span>
+            <span class="result-value">${formatResultValue(p.key, p.value)}</span>
+          </div>
+        `).join('')}
+      </div>`;
+  } else {
+    contentHtml = `
+      <div class="result-card-fallback">
+        <div class="result-value">${escapeHtml(parsed.rawText || 'Verification completed successfully.')}</div>
+      </div>`;
+  }
+
+  const flagsHtml = parsed.flags
+    ? `<div class="result-flags-note"><strong>Advisory flags:</strong> <code>${escapeHtml(parsed.flags)}</code></div>`
     : '';
+
+  const workflowRow = call.composite_workflow_id
+    ? `<div class="tech-row"><span class="tech-k">Workflow ID:</span> <code>${escapeHtml(call.composite_workflow_id)}</code></div>`
+    : '';
+
   return `
-  <div class="call-row">
-    <div class="call-dot ${dotClass}"></div>
-    <div>
-      <div class="call-endpoint">${escapeHtml(call.endpoint_called)}</div>
-      <div class="call-summary">${escapeHtml(call.response_summary || '—')}</div>
-    </div>
-    <div class="call-meta">
-      HTTP ${call.status_code ?? '—'}<br>${call.duration_ms != null ? `${call.duration_ms}ms` : ''}${compositeTag}<br>${timeAgo(call.called_at)}
-    </div>
-  </div>`;
+    <div class="result-card">
+      <div class="result-card-header">
+        <div class="result-card-dept">
+          <span class="dept-tag ${theme.themeClass}">
+            <span class="dept-tag-glyph">${theme.icon}</span>
+            <span style="font-weight:600">${escapeHtml(deptName)}</span>
+          </span>
+        </div>
+        <div>${headerBadge}</div>
+      </div>
+      ${contentHtml}
+      ${flagsHtml}
+      <details class="tech-details">
+        <summary class="tech-details-summary">Technical details</summary>
+        <div class="tech-details-body">
+          <div class="tech-row"><span class="tech-k">Endpoint:</span> <code class="tech-code">${escapeHtml(call.endpoint_called || '—')}</code></div>
+          <div class="tech-row"><span class="tech-k">HTTP Status:</span> <span>${call.status_code != null ? `HTTP ${call.status_code}` : '—'}</span></div>
+          <div class="tech-row"><span class="tech-k">Latency:</span> <span>${call.duration_ms != null ? `${call.duration_ms}ms` : '—'}</span></div>
+          <div class="tech-row"><span class="tech-k">Timestamp:</span> <span>${call.called_at ? `${timeAgo(call.called_at)} (${new Date(call.called_at).toLocaleString()})` : '—'}</span></div>
+          ${workflowRow}
+          <div class="tech-row tech-row-raw"><span class="tech-k">Raw Summary:</span> <code class="tech-code tech-code-raw">${escapeHtml(call.response_summary || '—')}</code></div>
+        </div>
+      </details>
+    </div>`;
 }
 
 async function renderApplicationDetail(root, applicationId, token) {
@@ -231,14 +390,14 @@ async function renderApplicationDetail(root, applicationId, token) {
     <p class="section-note">Created ${timeAgo(app.created_at)} &middot; Last updated ${timeAgo(app.updated_at)}</p>
     ${stepper}
     <div class="panel panel-pad">
-      <div class="section-head"><h2 style="font-size:15px">Department call history (${app.department_calls.length})</h2></div>
+      <div class="section-head"><h2 style="font-size:15px">Verification results (${app.department_calls.length})</h2></div>
       <div id="callList">${
         app.department_calls.length
-          ? app.department_calls.map(callRowHtml).join('')
+          ? app.department_calls.map(resultCardHtml).join('')
           : '<div class="empty-note">No department calls have been made for this application yet.</div>'
       }</div>
     </div>`);
-  revealStagger(root.querySelectorAll('.call-row'), { scale: 1, y: 10 });
+  revealStagger(root.querySelectorAll('.result-card'), { scale: 1, y: 10 });
 }
 
 export { renderApplicationsList, renderApplicationDetail };

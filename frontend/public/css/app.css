@@ -743,9 +743,175 @@ tr.row-click:hover td { background: var(--surface-sunken); }
 }
 
 /* ============================================================
-   APPLICATION DETAIL — call history
+   APPLICATION DETAIL — structured result cards & technical details
    ============================================================ */
 .detail-back { margin-bottom: var(--space-5); }
+
+.result-card {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.result-card:last-child {
+  margin-bottom: 0;
+}
+.result-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: var(--space-4);
+}
+.result-card-dept {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-4);
+}
+.result-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.result-label {
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.result-value {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--ink);
+  word-break: break-word;
+  line-height: var(--leading-snug, 1.4);
+}
+.result-card-error {
+  background: #fdf2f2;
+  border: 1px solid rgba(185, 28, 28, 0.22);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.result-error-title {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: #b91c1c;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 2px;
+}
+.result-error-desc {
+  font-size: var(--text-sm);
+  color: #7f1d1d;
+  line-height: 1.4;
+}
+.result-card-fallback {
+  padding: var(--space-2) 0 var(--space-4);
+}
+.result-flags-note {
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-xs);
+  padding: 6px 10px;
+  margin-bottom: var(--space-4);
+}
+.result-flags-note code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.val-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  width: fit-content;
+}
+.val-pill-ok {
+  background: #eef7ed;
+  color: #1b6329;
+  border: 1px solid rgba(27, 99, 41, 0.22);
+}
+.val-pill-fail {
+  background: #fdf2f2;
+  color: #b91c1c;
+  border: 1px solid rgba(185, 28, 28, 0.22);
+}
+
+/* Collapsible technical details */
+.tech-details {
+  border-top: 1px dashed var(--line);
+  padding-top: var(--space-3);
+  margin-top: var(--space-2);
+}
+.tech-details-summary {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-muted);
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  transition: color var(--dur-fast) var(--ease);
+}
+.tech-details-summary:hover {
+  color: var(--ink);
+}
+.tech-details-body {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--surface-sunken, #f8fafc);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tech-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+}
+.tech-k {
+  color: var(--ink-muted);
+  font-weight: var(--weight-medium);
+  min-width: 90px;
+}
+.tech-code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink);
+  word-break: break-all;
+}
+.tech-code-raw {
+  display: block;
+  width: 100%;
+  margin-top: 2px;
+  padding: 6px 8px;
+  background: var(--paper, #fff);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
 .call-row {
   display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-4); align-items: start;
   padding: var(--space-4) 0; border-bottom: 1px dashed var(--line);
