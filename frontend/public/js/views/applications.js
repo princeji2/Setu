@@ -138,6 +138,7 @@ function compositeStepperHtml(app) {
 async function renderApplicationsList(root, token) {
   root.innerHTML = `
     <div class="section-head"><h2>My applications</h2></div>
+    <p class="section-note">Every verification you've completed across connected departments, tracked in one place.</p>
     <div class="panel panel-pad" id="appsPanel"><div class="loading-note"><span class="spinner dark"></span> Loading…</div></div>`;
 
   let applications = [];
