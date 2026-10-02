@@ -12,7 +12,7 @@ import { getToken, getCitizen, clearSession, setUnauthorizedHandler } from './ap
 import { mountAuthScreen } from './views/auth.js';
 import { mountLanding } from './views/landing.js';
 import { netmapSvg, brandMarkSvg } from './netmap.js';
-import { initials } from './util.js';
+import { initials, escapeHtml } from './util.js';
 import { setRelayCallback } from './views/relay.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderServices } from './views/services.js';
@@ -42,6 +42,9 @@ let currentTab = 'dashboard';
 let currentApplicationId = null;
 
 function shellHtml(citizen) {
+  const safeName = escapeHtml(citizen.full_name || '');
+  const safeEmail = escapeHtml(citizen.email || '');
+
   return `
   <div class="app-layout">
     <aside class="sidebar">
@@ -60,8 +63,11 @@ function shellHtml(citizen) {
       <div class="sidebar-foot">
         <div class="who" role="group" aria-label="Signed-in account">
           <div class="avatar" aria-hidden="true">${initials(citizen.full_name)}</div>
-          <div class="role"><b>${citizen.full_name}</b>${citizen.email}</div>
-          <button class="logout-btn" id="logoutBtn" title="Log out" aria-label="Log out ${citizen.full_name}">
+          <div class="role">
+            <b title="${safeName}">${safeName}</b>
+            <span class="who-email" title="${safeEmail}">${safeEmail}</span>
+          </div>
+          <button class="logout-btn" id="logoutBtn" title="Log out" aria-label="Log out ${safeName}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
           </button>
         </div>
