@@ -1707,5 +1707,80 @@ tr.row-click:hover td { background: var(--surface-sunken); }
   }
 }
 
+/* Profile department coverage strip */
+.profile-cov-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+}
+
+.profile-cov-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-right: 1px solid var(--line);
+  min-width: 0;
+}
+
+.profile-cov-item:last-child {
+  border-right: 0;
+}
+
+.profile-cov-item .dept-tag {
+  min-width: 0;
+  font-size: var(--text-sm);
+  line-height: 1.35;
+}
+
+.profile-cov-item .dept-tag-name {
+  word-break: break-word;
+}
+
+.profile-cov-unverified {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--ink-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.profile-cov-count {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--ink-soft);
+}
+
+@media (max-width: 800px) {
+  .profile-cov-strip {
+    grid-template-columns: 1fr;
+  }
+  .profile-cov-item {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .profile-cov-item:last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-cov-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+  }
+  .profile-cov-count {
+    font-size: var(--text-xs);
+  }
+}
+
+
 
 
