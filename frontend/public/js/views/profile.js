@@ -154,7 +154,7 @@ async function renderProfile(root, token, { onBack, onLogout } = {}) {
           </div>
           <div class="stat">
             <div class="n">${verified}</div>
-            <div class="l">Verified</div>
+            <div class="l">Applications verified</div>
           </div>
           <div class="stat">
             <div class="n">${needsRetry}</div>
