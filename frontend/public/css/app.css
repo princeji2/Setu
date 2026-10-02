@@ -169,7 +169,7 @@ tr.row-click:focus-visible {
 
 .sidebar {
   display: flex; flex-direction: column;
-  background: rgba(244, 241, 232, 0.78);
+  background: rgba(246, 232, 204, 0.78);
   backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%);
   border-right: 1px solid var(--line);
   padding: var(--space-6) var(--space-4);
@@ -663,18 +663,18 @@ input.field:focus { border-color: var(--accent); box-shadow: var(--shadow-focus)
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 8px;
-  color: var(--ink, #1e293b);
+  color: var(--ink);
   line-height: 1.4;
 }
 .discrepancy-comparison .disc-val {
-  background: var(--surface, #ffffff);
+  background: var(--card);
   padding: 2px 6px;
   border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--line);
 }
 .discrepancy-comparison .disc-vs {
   font-weight: 600;
-  color: var(--ink-muted, #64748b);
+  color: var(--ink-muted);
   font-size: 10px;
   text-transform: uppercase;
 }
@@ -774,7 +774,7 @@ tr.row-click:hover td { background: var(--surface-sunken); }
 .detail-back { margin-bottom: var(--space-5); }
 
 .result-card {
-  background: var(--card, #ffffff);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-xs);
@@ -884,7 +884,7 @@ tr.row-click:hover td { background: var(--surface-sunken); }
   font-weight: var(--weight-semibold);
   letter-spacing: 0.02em;
   color: var(--ink);
-  background: var(--surface-sunken, #f8fafc);
+  background: var(--surface-sunken);
   padding: 1px 6px;
   border-radius: var(--radius-xs);
   border: 1px solid var(--line);
@@ -894,7 +894,7 @@ tr.row-click:hover td { background: var(--surface-sunken); }
   font-size: 11px;
   font-weight: var(--weight-semibold);
   color: var(--ink-muted);
-  background: var(--surface-sunken, #f8fafc);
+  background: var(--surface-sunken);
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   padding: 2px 8px;
@@ -926,7 +926,7 @@ tr.row-click:hover td { background: var(--surface-sunken); }
 .tech-details-body {
   margin-top: var(--space-3);
   padding: var(--space-3);
-  background: var(--surface-sunken, #f8fafc);
+  background: var(--surface-sunken);
   border-radius: var(--radius-sm);
   font-size: var(--text-xs);
   display: flex;
@@ -955,7 +955,7 @@ tr.row-click:hover td { background: var(--surface-sunken); }
   width: 100%;
   margin-top: 2px;
   padding: 6px 8px;
-  background: var(--paper, #fff);
+  background: var(--paper);
   border: 1px solid var(--line);
   border-radius: var(--radius-xs);
   white-space: pre-wrap;
@@ -1140,7 +1140,7 @@ tr.row-click:hover td { background: var(--surface-sunken); }
 /* primary CTA — the reference's full-width yellow button */
 .auth-submit {
   width: 100%; height: 50px; margin-top: var(--space-6); border: 0; outline: none;
-  border-radius: var(--radius-sm); background: var(--gold); color: var(--ink);
+  border-radius: var(--radius-sm); background: var(--primary); color: var(--on-primary);
   font-family: var(--font-sans); font-weight: var(--weight-semibold); font-size: var(--text-base); cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
   transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), filter var(--dur-fast) var(--ease);
@@ -1201,12 +1201,12 @@ tr.row-click:hover td { background: var(--surface-sunken); }
    old static hub-spoke gradient is retired in favour of it. A whisper-soft
    top wash keeps the hero readable over the mesh without hiding it. */
 .landing-bg { position: absolute; top: 0; left: 0; right: 0; height: 620px; pointer-events: none; z-index: var(--z-base);
-  background: radial-gradient(70% 60% at 50% 0%, rgba(184,166,120,0.28), transparent 72%);
+  background: radial-gradient(70% 60% at 50% 0%, rgba(194, 213, 232, 0.28), transparent 72%);
 }
 
 /* --- fixed blurred nav (lock screen 1.txt) --- */
 .lp-nav { position: sticky; top: 0; z-index: var(--z-sticky); transition: background var(--dur-med) var(--ease), border-color var(--dur-med) var(--ease), box-shadow var(--dur-med) var(--ease); border-bottom: 1px solid transparent; }
-.lp-nav.scrolled { background: rgba(244, 241, 232, 0.82); backdrop-filter: saturate(180%) blur(12px); -webkit-backdrop-filter: saturate(180%) blur(12px); border-bottom-color: var(--line); box-shadow: var(--shadow-xs); }
+.lp-nav.scrolled { background: rgba(246, 232, 204, 0.82); backdrop-filter: saturate(180%) blur(12px); -webkit-backdrop-filter: saturate(180%) blur(12px); border-bottom-color: var(--line); box-shadow: var(--shadow-xs); }
 .lp-nav-inner { max-width: 1180px; margin: 0 auto; padding: 14px var(--space-10); display: flex; align-items: center; justify-content: space-between; }
 .lp-nav-actions { display: flex; gap: var(--space-2); }
 

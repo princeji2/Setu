@@ -31,12 +31,12 @@ function token(name, fallback) {
 /** Resolve the palette the diagram needs from tokens (fallbacks = current token values). */
 function palette() {
   return {
-    primary: token('--primary', '#6D0808'),
-    accent: token('--accent', '#757D6F'),
+    primary: token('--primary', '#4B4150'),
+    accent: token('--accent', '#4B4150'),
     card: token('--card', '#FFFFFF'),
-    line: token('--line-strong', '#BAC0B5'),
-    ink: token('--ink', '#2D0000'),
-    inkSoft: token('--ink-soft', '#523A3A'),
+    line: token('--line-strong', '#C4B393'),
+    ink: token('--ink', '#332B37'),
+    inkSoft: token('--ink-soft', '#564B5B'),
     success: token('--success', '#546648'),
     onColor: token('--on-color', '#FFFFFF'),
   };
