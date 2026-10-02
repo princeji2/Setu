@@ -76,6 +76,41 @@ function recentActivityRowHtml(app) {
   </div>`;
 }
 
+const COVERAGE_DEPARTMENTS = [
+  'national_identity_registry',
+  'digital_tax_records',
+  'driving_licence_jan_aadhaar',
+];
+
+function verifiedSealBadgeHtml() {
+  return `
+    <span class="status-badge status-badge-verified" title="Officially verified via connected department">
+      <svg class="status-badge-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M10 2l6 2.5v5.5c0 4.5-3 7.5-6 9-3-1.5-6-4.5-6-9V4.5L10 2z" fill="currentColor" fill-opacity="0.14"/>
+        <path d="M10 2l6 2.5v5.5c0 4.5-3 7.5-6 9-3-1.5-6-4.5-6-9V4.5L10 2z"/>
+        <polyline points="7 10 9 12 13 8"/>
+      </svg>
+      <span class="status-badge-text">Verified</span>
+    </span>`;
+}
+
+function departmentCoverageItemHtml(deptKey, isVerified) {
+  const theme = departmentTheme(deptKey);
+  const deptLabel = DEPARTMENT_LABELS[deptKey] || deptKey;
+  const statusHtml = isVerified
+    ? verifiedSealBadgeHtml()
+    : `<span class="profile-cov-unverified">Not yet verified</span>`;
+
+  return `
+    <div class="profile-cov-item">
+      <span class="dept-tag ${theme.themeClass}">
+        <span class="dept-tag-glyph">${theme.icon}</span>
+        <span class="dept-tag-name">${escapeHtml(deptLabel)}</span>
+      </span>
+      ${statusHtml}
+    </div>`;
+}
+
 function verifiedDocCardHtml(doc) {
   const theme = departmentTheme(doc.department);
   const docName = getDocTypeLabel(doc.department_reference, doc.department);
@@ -94,14 +129,7 @@ function verifiedDocCardHtml(doc) {
           ${escapeHtml(deptLabel)}
         </span>
       </div>
-      <span class="status-badge status-badge-verified" title="Officially verified via connected department">
-        <svg class="status-badge-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M10 2l6 2.5v5.5c0 4.5-3 7.5-6 9-3-1.5-6-4.5-6-9V4.5L10 2z" fill="currentColor" fill-opacity="0.14"/>
-          <path d="M10 2l6 2.5v5.5c0 4.5-3 7.5-6 9-3-1.5-6-4.5-6-9V4.5L10 2z"/>
-          <polyline points="7 10 9 12 13 8"/>
-        </svg>
-        <span class="status-badge-text">Verified</span>
-      </span>
+      ${verifiedSealBadgeHtml()}
     </div>
     ${refHtml}
   </div>`;
@@ -154,6 +182,14 @@ async function renderProfile(root, token, { onBack, onLogout } = {}) {
         <div id="profileRecentSlot">
           <div class="loading-note"><span class="spinner dark"></span> Loading recent activity…</div>
         </div>
+      </section>
+
+      <section class="profile-section" id="profileCoverageSection" style="display: none;">
+        <div class="section-head">
+          <h2>Department coverage</h2>
+          <span class="profile-cov-count" id="profileCoverageCount"></span>
+        </div>
+        <div class="profile-cov-strip" id="profileCoverageSlot"></div>
       </section>
 
       <section class="profile-section">
@@ -270,11 +306,34 @@ async function renderProfile(root, token, { onBack, onLogout } = {}) {
 
   const fetchDocuments = async () => {
     const docsSlot = document.getElementById('profileDocsSlot');
+    const coverageSection = document.getElementById('profileCoverageSection');
+    if (coverageSection) coverageSection.style.display = 'none';
     if (!docsSlot) return;
     docsSlot.innerHTML = `<div class="loading-note"><span class="spinner dark"></span> Loading verified documents…</div>`;
     try {
       const docs = await api.documents.list();
       if (isStale(token)) return;
+
+      if (coverageSection) {
+        const coverageCount = document.getElementById('profileCoverageCount');
+        const coverageSlot = document.getElementById('profileCoverageSlot');
+
+        const verifiedDeptsCount = COVERAGE_DEPARTMENTS.filter((deptKey) =>
+          (docs || []).some((d) => d.department === deptKey && d.verified === true)
+        ).length;
+
+        if (coverageCount) {
+          coverageCount.textContent = `${verifiedDeptsCount} of ${COVERAGE_DEPARTMENTS.length} departments verified`;
+        }
+        if (coverageSlot) {
+          coverageSlot.innerHTML = COVERAGE_DEPARTMENTS.map((deptKey) => {
+            const isVerified = (docs || []).some((d) => d.department === deptKey && d.verified === true);
+            return departmentCoverageItemHtml(deptKey, isVerified);
+          }).join('');
+        }
+        coverageSection.style.display = '';
+      }
+
       const verifiedDocs = (docs || []).filter((d) => d.verified);
 
       if (verifiedDocs.length === 0) {
@@ -294,6 +353,9 @@ async function renderProfile(root, token, { onBack, onLogout } = {}) {
       }
     } catch (err) {
       if (isStale(token)) return;
+      if (coverageSection) {
+        coverageSection.style.display = 'none';
+      }
       docsSlot.innerHTML = dataErrorBannerHtml(err?.message || "Couldn't load verified documents.");
       docsSlot.querySelector('.deb-retry')?.addEventListener('click', () => fetchDocuments());
     }
