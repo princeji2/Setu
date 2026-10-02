@@ -23,12 +23,12 @@ const REDUCED_MOTION = () =>
   window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // Palette pulled from the theme tokens so it tracks the design system.
-// Vintage LIGHT theme: canvas is warm parchment (#FAF9F5), mesh is drawn in slate
-// sage lines (#757D6F) with crimson maroon (#6D0808) for excited nodes.
+// Cool Fall Breeze theme: canvas is warm cream (#F6E8CC), mesh is drawn in muted plum
+// lines (75, 65, 80) with plum (75, 65, 80) for excited nodes.
 function themeColors() {
   const css = getComputedStyle(document.documentElement);
-  const bg = (css.getPropertyValue('--paper').trim() || '#FAF9F5');
-  return { bg, stroke: '117, 125, 111', accent: '109, 8, 8' };
+  const bg = (css.getPropertyValue('--paper').trim() || '#F6E8CC');
+  return { bg, stroke: '75, 65, 80', accent: '75, 65, 80' };
 }
 
 function createFabric(canvas) {
