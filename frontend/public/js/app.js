@@ -18,6 +18,7 @@ import { renderDashboard } from './views/dashboard.js';
 import { renderServices } from './views/services.js';
 import { renderDocuments } from './views/documents.js';
 import { renderApplicationsList, renderApplicationDetail } from './views/applications.js';
+import { renderProfile } from './views/profile.js';
 import { nextRenderToken } from './render-guard.js';
 import { mountFabricBackground } from './fabric-bg.js';
 import { mountChatbot } from './chatbot.js';
@@ -39,6 +40,7 @@ const TABS = [
 
 const root = document.getElementById('appRoot');
 let currentTab = 'dashboard';
+let previousTab = 'dashboard';
 let currentApplicationId = null;
 
 function shellHtml(citizen) {
@@ -62,10 +64,12 @@ function shellHtml(citizen) {
       </nav>
       <div class="sidebar-foot">
         <div class="who" role="group" aria-label="Signed-in account">
-          <div class="avatar" aria-hidden="true">${initials(citizen.full_name)}</div>
-          <div class="role">
-            <b title="${safeName}">${safeName}</b>
-            <span class="who-email" title="${safeEmail}">${safeEmail}</span>
+          <div class="who-info" id="profileBtn" role="button" tabindex="0" aria-label="View profile">
+            <div class="avatar" aria-hidden="true">${initials(citizen.full_name)}</div>
+            <div class="role">
+              <b title="${safeName}">${safeName}</b>
+              <span class="who-email" title="${safeEmail}">${safeEmail}</span>
+            </div>
           </div>
           <button class="logout-btn" id="logoutBtn" title="Log out" aria-label="Log out ${safeName}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
@@ -81,6 +85,8 @@ function shellHtml(citizen) {
 
 function setActiveTab(tabId) {
   document.querySelectorAll('#tabNav button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tabId));
+  const whoEl = document.querySelector('.who');
+  if (whoEl) whoEl.classList.toggle('active', tabId === 'profile');
 }
 
 /**
@@ -105,6 +111,9 @@ function playViewEnter(el) {
 }
 
 async function loadTab(tabId) {
+  if (currentTab !== 'profile' && currentTab) {
+    previousTab = currentTab;
+  }
   currentTab = tabId;
   currentApplicationId = null;
   const token = nextRenderToken(); // invalidates any in-flight render from a previous view
@@ -118,9 +127,22 @@ async function loadTab(tabId) {
   if (tabId === 'services') return renderServices(viewRoot, token);
   if (tabId === 'documents') return renderDocuments(viewRoot, token);
   if (tabId === 'applications') return renderApplicationsList(viewRoot, token);
+  if (tabId === 'profile') {
+    const backTarget = previousTab && previousTab !== 'profile' ? previousTab : 'dashboard';
+    return renderProfile(viewRoot, token, {
+      onBack: () => loadTab(backTarget),
+      onLogout: () => {
+        clearSession();
+        showLanding();
+      },
+    });
+  }
 }
 
 async function openApplicationDetail(applicationId) {
+  if (currentTab !== 'profile' && currentTab) {
+    previousTab = currentTab;
+  }
   currentApplicationId = applicationId;
   const token = nextRenderToken();
   setActiveTab('applications');
@@ -141,6 +163,17 @@ function mountApp(citizen) {
     clearSession();
     showLanding();
   });
+
+  const profileBtn = document.getElementById('profileBtn');
+  if (profileBtn) {
+    profileBtn.addEventListener('click', () => loadTab('profile'));
+    profileBtn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        loadTab('profile');
+      }
+    });
+  }
 
   // Sidebar collapse toggle (3-dot). Persists the choice in localStorage so
   // it survives reloads. Collapsed = icon-only rail; the router is untouched.
