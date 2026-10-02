@@ -2,8 +2,8 @@
 
 /**
  * Citizen Profile view.
- * Displays citizen identity header, Activity summary stats, and
- * Verified reusable documents across connected departments.
+ * Displays citizen identity header, Activity summary stats, Recent activity,
+ * and Verified reusable documents across connected departments.
  */
 
 import { api, getCitizen } from '../api.js';
@@ -12,10 +12,12 @@ import {
   initials,
   timeAgo,
   DEPARTMENT_LABELS,
+  APPLICATION_TYPE_LABELS,
   departmentTheme,
   dataErrorBannerHtml,
 } from '../util.js';
 import { isStale } from '../render-guard.js';
+import { resolveDepartment, statusBadgeHtml } from './applications.js';
 
 function formatJoinDate(isoString) {
   if (!isoString) return 'Member';
@@ -39,6 +41,39 @@ function getDocTypeLabel(ref, dept) {
   if (dept === 'national_identity_registry') return 'Identity Record';
   if (dept === 'driving_licence_jan_aadhaar') return 'Driving Licence Record';
   return 'Official Record';
+}
+
+function renderDeptTag(app) {
+  const isComposite = app.type === 'senior_citizen_transport_concession' || Boolean(app.composite_workflow_id);
+  if (isComposite) {
+    return `<span class="dept-tag theme-composite"><span class="dept-tag-glyph">🚌</span>NIR + DLJA (Chained)</span>`;
+  }
+  const department = resolveDepartment(app);
+  if (!department) {
+    return `<span class="dept-tag"><span class="dept-tag-glyph">🏛️</span>Other department</span>`;
+  }
+  const theme = departmentTheme(department);
+  return `<span class="dept-tag ${theme.themeClass}"><span class="dept-tag-glyph">${theme.icon}</span>${escapeHtml(DEPARTMENT_LABELS[department] || department)}</span>`;
+}
+
+function recentActivityRowHtml(app) {
+  const typeLabel = APPLICATION_TYPE_LABELS[app.type] || app.type;
+  const deptTag = renderDeptTag(app);
+  const time = timeAgo(app.updated_at || app.created_at);
+
+  return `
+  <div class="profile-act-row" data-open-application="${escapeHtml(app.id)}" role="button" tabindex="0" aria-label="Open ${escapeHtml(typeLabel)} application">
+    <div class="profile-act-left">
+      <div class="profile-act-title-area">
+        <span class="profile-act-name">${escapeHtml(typeLabel)}</span>
+        ${deptTag}
+      </div>
+      <span class="profile-act-time">${escapeHtml(time)}</span>
+    </div>
+    <div class="profile-act-right">
+      ${statusBadgeHtml(app.status)}
+    </div>
+  </div>`;
 }
 
 function verifiedDocCardHtml(doc) {
@@ -113,6 +148,16 @@ async function renderProfile(root, token, { onBack, onLogout } = {}) {
 
       <section class="profile-section">
         <div class="section-head">
+          <h2>Recent activity</h2>
+          <button type="button" class="link profile-view-all-apps" id="profileViewAllApps">View all applications &rarr;</button>
+        </div>
+        <div id="profileRecentSlot">
+          <div class="loading-note"><span class="spinner dark"></span> Loading recent activity…</div>
+        </div>
+      </section>
+
+      <section class="profile-section">
+        <div class="section-head">
           <h2>Verified documents</h2>
         </div>
         <p class="section-note">Documents verified through Setu that can be reused across connected departments without re-entry.</p>
@@ -135,36 +180,91 @@ async function renderProfile(root, token, { onBack, onLogout } = {}) {
     signoutBtn.addEventListener('click', onLogout);
   }
 
+  const viewAllBtn = document.getElementById('profileViewAllApps');
+  if (viewAllBtn) {
+    viewAllBtn.addEventListener('click', () => {
+      window.dispatchEvent(new CustomEvent('setu:goto-tab', { detail: 'applications' }));
+    });
+  }
+
   const fetchActivity = async () => {
     const activitySlot = document.getElementById('profileActivitySlot');
-    if (!activitySlot) return;
-    activitySlot.innerHTML = `<div class="loading-note"><span class="spinner dark"></span> Loading activity…</div>`;
+    const recentSlot = document.getElementById('profileRecentSlot');
+    if (activitySlot) {
+      activitySlot.innerHTML = `<div class="loading-note"><span class="spinner dark"></span> Loading activity…</div>`;
+    }
+    if (recentSlot) {
+      recentSlot.innerHTML = `<div class="loading-note"><span class="spinner dark"></span> Loading recent activity…</div>`;
+    }
+
     try {
       const apps = await api.applications.list();
       if (isStale(token)) return;
+
       const total = apps.length;
       const verified = apps.filter((a) => a.status === 'complete').length;
       const needsRetry = apps.filter((a) => a.status === 'failed').length;
 
-      activitySlot.innerHTML = `
-        <div class="stat-row profile-stat-row">
-          <div class="stat">
-            <div class="n">${total}</div>
-            <div class="l">Total applications</div>
-          </div>
-          <div class="stat">
-            <div class="n">${verified}</div>
-            <div class="l">Applications verified</div>
-          </div>
-          <div class="stat">
-            <div class="n">${needsRetry}</div>
-            <div class="l">Needs retry</div>
-          </div>
-        </div>`;
+      if (activitySlot) {
+        activitySlot.innerHTML = `
+          <div class="stat-row profile-stat-row">
+            <div class="stat">
+              <div class="n">${total}</div>
+              <div class="l">Total applications</div>
+            </div>
+            <div class="stat">
+              <div class="n">${verified}</div>
+              <div class="l">Applications verified</div>
+            </div>
+            <div class="stat">
+              <div class="n">${needsRetry}</div>
+              <div class="l">Needs retry</div>
+            </div>
+          </div>`;
+      }
+
+      if (recentSlot) {
+        if (!apps.length) {
+          recentSlot.innerHTML = `<div class="empty-note">No applications yet. Start one from "Find a service".</div>`;
+        } else {
+          const sortedApps = [...apps].sort((a, b) => {
+            const timeA = new Date(a.updated_at || a.created_at || 0).getTime();
+            const timeB = new Date(b.updated_at || b.created_at || 0).getTime();
+            return timeB - timeA;
+          });
+          const recentApps = sortedApps.slice(0, 5);
+
+          recentSlot.innerHTML = `
+            <div class="profile-act-list">
+              ${recentApps.map(recentActivityRowHtml).join('')}
+            </div>`;
+
+          recentSlot.querySelectorAll('[data-open-application]').forEach((row) => {
+            const appId = row.dataset.openApplication;
+            const open = () => {
+              window.dispatchEvent(new CustomEvent('setu:open-application', { detail: { id: appId } }));
+            };
+            row.addEventListener('click', open);
+            row.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                open();
+              }
+            });
+          });
+        }
+      }
     } catch (err) {
       if (isStale(token)) return;
-      activitySlot.innerHTML = dataErrorBannerHtml(err?.message || "Couldn't load activity summary.");
-      activitySlot.querySelector('.deb-retry')?.addEventListener('click', () => fetchActivity());
+      const errorHtml = dataErrorBannerHtml(err?.message || "Couldn't load activity.");
+      if (activitySlot) {
+        activitySlot.innerHTML = errorHtml;
+        activitySlot.querySelector('.deb-retry')?.addEventListener('click', () => fetchActivity());
+      }
+      if (recentSlot) {
+        recentSlot.innerHTML = errorHtml;
+        recentSlot.querySelector('.deb-retry')?.addEventListener('click', () => fetchActivity());
+      }
     }
   };
 

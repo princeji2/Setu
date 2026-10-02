@@ -641,4 +641,4 @@ async function renderApplicationDetail(root, applicationId, token) {
   revealStagger(root.querySelectorAll('.result-card'), { scale: 1, y: 10 });
 }
 
-export { renderApplicationsList, renderApplicationDetail };
+export { renderApplicationsList, renderApplicationDetail, resolveDepartment, statusBadgeHtml };
