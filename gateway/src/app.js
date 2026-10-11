@@ -82,7 +82,7 @@ function createApp({
       }
       return callback(new Error('Not allowed by CORS'));
     },
-    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     // X-Admin-Key is the officials-console credential (Phase B). Browsers
     // preflight it as a non-simple header, so it must be allowed here or the
     // console's cross-origin fetch (3000 -> 4000) is blocked. Additive; does
@@ -94,10 +94,16 @@ function createApp({
   app.use(express.json({ limit: '10kb' }));
   app.use(express.urlencoded({ extended: false, limit: '10kb' }));
 
-  // Health check
-  app.get('/api/v1/health', (req, res) => {
+  // Health check. Two paths intentionally resolve to the same lightweight
+  // liveness probe: the documented API-prefixed one (api.md Part 1) and a
+  // bare top-level /health — the latter is what Render's health-check and a
+  // plain `curl host/health` expect, and it saves callers from needing the
+  // /api/v1 prefix just to check the server is up. Neither touches the DB.
+  const healthHandler = (req, res) => {
     res.json({ success: true, data: { service: 'setu-gateway', status: 'ok' }, error: null });
-  });
+  };
+  app.get('/api/v1/health', healthHandler);
+  app.get('/health', healthHandler);
 
   // ------------------------------------------------------------
   // Layer 1 — citizen-facing API

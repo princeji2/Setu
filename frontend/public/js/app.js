@@ -8,7 +8,7 @@
  * refrences/setu_sih26129_demo.html.
  */
 
-import { getToken, getCitizen, clearSession, setUnauthorizedHandler } from './api.js';
+import { getToken, getCitizen, clearSession, setUnauthorizedHandler, pingHealth } from './api.js';
 import { mountAuthScreen } from './views/auth.js';
 import { mountLanding } from './views/landing.js';
 import { netmapSvg, brandMarkSvg } from './netmap.js';
@@ -220,6 +220,14 @@ function showLanding() {
 }
 
 function boot() {
+  // Wake the gateway early. Render's free tier spins the service down after
+  // idle, and the first request pays a 30-60s cold start. Firing a liveness
+  // ping the moment the app loads means the server is usually already awake
+  // by the time the citizen submits the login form. Fire-and-forget: it
+  // never throws and never blocks the UI (the real request path still
+  // retries + classifies errors on its own).
+  pingHealth();
+
   // Living kinetic-fabric backdrop (ported from refrences/background.txt),
   // mounted once behind the whole app. Fixed, pointer-events:none, honours
   // reduced-motion. Persists across view/tab changes since it lives on body.

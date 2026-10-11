@@ -62,6 +62,42 @@ class NetworkError extends Error {
 }
 
 /**
+ * Thrown when the gateway didn't answer in time. Separated from
+ * NetworkError so the UI can say "the server is waking up" (expected on
+ * Render's free tier after idle) rather than "unreachable" (looks broken).
+ */
+class TimeoutError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'TimeoutError';
+  }
+}
+
+// --- Cold-start / retry tuning -------------------------------------------
+// Render's free tier spins the gateway down after ~15 min idle; the first
+// request after that takes 30-60s to cold-start. We give each attempt a
+// generous timeout and retry a couple of times with backoff so a sleeping
+// server wakes up transparently instead of failing on the first try.
+const REQUEST_TIMEOUT_MS = 60000; // 60s per attempt — covers a full cold start
+const MAX_ATTEMPTS = 3;           // 1 initial + 2 retries
+const RETRY_BASE_DELAY_MS = 1500; // backoff: 1.5s, then 3s
+
+// Optional callback the UI can register to show "waking up the server…"
+// while a request is being retried. Kept as a callback so this file stays
+// framework-free (same pattern as onUnauthorized below).
+let onRetry = null;
+function setRetryHandler(fn) {
+  onRetry = fn;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+const isLocalBase = () =>
+  API_BASE.includes('localhost') || API_BASE.includes('127.0.0.1');
+
+/**
  * Global handler invoked whenever a protected call comes back 401 — i.e.
  * the stored token is missing/expired/rejected. app.js registers a handler
  * that clears the session and bounces to the auth screen, so a stale token
@@ -80,19 +116,50 @@ async function request(method, path, body, { auth = true } = {}) {
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
-  let res;
-  try {
-    res = await fetch(`${API_BASE}${path}`, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
-  } catch (err) {
-    // The gateway process isn't reachable at all — distinct from a
-    // department being down, which the gateway itself reports as a normal
-    // 200 { status: 'failed' } response (see api.md's relay convention).
-    const isLocal = API_BASE.includes('localhost') || API_BASE.includes('127.0.0.1');
-    const hint = isLocal ? ' Is it running on port 4000?' : ` (${API_BASE})`;
+  const hint = isLocalBase() ? ' Is it running on port 4000?' : ` (${API_BASE})`;
+
+  let res = null;
+  let lastTransportError = null;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    // Each attempt gets its own abort timer. On Render's free tier the very
+    // first request after idle can take most of a minute to cold-start, so
+    // the timeout is deliberately generous rather than a snappy 5-10s.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      res = await fetch(`${API_BASE}${path}`, {
+        method,
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      lastTransportError = null;
+      break; // got an HTTP response (any status) — stop retrying at transport level
+    } catch (err) {
+      clearTimeout(timer);
+      lastTransportError = err;
+      // Retry transport failures (gateway asleep / cold-starting / transient
+      // network blip) with backoff. A department being down is NOT this —
+      // the gateway reports that as a normal 200 { status: 'failed' } body
+      // (see api.md's relay convention), which never lands here.
+      if (attempt < MAX_ATTEMPTS) {
+        if (onRetry) onRetry({ attempt, maxAttempts: MAX_ATTEMPTS });
+        await sleep(RETRY_BASE_DELAY_MS * attempt); // 1.5s, then 3s
+        continue;
+      }
+    }
+  }
+
+  // Exhausted all attempts without any HTTP response — classify the failure
+  // so the banner is accurate (timeout vs. unreachable) instead of generic.
+  if (!res) {
+    if (lastTransportError && lastTransportError.name === 'AbortError') {
+      throw new TimeoutError(
+        `The Setu gateway didn't respond in time. It may be waking up — please try again in a moment.${hint}`,
+      );
+    }
     throw new NetworkError(`Could not reach the Setu gateway.${hint}`);
   }
 
@@ -113,10 +180,42 @@ async function request(method, path, body, { auth = true } = {}) {
       clearSession();
       onUnauthorized();
     }
+    // Distinct message for a 5xx the server itself returned (as opposed to
+    // never reaching it) — including Render's 502/503 while a service is
+    // suspended or still booting — so "server error" isn't confused with
+    // "bad credentials". The gateway's own JSON error (if any) wins; this
+    // is the fallback when the body is empty or non-JSON (e.g. Render's
+    // HTML "Service Suspended" page).
+    if (res.status >= 500 && !(payload && payload.error && payload.error.message)) {
+      throw new ApiError(
+        'SERVER_ERROR',
+        `The Setu gateway is temporarily unavailable (HTTP ${res.status}). Please try again shortly.`,
+        res.status,
+      );
+    }
     throw new ApiError(err.code || 'UNKNOWN', err.message || `Request failed (${res.status}).`, res.status);
   }
 
   return payload ? payload.data : null;
+}
+
+/**
+ * Fire-and-forget liveness ping used to wake a sleeping Render instance
+ * before the citizen interacts. Never throws — a failure here is silent
+ * (the real request path handles retries/errors). Resolves true if the
+ * gateway answered 200, false otherwise.
+ */
+async function pingHealth() {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${API_BASE}/health`, { method: 'GET', signal: controller.signal });
+    clearTimeout(timer);
+    return res.ok;
+  } catch {
+    clearTimeout(timer);
+    return false;
+  }
 }
 
 const api = {
@@ -149,4 +248,17 @@ const api = {
   },
 };
 
-export { api, ApiError, NetworkError, getToken, getCitizen, setSession, clearSession, setUnauthorizedHandler, API_BASE };
+export {
+  api,
+  ApiError,
+  NetworkError,
+  TimeoutError,
+  getToken,
+  getCitizen,
+  setSession,
+  clearSession,
+  setUnauthorizedHandler,
+  setRetryHandler,
+  pingHealth,
+  API_BASE,
+};

@@ -20,7 +20,7 @@
  *     the 401 "notice" path keep working unchanged.
  */
 
-import { api, ApiError, NetworkError, setSession } from '../api.js';
+import { api, ApiError, NetworkError, TimeoutError, setSession, setRetryHandler } from '../api.js';
 import { brandMarkSvg } from '../netmap.js';
 import { toast, escapeHtml } from '../util.js';
 
@@ -140,6 +140,36 @@ function setButtonLoading(btn, loading, label) {
   btn.innerHTML = loading ? `<span class="spinner"></span> ${escapeHtml(label)}` : label;
 }
 
+/**
+ * Turn an auth error into an accurate, specific banner message. Each failure
+ * mode reads differently so the citizen knows whether to re-check their
+ * password, wait for the server to wake, or try again later:
+ *   - ApiError 401            -> bad credentials
+ *   - ApiError 5xx/SERVER_ERROR-> server-side problem (incl. Render suspended/booting)
+ *   - TimeoutError            -> server waking up (Render cold start)
+ *   - NetworkError            -> genuinely unreachable (down / DNS / CORS)
+ */
+function authErrorMessage(err, context) {
+  if (err instanceof ApiError) {
+    if (err.status === 401) {
+      return context === 'register'
+        ? (err.message || 'That account could not be created. Please check your details.')
+        : 'Incorrect e-mail or password. Please try again.';
+    }
+    if (err.status >= 500 || err.code === 'SERVER_ERROR') {
+      return err.message || 'The Setu gateway is temporarily unavailable. Please try again shortly.';
+    }
+    return err.message || 'Something went wrong. Please try again.';
+  }
+  if (err instanceof TimeoutError) {
+    return err.message || 'The server is taking a while to respond — it may be waking up. Please try again in a moment.';
+  }
+  if (err instanceof NetworkError) {
+    return err.message || 'Could not reach the Setu gateway.';
+  }
+  return 'Something went wrong. Please try again.';
+}
+
 function mountAuthScreen(root, onAuthenticated, { notice } = {}) {
   root.innerHTML = authScreenHtml();
 
@@ -178,12 +208,24 @@ function mountAuthScreen(root, onAuthenticated, { notice } = {}) {
     });
   });
 
+  // While api.js retries a transport failure (Render free-tier cold start),
+  // reflect it on whichever submit button is active so the citizen sees
+  // "waking up" progress instead of a frozen spinner. Registered once for
+  // the screen; the active button is tracked per in-flight submit.
+  let activeSubmitBtn = null;
+  setRetryHandler(({ attempt, maxAttempts }) => {
+    if (activeSubmitBtn) {
+      setButtonLoading(activeSubmitBtn, true, `Waking up the server… (${attempt}/${maxAttempts})`);
+    }
+  });
+
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
     const errorBox = document.getElementById('loginError');
     const submitBtn = document.getElementById('loginSubmit');
+    activeSubmitBtn = submitBtn;
     errorBox.classList.add('hidden');
     setButtonLoading(submitBtn, true, 'Logging in…');
     try {
@@ -191,12 +233,10 @@ function mountAuthScreen(root, onAuthenticated, { notice } = {}) {
       setSession(data.token, data.citizen);
       onAuthenticated(data.citizen);
     } catch (err) {
-      const message = err instanceof ApiError ? err.message
-        : err instanceof NetworkError ? err.message
-        : 'Something went wrong. Please try again.';
-      errorBox.textContent = message;
+      errorBox.textContent = authErrorMessage(err, 'login');
       errorBox.classList.remove('hidden');
     } finally {
+      activeSubmitBtn = null;
       setButtonLoading(submitBtn, false, 'Log in');
     }
   });
@@ -208,6 +248,7 @@ function mountAuthScreen(root, onAuthenticated, { notice } = {}) {
     const password = document.getElementById('registerPassword').value;
     const errorBox = document.getElementById('registerError');
     const submitBtn = document.getElementById('registerSubmit');
+    activeSubmitBtn = submitBtn;
     errorBox.classList.add('hidden');
     setButtonLoading(submitBtn, true, 'Creating account…');
     try {
@@ -216,12 +257,10 @@ function mountAuthScreen(root, onAuthenticated, { notice } = {}) {
       toast(`Welcome to Setu, ${data.citizen.full_name.split(' ')[0]}.`);
       onAuthenticated(data.citizen);
     } catch (err) {
-      const message = err instanceof ApiError ? err.message
-        : err instanceof NetworkError ? err.message
-        : 'Something went wrong. Please try again.';
-      errorBox.textContent = message;
+      errorBox.textContent = authErrorMessage(err, 'register');
       errorBox.classList.remove('hidden');
     } finally {
+      activeSubmitBtn = null;
       setButtonLoading(submitBtn, false, 'Create account');
     }
   });
