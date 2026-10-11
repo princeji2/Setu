@@ -156,6 +156,14 @@ function createApp({
         error: { code: 'CORS_NOT_ALLOWED', message: 'Origin not allowed by CORS' },
       });
     }
+    // Malformed JSON body (body-parser) is a client error, not a server
+    // fault - return 400 with a clear code instead of a generic 500.
+    if (err && err.type === 'entity.parse.failed') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_JSON', message: 'Request body is not valid JSON.' },
+      });
+    }
     console.error('[gateway] Unhandled server error:', err);
     return res.status(500).json({
       success: false,

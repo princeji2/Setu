@@ -2,3 +2,8 @@
 NEON_CREDENTIALS.md
 .env
 .env.local
+
+# Ignore env files in any subdirectory (keep .env.example tracked)
+**/.env
+**/.env.local
+!**/.env.example
