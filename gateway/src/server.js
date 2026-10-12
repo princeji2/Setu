@@ -36,7 +36,10 @@ function startKeepAlive() {
     config.departments.digital_tax_records?.baseUrl,
     config.departments.national_identity_registry?.baseUrl ? `${config.departments.national_identity_registry.baseUrl.replace(/\/+$/, '')}/health` : null,
     config.departments.driving_licence_jan_aadhaar?.baseUrl,
-    'https://setu-gateway-v2.onrender.com/api/v1/health',
+    // Gateway self-ping. Prefer Render's auto-injected RENDER_EXTERNAL_URL so
+    // the URL is never stale across redeploys/renames; fall back to the
+    // current deployed gateway URL when the env var is absent (e.g. local).
+    `${(process.env.RENDER_EXTERNAL_URL || 'https://setu-gateway-bskg.onrender.com').replace(/\/+$/, '')}/api/v1/health`,
   ].filter(Boolean);
 
   async function ping() {
