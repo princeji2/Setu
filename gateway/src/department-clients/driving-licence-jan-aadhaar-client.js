@@ -33,8 +33,10 @@
 const config = require('../config/env');
 const { maskValue } = require('../utils/mask');
 const { flagRegistration } = require('../utils/data-quality');
+const { fetchWithRetry, logUpstreamSignal } = require('./http-fetch');
 
 const DEPARTMENT = 'driving_licence_jan_aadhaar';
+const DEPARTMENT_HUMAN_NAME = 'Driving Licence & Jan Aadhaar Portal';
 
 // verification_status values that count as "verified" at the gateway level,
 // i.e. the department confirmed the reference exists and passed its checks.

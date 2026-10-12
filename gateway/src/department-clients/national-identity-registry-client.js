@@ -26,8 +26,10 @@
 const config = require('../config/env');
 const { maskValue } = require('../utils/mask');
 const { flagFieldArray } = require('../utils/data-quality');
+const { fetchWithRetry, logUpstreamSignal } = require('./http-fetch');
 
 const DEPARTMENT = 'national_identity_registry';
+const DEPARTMENT_HUMAN_NAME = 'National Identity Registry';
 
 /**
  * Translate the NIR-native success payload into the minimal internal shape.
@@ -84,58 +86,45 @@ function createNationalIdentityRegistryClient({
       const url = `${baseUrl.replace(/\/$/, '')}${path}`;
       const start = Date.now();
 
+      // Retry / backoff / single-consume body / unavailable-logging all live
+      // in the shared helper so all three clients behave identically here.
+      const fetched = await fetchWithRetry({
+        url,
+        gatewayKey,
+        timeoutMs,
+        start,
+        fetchImpl,
+        departmentHumanName: DEPARTMENT_HUMAN_NAME,
+        endpoint,
+      });
 
-      let res = null;
-      let lastErr = null;
-      const retryCodes = new Set([502, 503, 504]);
-      const retryStart = Date.now();
-      const maxRetryMs = Math.min(timeoutMs - 5000, 35000);
-
-      while (Date.now() - retryStart < maxRetryMs) {
-        try {
-          res = await fetchImpl(url, {
-            method: 'GET',
-            headers: { 'X-Gateway-Key': gatewayKey, Accept: 'application/json' },
-            signal: AbortSignal.timeout(Math.min(15000, Math.max(5000, timeoutMs - (Date.now() - start)))),
-          });
-          lastErr = null;
-          if (!retryCodes.has(res?.status)) {
-            break;
-          }
-        } catch (fetchErr) {
-          lastErr = fetchErr;
-          res = null;
-        }
-
-        if (Date.now() - retryStart + 3000 < maxRetryMs) {
-          await new Promise((resolve) => setTimeout(resolve, 3000));
-        } else {
-          break;
-        }
-      }
-
-      if (!res && lastErr) {
-        const durationMs = Date.now() - start;
-        const isTimeout = lastErr && (lastErr.name === 'TimeoutError' || lastErr.name === 'AbortError');
+      // Terminal transport failure — no response within budget.
+      if (fetched.kind === 'timeout' || fetched.kind === 'unreachable') {
         return {
-          outcome: isTimeout ? 'timeout' : 'unreachable',
+          outcome: fetched.kind,
           statusCode: null,
           endpoint,
-          durationMs,
+          durationMs: fetched.durationMs,
           data: null,
-          error: isTimeout
+          error: fetched.kind === 'timeout'
             ? 'National Identity Registry did not respond in time.'
             : 'Could not reach National Identity Registry.',
         };
       }
 
-      const durationMs = Date.now() - start;
-      let body = null;
-      try {
-        body = await res.json();
-      } catch {
-        body = null;
+      // Terminal exhausted-retry 502/503/504 — the helper already logged this.
+      if (fetched.kind === 'unavailable') {
+        return {
+          outcome: 'unavailable',
+          statusCode: fetched.status,
+          endpoint,
+          durationMs: fetched.durationMs,
+          data: null,
+          error: 'National Identity Registry is temporarily unavailable. Please try again in a minute.',
+        };
       }
+
+      const { res, body, bodyTextPreview, durationMs } = fetched;
 
       if (res.status === 200 && body && body.data) {
         return {
@@ -181,6 +170,9 @@ function createNationalIdentityRegistryClient({
         };
       }
 
+      // Unexpected status (not in {200,404,401,400,502,503,504}) — log once
+      // (response-side only, redacted) before surfacing the honest outcome.
+      logUpstreamSignal({ departmentHumanName: DEPARTMENT_HUMAN_NAME, endpoint, res, bodyTextPreview });
       return {
         outcome: 'unexpected',
         statusCode: res.status,
