@@ -36,7 +36,7 @@ function startKeepAlive() {
     config.departments.digital_tax_records?.baseUrl,
     config.departments.national_identity_registry?.baseUrl ? `${config.departments.national_identity_registry.baseUrl.replace(/\/+$/, '')}/health` : null,
     config.departments.driving_licence_jan_aadhaar?.baseUrl,
-    'https://setu-gateway.onrender.com/api/v1/health',
+    'https://setu-gateway-v2.onrender.com/api/v1/health',
   ].filter(Boolean);
 
   async function ping() {

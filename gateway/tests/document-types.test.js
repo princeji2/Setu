@@ -22,17 +22,19 @@ test('DTR Client: routes PANCARD- and INC- references to dedicated endpoints', a
   const calls = [];
   const fakeFetch = async (url, opts) => {
     calls.push({ url, headers: opts.headers });
+    const payload = {
+      success: true,
+      data: {
+        reference: url.includes('pan-card') ? 'PANCARD-000102' : 'INC-2026-000102',
+        sourceDepartment: 'Digital Tax Records',
+        fields: [{ name: 'fullName', value: 'Aditi Rao', verified: true }],
+      },
+    };
     return {
       ok: true,
       status: 200,
-      json: async () => ({
-        success: true,
-        data: {
-          reference: url.includes('pan-card') ? 'PANCARD-000102' : 'INC-2026-000102',
-          sourceDepartment: 'Digital Tax Records',
-          fields: [{ name: 'fullName', value: 'Aditi Rao', verified: true }],
-        },
-      }),
+      headers: { get: () => null },
+      text: async () => JSON.stringify(payload),
     };
   };
 
@@ -59,17 +61,19 @@ test('NIR Client: routes VOTER- and BIRTH- references to dedicated endpoints', a
   const calls = [];
   const fakeFetch = async (url, opts) => {
     calls.push({ url, headers: opts.headers });
+    const payload = {
+      success: true,
+      data: {
+        identityReference: url.includes('voter-id') ? 'VOTER-DL-000102' : 'BIRTH-DEL-000102',
+        sourceDepartment: 'National Identity Registry',
+        fields: [{ name: 'fullName', value: 'Aditi Rao', verified: true }],
+      },
+    };
     return {
       ok: true,
       status: 200,
-      json: async () => ({
-        success: true,
-        data: {
-          identityReference: url.includes('voter-id') ? 'VOTER-DL-000102' : 'BIRTH-DEL-000102',
-          sourceDepartment: 'National Identity Registry',
-          fields: [{ name: 'fullName', value: 'Aditi Rao', verified: true }],
-        },
-      }),
+      headers: { get: () => null },
+      text: async () => JSON.stringify(payload),
     };
   };
 
@@ -96,18 +100,20 @@ test('DLJA Client: routes RC- and PASS- references to dedicated endpoints', asyn
   const calls = [];
   const fakeFetch = async (url, opts) => {
     calls.push({ url, headers: opts.headers });
+    const payload = {
+      success: true,
+      data: {
+        registration_reference: url.includes('vehicle-rc') ? 'RC-7B010002' : 'PASS-7B010002',
+        owner_name: url.includes('vehicle-rc') ? 'Aditi Rao' : undefined,
+        holder_name: url.includes('passport') ? 'Aditi Rao' : undefined,
+        verification_status: 'VERIFIED',
+      },
+    };
     return {
       ok: true,
       status: 200,
-      json: async () => ({
-        success: true,
-        data: {
-          registration_reference: url.includes('vehicle-rc') ? 'RC-7B010002' : 'PASS-7B010002',
-          owner_name: url.includes('vehicle-rc') ? 'Aditi Rao' : undefined,
-          holder_name: url.includes('passport') ? 'Aditi Rao' : undefined,
-          verification_status: 'VERIFIED',
-        },
-      }),
+      headers: { get: () => null },
+      text: async () => JSON.stringify(payload),
     };
   };
 

@@ -19,12 +19,12 @@
      reads this). Leave unset/blank for local dev — the client falls back
      to http://localhost:4000/api/v1. For a deployed console, set it to the
      deployed gateway URL, e.g.
-       window.SETU_API_BASE = 'https://setu-gateway.onrender.com/api/v1';
+       window.SETU_API_BASE = 'https://setu-gateway-v2.onrender.com/api/v1';
      Keep the trailing '/api/v1' and no trailing slash. -->
 <script>
   window.SETU_API_BASE = (['localhost', '127.0.0.1'].includes(window.location.hostname))
     ? 'http://localhost:4000/api/v1'
-    : 'https://setu-gateway.onrender.com/api/v1';
+    : 'https://setu-gateway-v2.onrender.com/api/v1';
 </script>
 </head>
 <body class="admin-body">
