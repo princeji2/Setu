@@ -6,7 +6,11 @@
  * stays there until Phase 3 relay logic moves it forward.
  *
  * Errors thrown with a `.code` mapped to HTTP status by the controller:
- *   VALIDATION -> 400, NOT_FOUND -> 404
+ *   VALIDATION -> 400, NOT_FOUND -> 404, UNAUTHENTICATED -> 401
+ *
+ * UNAUTHENTICATED is raised when a validly-signed token references a
+ * citizen row that no longer exists (foreign-key violation on insert) —
+ * the identity is gone, so it's an auth failure, not a 500.
  */
 
 class ApplicationError extends Error {
@@ -76,11 +80,28 @@ function createApplicationService({ applicationRepository, auditRepository }) {
         ? crypto.randomUUID()
         : null;
 
-      const row = await applicationRepository.create({
-        citizenId,
-        type,
-        compositeWorkflowId,
-      });
+      let row;
+      try {
+        row = await applicationRepository.create({
+          citizenId,
+          type,
+          compositeWorkflowId,
+        });
+      } catch (err) {
+        // A validly-signed JWT can carry a citizen_id that no longer exists
+        // in `citizens` (e.g. token minted against a different/earlier DB,
+        // or the gateway DB was re-migrated). The INSERT then trips the
+        // foreign-key constraint. That is an authentication problem — the
+        // asserted identity is gone — not a server fault, so surface 401
+        // instead of letting the raw DB error become a 500.
+        if (err && err.code === '23503' && /citizen_id/.test(err.constraint || err.detail || '')) {
+          throw new ApplicationError(
+            'UNAUTHENTICATED',
+            'Your session is no longer valid. Please sign in again.'
+          );
+        }
+        throw err;
+      }
 
       const auditDetail = { application_id: row.id, type };
       if (compositeWorkflowId) {

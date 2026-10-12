@@ -2,7 +2,7 @@
 
 const { ApplicationError } = require('../services/application-service');
 
-const STATUS_BY_CODE = { VALIDATION: 400, NOT_FOUND: 404 };
+const STATUS_BY_CODE = { VALIDATION: 400, NOT_FOUND: 404, UNAUTHENTICATED: 401 };
 
 function sendError(res, err) {
   if (err instanceof ApplicationError) {
